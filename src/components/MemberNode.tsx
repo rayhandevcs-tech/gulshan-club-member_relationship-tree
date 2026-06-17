@@ -1,0 +1,59 @@
+'use client';
+import { Member } from '@/lib/types';
+import { getInitials, TYPE_CONFIG, REL_LABELS } from '@/lib/memberUtils';
+import { useMemberStore } from '@/store/memberStore';
+import { clsx } from 'clsx';
+
+interface Props {
+  member: Member;
+  showRel?: boolean;
+  small?: boolean;
+  dashed?: boolean;
+}
+
+export default function MemberNode({ member, showRel, small, dashed }: Props) {
+  const { selectedId, setSelected } = useMemberStore();
+  const cfg = TYPE_CONFIG[member.type] ?? TYPE_CONFIG.Permanent;
+  const isSelected = selectedId === member.id;
+  const relLabel = member.rel ? REL_LABELS[member.rel] : '';
+
+  const size = small ? 'w-10 h-10 text-[11px]' : 'w-14 h-14 text-[14px]';
+  const pipSize = small ? 'w-4 h-4 text-[7px]' : 'w-5 h-5 text-[8px]';
+
+  return (
+    <div
+      onClick={() => setSelected(isSelected ? null : member.id)}
+      className={clsx(
+        'flex flex-col items-center cursor-pointer px-2.5 py-2 rounded-xl transition-all',
+        'hover:bg-gray-100',
+        isSelected ? 'bg-gray-50 shadow-sm' : '',
+        dashed && 'border border-dashed border-gray-300'
+      )}
+      style={isSelected ? { boxShadow: `0 0 0 2.5px ${cfg.color}` } : undefined}
+    >
+      {showRel && relLabel && (
+        <span className="text-[9px] font-medium text-gray-500 bg-gray-100 rounded-full px-2 py-0.5 mb-1">
+          {relLabel}
+        </span>
+      )}
+      <div
+        className={clsx('rounded-full flex items-center justify-center font-semibold relative shadow-sm', size)}
+        style={{ background: cfg.bg, color: cfg.dark }}
+      >
+        {getInitials(member.name)}
+        <div
+          className={clsx('absolute -bottom-1 -right-1 rounded-full flex items-center justify-center font-bold text-white border-2 border-white', pipSize)}
+          style={{ background: cfg.color, borderColor: '#fff' }}
+        >
+          {cfg.short}
+        </div>
+      </div>
+      <div className={clsx('font-medium text-gray-800 text-center mt-1 leading-tight', small ? 'text-[10px] max-w-[64px]' : 'text-[12px] max-w-[84px]')}>
+        {member.name.split(' ').slice(0, 2).join(' ')}
+      </div>
+      <div className={clsx('text-gray-400 text-center', small ? 'text-[9px]' : 'text-[10px]')}>
+        {member.id}
+      </div>
+    </div>
+  );
+}
