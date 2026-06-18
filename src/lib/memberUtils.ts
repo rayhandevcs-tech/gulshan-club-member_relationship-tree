@@ -194,3 +194,217 @@ export const UPGRADE_PATHS: Partial<Record<string, string[]>> = {
   Life: ['Donor (2.5 Lac)', 'Senior (25 Thousand)'],
   Donor: ['Senior (25 Thousand)'],
 };
+
+// ---- Relationship diagram layout -----------------------------------
+// Builds the boxes-and-arrows model for the flowchart-style relationship
+// diagram (the "show me exactly who's related to whom" view). Rows are
+// positioned by BIOLOGICAL generation (via fatherId/motherId when known,
+// falling back to the structural pid chain), while the actual arrows
+// drawn follow the STRUCTURAL pid link — which is exactly what lets an
+// arrow legitimately skip a generation when a quota slot is sourced
+// from a grandparent instead of a parent.
+
+export const DIAGRAM_BOX_W = 190;
+export const DIAGRAM_BOX_H = 64;
+export const DIAGRAM_ROW_GAP = 130;
+export const DIAGRAM_COL_GAP = 50;
+
+export interface DiagramNode {
+  member: Member;
+  x: number;
+  y: number;
+  row: number;
+  caption: string | null;
+}
+
+export interface DiagramEdge {
+  fromId: string;
+  toId: string;
+  label: string;
+  kind: 'vertical' | 'spouse' | 'sibling';
+}
+
+export interface DiagramRef {
+  // A small extra box for things like "membership transferred to LS-35"
+  label: string;
+  detail: string;
+  targetId: string;
+}
+
+export interface DiagramLayout {
+  nodes: DiagramNode[];
+  edges: DiagramEdge[];
+  refs: DiagramRef[];
+  width: number;
+  height: number;
+}
+
+const relEdgeLabel = (m: Member): string => {
+  switch (m.rel) {
+    case 'a4d': return 'A4D';
+    case 'child': return 'Children';
+    case 'associate': return 'Associate';
+    case 'nominee': return 'Nominee';
+    default: return '';
+  }
+};
+
+export const buildRelationshipDiagram = (members: Member[], rootId: string): DiagramLayout | null => {
+  const root = getMember(members, rootId);
+  if (!root) return null;
+
+  const familyIds = [root.id, ...getAllDescendants(members, root.id)];
+  const family = familyIds.map(id => getMember(members, id)).filter((m): m is Member => !!m);
+  const byId = new Map(family.map(m => [m.id, m]));
+
+  // Biological generation depth (for vertical row placement).
+  const bioRow = new Map<string, number>();
+  const resolving = new Set<string>();
+
+  const computeRow = (m: Member): number => {
+    if (bioRow.has(m.id)) return bioRow.get(m.id)!;
+    if (m.id === root.id) {
+      bioRow.set(m.id, 0);
+      return 0;
+    }
+    if (resolving.has(m.id)) return 0; // guard against bad data cycles
+    resolving.add(m.id);
+
+    let row: number;
+    if (m.rel === 'spouse' && m.pid && byId.has(m.pid)) {
+      // A spouse shares their partner's row — they're a couple, not a
+      // generation apart.
+      row = computeRow(byId.get(m.pid)!);
+    } else {
+      const father = m.fatherId ? byId.get(m.fatherId) : undefined;
+      const mother = m.motherId ? byId.get(m.motherId) : undefined;
+      if (father || mother) {
+        const fr = father ? computeRow(father) : -1;
+        const mr = mother ? computeRow(mother) : -1;
+        row = Math.max(fr, mr) + 1;
+      } else {
+        const pidRow = m.pid && byId.has(m.pid) ? computeRow(byId.get(m.pid)!) : 0;
+        // An A4D slot with a named-but-unresolved external parent (e.g.
+        // "father is LM-50, not in this family") is conventionally one
+        // generation further down than its sponsor, same as every other
+        // A4D dependent — without this, it would visually sit a row too
+        // high compared to its A4D peers.
+        const looksLikeExternalSkip = m.type === 'A4D' && (m.fatherName || m.motherName);
+        row = pidRow + (looksLikeExternalSkip ? 2 : 1);
+      }
+    }
+
+    resolving.delete(m.id);
+    bioRow.set(m.id, row);
+    return row;
+  };
+
+  family.forEach(computeRow);
+
+  const maxRow = Math.max(...family.map(m => bioRow.get(m.id) ?? 0));
+  const rows: Member[][] = Array.from({ length: maxRow + 1 }, () => []);
+  family.forEach(m => rows[bioRow.get(m.id) ?? 0].push(m));
+
+  // Assign x per row — sort by the structural parent's x (once known)
+  // so visually-related clusters stay together and lines cross less.
+  const xOf = new Map<string, number>();
+  const nodes: DiagramNode[] = [];
+
+  rows.forEach((row, rowIdx) => {
+    // Spouses must sit immediately next to their partner, not get sorted
+    // independently — otherwise a spouse's sort key (their partner's x)
+    // isn't assigned yet (same row, not yet positioned) and they drift
+    // away from the couple they belong to.
+    const spouseOf = new Map<string, Member>();
+    const anchors: Member[] = [];
+    const inRow = new Set(row.map(m => m.id));
+    row.forEach(m => {
+      if (m.rel === 'spouse' && m.pid && inRow.has(m.pid)) {
+        spouseOf.set(m.pid, m);
+      } else {
+        anchors.push(m);
+      }
+    });
+
+    const sortedAnchors = [...anchors].sort((a, b) => {
+      const pa = a.pid && xOf.has(a.pid) ? xOf.get(a.pid)! : 0;
+      const pb = b.pid && xOf.has(b.pid) ? xOf.get(b.pid)! : 0;
+      if (pa !== pb) return pa - pb;
+      return family.indexOf(a) - family.indexOf(b);
+    });
+
+    const ordered: Member[] = [];
+    sortedAnchors.forEach(a => {
+      ordered.push(a);
+      const sp = spouseOf.get(a.id);
+      if (sp) ordered.push(sp);
+    });
+
+    const totalWidth = ordered.length * (DIAGRAM_BOX_W + DIAGRAM_COL_GAP) - DIAGRAM_COL_GAP;
+    let x = -totalWidth / 2;
+
+    ordered.forEach(m => {
+      xOf.set(m.id, x);
+      const sponsorIds = m.pid ? [m.pid] : [];
+      nodes.push({
+        member: m,
+        x,
+        y: rowIdx * DIAGRAM_ROW_GAP,
+        row: rowIdx,
+        caption: m.type === 'A4D' ? getQuotaSourceCaption(m, sponsorIds, family) : null,
+      });
+      x += DIAGRAM_BOX_W + DIAGRAM_COL_GAP;
+    });
+  });
+
+  // Edges: spouse links (horizontal) and everything else (vertical,
+  // following the structural pid — this is what lets an arrow skip a
+  // generation for a grandparent-sourced A4D slot).
+  const edges: DiagramEdge[] = [];
+  family.forEach(m => {
+    if (!m.pid || !byId.has(m.pid)) return;
+    if (m.rel === 'spouse') {
+      edges.push({ fromId: m.pid, toId: m.id, label: 'Spouse', kind: 'spouse' });
+    } else if (m.rel !== 'associate' && m.rel !== 'nominee') {
+      edges.push({ fromId: m.pid, toId: m.id, label: relEdgeLabel(m), kind: 'vertical' });
+    } else {
+      edges.push({ fromId: m.pid, toId: m.id, label: relEdgeLabel(m), kind: 'vertical' });
+    }
+  });
+
+  // Sibling connectors — only between full siblings who ended up
+  // immediately adjacent in the same row, so the line stays short and
+  // doesn't cross unrelated boxes.
+  rows.forEach(row => {
+    const sorted = [...row].sort((a, b) => xOf.get(a.id)! - xOf.get(b.id)!);
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const a = sorted[i];
+      const b = sorted[i + 1];
+      const sameParents =
+        a.fatherId && a.motherId && a.fatherId === b.fatherId && a.motherId === b.motherId;
+      const sameCoreParent =
+        a.rel === 'child' && b.rel === 'child' && a.pid === b.pid;
+      if (sameParents || sameCoreParent) {
+        edges.push({ fromId: a.id, toId: b.id, label: 'Sibling', kind: 'sibling' });
+      }
+    }
+  });
+
+  // Membership transfer/renumbering references, e.g. "Linked to LS-35
+  // (Article 6C & 10B)" — drawn as a small extra box off to the side.
+  const refs: DiagramRef[] = [];
+  family.forEach(m => {
+    if (!m.membershipRef) return;
+    const match = m.membershipRef.match(/([A-Z]{1,3}-\d+)\s*(?:\(([^)]+)\))?/);
+    if (match) {
+      refs.push({ label: match[1], detail: match[2] ?? '', targetId: m.id });
+    }
+  });
+
+  const minX = Math.min(...nodes.map(n => n.x));
+  const maxX = Math.max(...nodes.map(n => n.x + DIAGRAM_BOX_W));
+  const width = maxX - minX + 160; // padding + room for ref boxes
+  const height = (maxRow + 1) * DIAGRAM_ROW_GAP + DIAGRAM_BOX_H + 60;
+
+  return { nodes, edges, refs, width, height };
+};
