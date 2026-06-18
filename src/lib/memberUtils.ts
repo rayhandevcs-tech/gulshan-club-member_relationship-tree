@@ -127,6 +127,68 @@ export const REL_LABELS: Record<string, string> = {
   nominee: 'Nominee',
 };
 
+// Every core member (Life/Permanent/Donor-level primary or someone who
+// has succeeded into that position) gets a fixed number of A4D slots
+// they can allocate. Default is 2 unless overridden per type later.
+export const DEFAULT_A4D_QUOTA = 2;
+
+// Counts how many A4D slots a given member has actually allocated.
+// Keyed off type === 'A4D' rather than rel === 'a4d', because a quota
+// slot can be given to someone who is functionally a spouse in the tree
+// (rel: 'spouse', positioned next to the sponsor) while still being the
+// thing that actually consumes one of the sponsor's 2 A4D slots — type
+// is the real "this consumes a quota slot" signal, rel is just how it
+// renders in the tree.
+export const getA4DQuota = (members: Member[], sponsorId: string) => {
+  const used = members.filter(m => m.pid === sponsorId && m.type === 'A4D').length;
+  return { used, total: DEFAULT_A4D_QUOTA, remaining: Math.max(DEFAULT_A4D_QUOTA - used, 0) };
+};
+
+// A more specific, gender-aware label for tree pills and the "Family
+// Members" list — falls back to the generic REL_LABELS entry when
+// gender isn't known. 'child' relations (a descendant who is themselves
+// a core member) get no pill at all, since they render as their own
+// nested family card instead of a dependent leaf.
+export const getRelLabel = (member: Member): string => {
+  if (!member.rel) return '';
+  if (member.rel === 'child') return '';
+  if (member.rel === 'a4d' && member.gender) {
+    return member.gender === 'M' ? 'Son (A4D)' : 'Daughter (A4D)';
+  }
+  if (member.rel === 'spouse' && member.gender) {
+    return member.gender === 'M' ? 'Husband' : 'Wife';
+  }
+  return REL_LABELS[member.rel] ?? member.rel;
+};
+
+// For an A4D-type kid being rendered under a sponsor that ISN'T their
+// true biological parent (a borrowed/grandparent quota slot), returns
+// a short tree caption like "Son of PW-6 & PK-49" or "Daughter of LM-50"
+// — the same kind of annotation used in the original paper diagram.
+// Returns null when the sponsor shown IS the real parent (no caption
+// needed, the tree position already tells the whole story).
+export const getQuotaSourceCaption = (
+  kid: Member,
+  sponsorIds: string[],
+  members: Member[]
+): string | null => {
+  const father = kid.fatherId ? members.find(m => m.id === kid.fatherId) : null;
+  const mother = kid.motherId ? members.find(m => m.id === kid.motherId) : null;
+
+  if ((father && sponsorIds.includes(father.id)) || (mother && sponsorIds.includes(mother.id))) {
+    return null;
+  }
+
+  const refs = [father?.id, mother?.id].filter((x): x is string => !!x);
+  if (!refs.length && (kid.fatherName || kid.motherName)) {
+    refs.push((kid.fatherName ?? kid.motherName) as string);
+  }
+  if (!refs.length) return null;
+
+  const noun = kid.gender === 'M' ? 'Son' : kid.gender === 'F' ? 'Daughter' : 'Child';
+  return `${noun} of ${refs.join(' & ')}`;
+};
+
 export const UPGRADE_PATHS: Partial<Record<string, string[]>> = {
   Permanent: ['Life (7.5 Lac)', 'Donor (10 Lac)', 'Senior (25 Thousand)'],
   Life: ['Donor (2.5 Lac)', 'Senior (25 Thousand)'],

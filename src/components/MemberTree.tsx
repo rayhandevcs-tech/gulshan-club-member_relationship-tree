@@ -3,7 +3,7 @@ import { useMemberStore } from '@/store/memberStore';
 import { Member } from '@/lib/types';
 import {
   getRoots, getSpouse, getNonSpouseChildren, getAssociates,
-  getNominees, getAllDescendants, TYPE_CONFIG
+  getNominees, getAllDescendants, getQuotaSourceCaption, TYPE_CONFIG
 } from '@/lib/memberUtils';
 import MemberNode from './MemberNode';
 import { Search } from 'lucide-react';
@@ -30,8 +30,18 @@ function AssocGroup({ parentId }: { parentId: string }) {
 function FamilySubtree({ member }: { member: Member }) {
   const { members } = useMemberStore();
   const spouse = getSpouse(members, member.id);
-  const kids   = getNonSpouseChildren(members, member.id)
-    .filter(k => k.rel !== 'associate' && k.rel !== 'nominee');
+
+  // A couple can each sponsor their own A4D/child slots, so combine
+  // both sides — without this, anything sponsored under the spouse's
+  // own id (instead of the root member's id) would be invisible here.
+  const allKids = [
+    ...getNonSpouseChildren(members, member.id),
+    ...(spouse ? getNonSpouseChildren(members, spouse.id) : []),
+  ].filter(k => k.rel !== 'associate' && k.rel !== 'nominee');
+
+  // Who's structurally sponsoring this level's kids — used to tell
+  // whether a kid's biological parent differs from where they're shown.
+  const sponsorIds = [member.id, ...(spouse ? [spouse.id] : [])];
 
   return (
     <div className="flex flex-col items-center">
@@ -46,18 +56,38 @@ function FamilySubtree({ member }: { member: Member }) {
         )}
       </div>
       <AssocGroup parentId={member.id} />
-      {kids.length > 0 && (
+      {spouse && <AssocGroup parentId={spouse.id} />}
+      {allKids.length > 0 && (
         <>
           <div className="w-[1.5px] h-5 bg-gray-300" />
-          {kids.length > 1 && (
-            <div className="h-[1.5px] bg-gray-300" style={{ width: Math.min(kids.length * 108, 460) }} />
+          {allKids.length > 1 && (
+            <div className="h-[1.5px] bg-gray-300" style={{ width: Math.min(allKids.length * 108, 460) }} />
           )}
           <div className="flex gap-4 items-start">
-            {kids.map(kid => (
+            {allKids.map(kid => (
               <div key={kid.id} className="flex flex-col items-center">
                 <div className="w-[1.5px] h-5 bg-gray-300" />
-                <MemberNode member={kid} showRel />
-                <AssocGroup parentId={kid.id} />
+                {kid.rel === 'child' ? (
+                  // This descendant is themselves a core member with their
+                  // own spouse/A4D allocations — nest their subtree
+                  // instead of rendering them as a flat leaf.
+                  <div className="border border-gray-100 rounded-xl p-4 bg-gray-50/60">
+                    <FamilySubtree member={kid} />
+                  </div>
+                ) : (
+                  <>
+                    <MemberNode member={kid} showRel />
+                    {(() => {
+                      const caption = getQuotaSourceCaption(kid, sponsorIds, members);
+                      return caption ? (
+                        <div className="text-[8px] text-gray-400 text-center max-w-[96px] leading-tight -mt-0.5 mb-0.5 italic">
+                          {caption}
+                        </div>
+                      ) : null;
+                    })()}
+                    <AssocGroup parentId={kid.id} />
+                  </>
+                )}
               </div>
             ))}
           </div>
@@ -73,7 +103,9 @@ function EmptyPrompt() {
       <Search size={34} className="text-gray-300" />
       <div className="text-[15px] font-medium text-gray-500">Search for a member</div>
       <div className="text-[12px] max-w-[300px] leading-relaxed">
-        Type a name or A/C number in the search box..
+        Type a name or A/C number in the search box above, then pick the
+        specific member from the list — their full family relationship
+        will be shown here.
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 import { Member } from '@/lib/types';
-import { getInitials, TYPE_CONFIG, REL_LABELS } from '@/lib/memberUtils';
+import { getInitials, TYPE_CONFIG, getRelLabel } from '@/lib/memberUtils';
 import { useMemberStore } from '@/store/memberStore';
 import { clsx } from 'clsx';
 
@@ -15,7 +15,7 @@ export default function MemberNode({ member, showRel, small, dashed }: Props) {
   const { selectedId, setSelected } = useMemberStore();
   const cfg = TYPE_CONFIG[member.type] ?? TYPE_CONFIG.Permanent;
   const isSelected = selectedId === member.id;
-  const relLabel = member.rel ? REL_LABELS[member.rel] : '';
+  const relLabel = getRelLabel(member);
 
   const size = small ? 'w-10 h-10 text-[11px]' : 'w-14 h-14 text-[14px]';
   const pipSize = small ? 'w-4 h-4 text-[7px]' : 'w-5 h-5 text-[8px]';

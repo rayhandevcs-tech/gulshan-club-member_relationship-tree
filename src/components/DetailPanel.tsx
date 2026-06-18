@@ -5,7 +5,8 @@ import {
   getMember,
   getInitials,
   TYPE_CONFIG,
-  REL_LABELS,
+  getRelLabel,
+  getA4DQuota,
   UPGRADE_PATHS,
 } from '@/lib/memberUtils';
 import { X, Edit2, Plus, Trash2, ChevronRight, Users } from 'lucide-react';
@@ -27,8 +28,20 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
   const cfg = TYPE_CONFIG[m.type];
   const parent = m.pid ? getMember(members, m.pid) : null;
   const children = members.filter(c => c.pid === m.id);
-  const relText = m.rel ? REL_LABELS[m.rel] ?? m.rel : 'Primary Member';
+  const relLabel = getRelLabel(m);
   const upgrades = UPGRADE_PATHS[m.type] ?? [];
+
+  // True biological parents — prefer a linked Member (clickable),
+  // fall back to a free-text name, then to the legacy field.
+  const fatherMember = m.fatherId ? getMember(members, m.fatherId) : null;
+  const motherMember = m.motherId ? getMember(members, m.motherId) : null;
+  const fatherDisplay = fatherMember?.name ?? m.fatherName ?? m.father;
+  const motherDisplay = motherMember?.name ?? m.motherName ?? m.mother;
+
+  // Core members (anyone who isn't themselves an A4D/Associate slot)
+  // get their own A4D quota — show how much of it is in use.
+  const isSponsorType = m.type !== 'A4D' && m.type !== 'Associate';
+  const quota = getA4DQuota(members, m.id);
 
   const handleDelete = () => {
     if (confirm('Delete this member and all related members?')) {
@@ -68,17 +81,27 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
       </div>
 
       <div
-        className="text-[11px] font-medium px-3.5 py-1 rounded-full mx-auto w-fit mb-4"
+        className="text-[11px] font-medium px-3.5 py-1 rounded-full mx-auto w-fit mb-2"
         style={{ background: cfg.bg, color: cfg.dark }}
       >
         {m.type}
-        {m.rel ? ` · ${relText}` : ''}
+        {relLabel ? ` · ${relLabel}` : ''}
       </div>
+
+      {isSponsorType && (
+        <div className="text-[10px] text-gray-400 text-center mb-4">
+          A4D Quota: <span className="text-gray-600 font-medium">{quota.used}/{quota.total}</span> used
+        </div>
+      )}
+      {!isSponsorType && <div className="mb-4" />}
 
       {[
         ['Joined', m.since],
         ['Email', m.email],
         ['Phone', m.phone],
+        ['A4D Source', m.quotaNote],
+        ['Succession', m.succession],
+        ['Membership Ref', m.membershipRef],
         ['Note', m.note],
       ]
         .filter(([, v]) => v)
@@ -87,7 +110,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
             key={label}
             className="flex gap-2 py-1.5 border-t border-gray-100 text-[12px]"
           >
-            <span className="text-gray-400 w-16 flex-shrink-0 text-[11px]">
+            <span className="text-gray-400 w-20 flex-shrink-0 text-[11px]">
               {label}
             </span>
             <span className="text-gray-700 break-all leading-snug">
@@ -134,24 +157,32 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
               );
             })()}
 
-          {(m.father || m.mother) && (
+          {(fatherDisplay || motherDisplay) && (
             <div className="mt-3 bg-gray-50 rounded-xl p-3 border border-gray-100">
               <div className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
                 <Users size={11} />
                 Parents
               </div>
 
-              {m.father && (
-                <div className="flex gap-2 text-[11px] py-1">
+              {fatherDisplay && (
+                <div
+                  className={`flex items-center gap-2 text-[11px] py-1 ${fatherMember ? 'cursor-pointer hover:text-blue-600' : ''}`}
+                  onClick={() => fatherMember && setSelected(fatherMember.id)}
+                >
                   <span className="text-gray-400 w-12 flex-shrink-0">Father</span>
-                  <span className="text-gray-700">{m.father}</span>
+                  <span className="text-gray-700">{fatherDisplay}</span>
+                  {fatherMember && <ChevronRight size={12} className="text-gray-300" />}
                 </div>
               )}
 
-              {m.mother && (
-                <div className="flex gap-2 text-[11px] py-1">
+              {motherDisplay && (
+                <div
+                  className={`flex items-center gap-2 text-[11px] py-1 ${motherMember ? 'cursor-pointer hover:text-blue-600' : ''}`}
+                  onClick={() => motherMember && setSelected(motherMember.id)}
+                >
                   <span className="text-gray-400 w-12 flex-shrink-0">Mother</span>
-                  <span className="text-gray-700">{m.mother}</span>
+                  <span className="text-gray-700">{motherDisplay}</span>
+                  {motherMember && <ChevronRight size={12} className="text-gray-300" />}
                 </div>
               )}
             </div>
@@ -165,6 +196,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
 
               {children.map(ch => {
                 const cc = TYPE_CONFIG[ch.type];
+                const chRelLabel = getRelLabel(ch);
 
                 return (
                   <div
@@ -185,7 +217,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
                       </div>
 
                       <div className="text-[10px] text-gray-400">
-                        {ch.id} · {REL_LABELS[ch.rel ?? ''] ?? ch.rel ?? ''}
+                        {ch.id}{chRelLabel ? ` · ${chRelLabel}` : ` · ${ch.type}`}
                       </div>
                     </div>
 
