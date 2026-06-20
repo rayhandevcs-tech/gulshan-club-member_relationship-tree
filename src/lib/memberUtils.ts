@@ -205,11 +205,13 @@ export const getRelRoleLabel = (member: Member): string => {
 };
 
 // ---- Focused (single-person) relationship view ----------------------
-// Given any member, resolves to the "owner" of their family unit (a
-// spouse resolves to their partner, so clicking either side of a couple
-// shows the same picture), then returns everyone DIRECTLY connected to
-// that owner — their spouse, and everyone they personally sponsor.
-// This is the primary, default diagram: small, focused, one hop only.
+// Click on anyone, and this shows ONLY what's directly connected to
+// THAT exact person — their own sponsored spouse (if any) and their own
+// sponsored children/A4D — not their partner's. A spouse who succeeded
+// into a deceased predecessor's position is the one exception: the most
+// relevant "direct connection" for them IS that succession link, shown
+// as a reversed arrow, since they may not have sponsored anyone yet
+// themselves.
 
 export interface FocusedConnection {
   member: Member;
@@ -240,13 +242,6 @@ const extractArticleRef = (text?: string) => {
   return m ? m[0] : undefined;
 };
 
-// Click on anyone, and this shows ONLY what's directly connected to
-// THAT exact person — their own sponsored spouse (if any) and their own
-// sponsored children/A4D — not their partner's. A spouse who succeeded
-// into a deceased predecessor's position is the one exception: the most
-// relevant "direct connection" for them IS that succession link, shown
-// as a reversed arrow, since they may not have sponsored anyone yet
-// themselves.
 export const buildFocusedRelationship = (members: Member[], focusId: string): FocusedView | null => {
   const focus = getMember(members, focusId);
   if (!focus) return null;
@@ -310,108 +305,6 @@ export const UPGRADE_PATHS: Partial<Record<string, string[]>> = {
   Donor: ['Senior (25 Thousand)'],
 };
 
-// Bare relational role (Son/Daughter/Husband/Wife/Sibling) with no type
-// suffix — used for diagram edge labels, where the membership type
-// (A4D etc.) is shown separately as the box's own subtitle instead of
-// being folded into the relationship label.
-export const getRelRoleLabel = (member: Member): string => {
-  if (!member.rel) return '';
-  if (member.rel === 'spouse' && member.gender) {
-    return member.gender === 'M' ? 'Husband' : 'Wife';
-  }
-  if ((member.rel === 'a4d' || member.rel === 'child') && member.gender) {
-    return member.gender === 'M' ? 'Son' : 'Daughter';
-  }
-  return REL_LABELS[member.rel] ?? member.rel;
-};
-
-// ---- Focused (single-person) relationship view ----------------------
-export interface FocusedConnection {
-  member: Member;
-  edgeLabel: string;
-  reversed: boolean;
-  isSpouse: boolean;
-  refNote?: string;
-  caption: string | null;
-}
-
-export interface FocusedView {
-  owner: Member;
-  ownerCaption: string | null;
-  connections: FocusedConnection[];
-  associateCount: number;
-  nomineeCount: number;
-  membershipRef: { label: string; detail: string } | null;
-}
-
-const parseMembershipRef = (text?: string) => {
-  if (!text) return null;
-  const match = text.match(/([A-Z]{1,3}-\d+)\s*(?:\(([^)]+)\))?/);
-  return match ? { label: match[1], detail: match[2] ?? '' } : null;
-};
-
-const extractArticleRef = (text?: string) => {
-  const m = text?.match(/Article\s+[\d()a-zA-Z]+/);
-  return m ? m[0] : undefined;
-};
-
-export const buildFocusedRelationship = (members: Member[], focusId: string): FocusedView | null => {
-  const focus = getMember(members, focusId);
-  if (!focus) return null;
-
-  const connections: FocusedConnection[] = [];
-
-  if (focus.rel === 'spouse' && focus.succession && focus.pid) {
-    const predecessor = getMember(members, focus.pid);
-    if (predecessor) {
-      connections.push({
-        member: predecessor,
-        edgeLabel: getRelRoleLabel(focus) || 'Spouse',
-        reversed: true,
-        isSpouse: true,
-        refNote: extractArticleRef(focus.succession),
-        caption: null,
-      });
-    }
-  }
-
-  const spouse = getSpouse(members, focus.id);
-  if (spouse) {
-    connections.push({
-      member: spouse,
-      edgeLabel: getRelRoleLabel(spouse) || 'Spouse',
-      reversed: false,
-      isSpouse: true,
-      refNote: extractArticleRef(spouse.succession),
-      caption: null,
-    });
-  }
-
-  getNonSpouseChildren(members, focus.id)
-    .filter(k => k.rel === 'a4d')
-    .forEach(k => {
-      connections.push({
-        member: k,
-        edgeLabel: getRelRoleLabel(k) || 'Child',
-        reversed: false,
-        isSpouse: false,
-        caption: k.type === 'A4D' ? getQuotaSourceCaption(k, [focus.id], members) : null,
-      });
-    });
-
-  const associateCount = getAssociates(members, focus.id).length;
-  const nomineeCount = getNominees(members, focus.id).length;
-
-  return {
-    owner: focus,
-    ownerCaption: focus.type === 'A4D' ? getQuotaSourceCaption(focus, focus.pid ? [focus.pid] : [], members) : null,
-    connections,
-    associateCount,
-    nomineeCount,
-    membershipRef: parseMembershipRef(focus.membershipRef),
-  };
-};
-
 // ---- Relationship diagram layout -----------------------------------
 // Builds the boxes-and-arrows model for the flowchart-style relationship
 // diagram (the "show me exactly who's related to whom" view). Rows are
@@ -442,7 +335,6 @@ export interface DiagramEdge {
 }
 
 export interface DiagramRef {
-  // A small extra box for things like "membership transferred to LS-35"
   label: string;
   detail: string;
   targetId: string;
@@ -474,7 +366,6 @@ export const buildRelationshipDiagram = (members: Member[], rootId: string): Dia
   const family = familyIds.map(id => getMember(members, id)).filter((m): m is Member => !!m);
   const byId = new Map(family.map(m => [m.id, m]));
 
-  // Biological generation depth (for vertical row placement).
   const bioRow = new Map<string, number>();
   const resolving = new Set<string>();
 
@@ -484,13 +375,11 @@ export const buildRelationshipDiagram = (members: Member[], rootId: string): Dia
       bioRow.set(m.id, 0);
       return 0;
     }
-    if (resolving.has(m.id)) return 0; // guard against bad data cycles
+    if (resolving.has(m.id)) return 0;
     resolving.add(m.id);
 
     let row: number;
     if (m.rel === 'spouse' && m.pid && byId.has(m.pid)) {
-      // A spouse shares their partner's row — they're a couple, not a
-      // generation apart.
       row = computeRow(byId.get(m.pid)!);
     } else {
       const father = m.fatherId ? byId.get(m.fatherId) : undefined;
@@ -501,11 +390,6 @@ export const buildRelationshipDiagram = (members: Member[], rootId: string): Dia
         row = Math.max(fr, mr) + 1;
       } else {
         const pidRow = m.pid && byId.has(m.pid) ? computeRow(byId.get(m.pid)!) : 0;
-        // An A4D slot with a named-but-unresolved external parent (e.g.
-        // "father is LM-50, not in this family") is conventionally one
-        // generation further down than its sponsor, same as every other
-        // A4D dependent — without this, it would visually sit a row too
-        // high compared to its A4D peers.
         const looksLikeExternalSkip = m.type === 'A4D' && (m.fatherName || m.motherName);
         row = pidRow + (looksLikeExternalSkip ? 2 : 1);
       }
@@ -522,16 +406,10 @@ export const buildRelationshipDiagram = (members: Member[], rootId: string): Dia
   const rows: Member[][] = Array.from({ length: maxRow + 1 }, () => []);
   family.forEach(m => rows[bioRow.get(m.id) ?? 0].push(m));
 
-  // Assign x per row — sort by the structural parent's x (once known)
-  // so visually-related clusters stay together and lines cross less.
   const xOf = new Map<string, number>();
   const nodes: DiagramNode[] = [];
 
   rows.forEach((row, rowIdx) => {
-    // Spouses must sit immediately next to their partner, not get sorted
-    // independently — otherwise a spouse's sort key (their partner's x)
-    // isn't assigned yet (same row, not yet positioned) and they drift
-    // away from the couple they belong to.
     const spouseOf = new Map<string, Member>();
     const anchors: Member[] = [];
     const inRow = new Set(row.map(m => m.id));
@@ -574,24 +452,16 @@ export const buildRelationshipDiagram = (members: Member[], rootId: string): Dia
     });
   });
 
-  // Edges: spouse links (horizontal) and everything else (vertical,
-  // following the structural pid — this is what lets an arrow skip a
-  // generation for a grandparent-sourced A4D slot).
   const edges: DiagramEdge[] = [];
   family.forEach(m => {
     if (!m.pid || !byId.has(m.pid)) return;
     if (m.rel === 'spouse') {
       edges.push({ fromId: m.pid, toId: m.id, label: 'Spouse', kind: 'spouse' });
-    } else if (m.rel !== 'associate' && m.rel !== 'nominee') {
-      edges.push({ fromId: m.pid, toId: m.id, label: relEdgeLabel(m), kind: 'vertical' });
     } else {
       edges.push({ fromId: m.pid, toId: m.id, label: relEdgeLabel(m), kind: 'vertical' });
     }
   });
 
-  // Sibling connectors — only between full siblings who ended up
-  // immediately adjacent in the same row, so the line stays short and
-  // doesn't cross unrelated boxes.
   rows.forEach(row => {
     const sorted = [...row].sort((a, b) => xOf.get(a.id)! - xOf.get(b.id)!);
     for (let i = 0; i < sorted.length - 1; i++) {
@@ -607,8 +477,6 @@ export const buildRelationshipDiagram = (members: Member[], rootId: string): Dia
     }
   });
 
-  // Membership transfer/renumbering references, e.g. "Linked to LS-35
-  // (Article 6C & 10B)" — drawn as a small extra box off to the side.
   const refs: DiagramRef[] = [];
   family.forEach(m => {
     if (!m.membershipRef) return;
@@ -620,7 +488,7 @@ export const buildRelationshipDiagram = (members: Member[], rootId: string): Dia
 
   const minX = Math.min(...nodes.map(n => n.x));
   const maxX = Math.max(...nodes.map(n => n.x + DIAGRAM_BOX_W));
-  const width = maxX - minX + 160; // padding + room for ref boxes
+  const width = maxX - minX + 160;
   const height = (maxRow + 1) * DIAGRAM_ROW_GAP + DIAGRAM_BOX_H + 60;
 
   return { nodes, edges, refs, width, height };
