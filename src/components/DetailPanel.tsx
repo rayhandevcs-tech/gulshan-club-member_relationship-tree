@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useMemberStore } from '@/store/memberStore';
 import {
   getMember,
@@ -8,11 +7,9 @@ import {
   TYPE_CONFIG,
   getRelLabel,
   getA4DQuota,
-  getRootMember,
   UPGRADE_PATHS,
 } from '@/lib/memberUtils';
-import { X, Edit2, Plus, Trash2, ChevronRight, Users, GitBranch } from 'lucide-react';
-import RelationshipDiagram from './RelationshipDiagram';
+import { X, Edit2, Plus, Trash2, ChevronRight, Users } from 'lucide-react';
 
 interface Props {
   onEdit: (id: string) => void;
@@ -20,8 +17,7 @@ interface Props {
 }
 
 export default function DetailPanel({ onEdit, onAdd }: Props) {
-  const { members, selectedId, setSelected, deleteMember } = useMemberStore();
-  const [showDiagram, setShowDiagram] = useState(false);
+  const { members, selectedId, setSelected, navigateTo, deleteMember } = useMemberStore();
 
   if (!selectedId) return null;
 
@@ -35,15 +31,11 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
   const relLabel = getRelLabel(m);
   const upgrades = UPGRADE_PATHS[m.type] ?? [];
 
-  // True biological parents — prefer a linked Member (clickable),
-  // fall back to a free-text name, then to the legacy field.
   const fatherMember = m.fatherId ? getMember(members, m.fatherId) : null;
   const motherMember = m.motherId ? getMember(members, m.motherId) : null;
   const fatherDisplay = fatherMember?.name ?? m.fatherName ?? m.father;
   const motherDisplay = motherMember?.name ?? m.motherName ?? m.mother;
 
-  // Core members (anyone who isn't themselves an A4D/Associate slot)
-  // get their own A4D quota — show how much of it is in use.
   const isSponsorType = m.type !== 'A4D' && m.type !== 'Associate';
   const quota = getA4DQuota(members, m.id);
 
@@ -110,25 +102,11 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
       </div>
 
       {isSponsorType && (
-        <div className="text-[10px] text-gray-400 text-center mb-2">
+        <div className="text-[10px] text-gray-400 text-center mb-4">
           A4D Quota: <span className="text-gray-600 font-medium">{quota.used}/{quota.total}</span> used
         </div>
       )}
-      {!isSponsorType && <div className="mb-2" />}
-
-      <button
-        onClick={() => setShowDiagram(true)}
-        className="w-full flex items-center justify-center gap-1.5 text-[11px] text-gray-600 border border-gray-200 rounded-lg py-1.5 mb-4 hover:bg-gray-50 transition-colors"
-      >
-        <GitBranch size={12} /> View Relationship Diagram
-      </button>
-
-      {showDiagram && (
-        <RelationshipDiagram
-          rootId={getRootMember(members, m.id)?.id ?? m.id}
-          onClose={() => setShowDiagram(false)}
-        />
-      )}
+      {!isSponsorType && <div className="mb-4" />}
 
       {[
         ['Joined', m.since],
@@ -168,7 +146,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
 
                   <div
                     className="flex items-center gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
-                    onClick={() => setSelected(parent.id)}
+                    onClick={() => navigateTo(parent.id)}
                   >
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0"
@@ -202,7 +180,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
               {fatherDisplay && (
                 <div
                   className={`flex items-center gap-2 text-[11px] py-1 ${fatherMember ? 'cursor-pointer hover:text-blue-600' : ''}`}
-                  onClick={() => fatherMember && setSelected(fatherMember.id)}
+                  onClick={() => fatherMember && navigateTo(fatherMember.id)}
                 >
                   <span className="text-gray-400 w-12 flex-shrink-0">Father</span>
                   <span className="text-gray-700">{fatherDisplay}</span>
@@ -213,7 +191,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
               {motherDisplay && (
                 <div
                   className={`flex items-center gap-2 text-[11px] py-1 ${motherMember ? 'cursor-pointer hover:text-blue-600' : ''}`}
-                  onClick={() => motherMember && setSelected(motherMember.id)}
+                  onClick={() => motherMember && navigateTo(motherMember.id)}
                 >
                   <span className="text-gray-400 w-12 flex-shrink-0">Mother</span>
                   <span className="text-gray-700">{motherDisplay}</span>
@@ -237,7 +215,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
                   <div
                     key={ch.id}
                     className="flex items-center gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
-                    onClick={() => setSelected(ch.id)}
+                    onClick={() => navigateTo(ch.id)}
                   >
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0"
@@ -264,45 +242,6 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
           )}
         </div>
       )}
-
-
-
-      {/* {upgrades.length > 0 && (
-        <div className="mt-2 pt-2 border-t border-gray-100">
-          <div className="text-[9px] font-medium text-gray-400 uppercase tracking-wide mb-1">
-            Upgrade Path
-          </div>
-
-          {upgrades.map(u => (
-            <div key={u} className="text-[10px] text-gray-500 py-0.5">
-              → {u}
-            </div>
-          ))}
-        </div>
-      )} */}
-
-      {/* <div className="mt-3 flex gap-1.5">
-        <button
-          onClick={() => onEdit(m.id)}
-          className="flex-1 flex items-center justify-center gap-1 text-[10px] border border-gray-200 rounded-lg py-1.5 hover:bg-gray-50"
-        >
-          <Edit2 size={11} /> Edit
-        </button>
-
-        <button
-          onClick={() => onAdd(m.id)}
-          className="flex-1 flex items-center justify-center gap-1 text-[10px] bg-blue-500 text-white rounded-lg py-1.5 hover:bg-blue-600"
-        >
-          <Plus size={11} /> Add
-        </button>
-      </div> */}
-
-      {/* <button
-        onClick={handleDelete}
-        className="w-full mt-1.5 flex items-center justify-center gap-1 text-[10px] text-red-500 border border-red-100 rounded-lg py-1.5 hover:bg-red-50"
-      >
-        <Trash2 size={11} /> Delete
-      </button> */}
     </div>
     </>
   );
