@@ -16,23 +16,11 @@ interface Props {
   onPick: (id: string) => void;
 }
 
-// The default, lightweight per-person view — click someone, see only
-// what's directly connected to THEM: their own spouse (shown beside
-// them, like a couple, never "below" — a spouse isn't an A4D slot
-// unless they specifically are), and their own sponsored A4D — with
-// biological-parent captions wherever the quota source differs, plus
-// any membership transfer reference. Uses the same round-avatar card
-// style as the rest of the app.
 export function FocusedDiagram({ focusId, members, onPick }: Props) {
   const view = buildFocusedRelationship(members, focusId);
   if (!view) return null;
 
   const { owner, ownerCaption, connections, associateCount, nomineeCount, membershipRef } = view;
-  // A spouse who personally consumes one of the owner's own A4D slots
-  // (their type is A4D, even though their *role* is "Wife"/"Husband")
-  // belongs in the lower quota row with everyone else who was sponsored
-  // the same way — lateral "couple" placement is reserved for a spouse
-  // who is a full member in their own right, not an A4D dependent.
   const lateralSpouse = connections.find(c => c.isSpouse && c.member.type !== 'A4D');
   const lowerConns = connections.filter(c => c !== lateralSpouse);
 
@@ -47,9 +35,6 @@ export function FocusedDiagram({ focusId, members, onPick }: Props) {
         </div>
       )}
 
-      {/* owner + spouse, side by side like a couple, connected by an
-          actual line (not an icon) — only when the spouse is a full
-          member in their own right, not someone else's A4D slot */}
       <div className="flex items-start">
         <div onClick={() => onPick(owner.id)}>
           <MemberNode member={owner} />
@@ -84,9 +69,6 @@ export function FocusedDiagram({ focusId, members, onPick }: Props) {
         </div>
       )}
 
-      {/* everyone who's an A4D-quota recipient — including a spouse who
-          was admitted that way — goes in this lower row, clearly
-          connected down from the owner with a visible line */}
       {lowerConns.length > 0 && (
         <>
           <div className="w-[1.5px] h-5 sm:h-6 bg-gray-300 mt-2" />
@@ -125,9 +107,6 @@ interface WholeProps {
   onPick: (id: string) => void;
 }
 
-// The comprehensive, multi-generation map — every family member at
-// once, positioned by biological generation, with structural (quota)
-// arrows that can legitimately skip a generation.
 export function WholeMapDiagram({ rootId, members, onPick }: WholeProps) {
   const layout = buildRelationshipDiagram(members, rootId);
   if (!layout) return null;

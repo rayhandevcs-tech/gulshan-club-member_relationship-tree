@@ -37,21 +37,15 @@ function FamilySubtree({ member }: { member: Member }) {
   const { members, navigateTo } = useMemberStore();
   const spouse = getSpouse(members, member.id);
 
-  // A couple can each sponsor their own A4D/child slots, so combine
-  // both sides — without this, anything sponsored under the spouse's
-  // own id (instead of the root member's id) would be invisible here.
   const allKids = [
     ...getNonSpouseChildren(members, member.id),
     ...(spouse ? getNonSpouseChildren(members, spouse.id) : []),
   ].filter(k => k.rel !== 'associate' && k.rel !== 'nominee');
 
-  // Who's structurally sponsoring this level's kids — used to tell
-  // whether a kid's biological parent differs from where they're shown.
   const sponsorIds = [member.id, ...(spouse ? [spouse.id] : [])];
 
   return (
     <div className="flex flex-col items-center">
-      {/* couple row */}
       <div className="flex items-start gap-1">
         <div onClick={() => navigateTo(member.id)}>
           <MemberNode member={member} />
@@ -78,9 +72,6 @@ function FamilySubtree({ member }: { member: Member }) {
               <div key={kid.id} className="flex flex-col items-center">
                 <div className="w-[1.5px] h-5 bg-gray-300" />
                 {kid.rel === 'child' ? (
-                  // This descendant is themselves a core member with their
-                  // own spouse/A4D allocations — nest their subtree
-                  // instead of rendering them as a flat leaf.
                   <div className="border border-gray-100 rounded-xl p-4 bg-gray-50/60">
                     <FamilySubtree member={kid} />
                   </div>
@@ -125,8 +116,6 @@ export default function MemberTree() {
   const { members, filterType, activeRootId, focusViewId, view, navigateTo } = useMemberStore();
   const [diagramMode, setDiagramMode] = useState<'focused' | 'whole'>('focused');
 
-  // Category-pill browse mode: show every family that has a member of
-  // this type. This is the one case where multiple cards is intentional.
   const categoryMatchIds = filterType
     ? new Set(members.filter(m => m.type === filterType).map(m => m.id))
     : null;
@@ -138,8 +127,6 @@ export default function MemberTree() {
       })
     : [];
 
-  // Single-family mode: the person picked a specific result from the
-  // search dropdown, so resolve and show only that one root.
   const activeRoot = !filterType && activeRootId
     ? members.find(m => m.id === activeRootId)
     : undefined;
@@ -159,7 +146,7 @@ export default function MemberTree() {
           )
         : [];
     return (
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 p-6">
+      <div className="grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 p-4 md:p-6">
         {visible.map(m => {
           const cfg = TYPE_CONFIG[m.type];
           return (
@@ -185,18 +172,16 @@ export default function MemberTree() {
     );
   }
 
-  // Category browsing always shows the multi-family card view — there's
-  // no single "focus person" to center a relationship diagram on here.
   if (filterType) {
     if (!categoryRoots.length) {
       return <div className="flex items-center justify-center h-40 text-gray-400 text-sm">কোনো সদস্য পাওয়া যায়নি</div>;
     }
     return (
-      <div className="flex flex-wrap gap-6 p-8 items-start justify-center">
+      <div className="flex flex-wrap gap-4 md:gap-6 p-4 md:p-8 items-start justify-center">
         {categoryRoots.map(r => {
           const cfg = TYPE_CONFIG[r.type];
           return (
-            <div key={r.id} className="inline-flex flex-col items-center border rounded-2xl p-6 bg-white shadow-sm"
+            <div key={r.id} className="inline-flex flex-col items-center border rounded-2xl p-4 md:p-6 bg-white shadow-sm"
               style={{ borderColor: cfg.color + '33' }}>
               <div className="text-[10px] font-medium px-2.5 py-1 rounded-full mb-5"
                 style={{ background: cfg.bg, color: cfg.dark }}>
@@ -210,9 +195,6 @@ export default function MemberTree() {
     );
   }
 
-  // Single-family mode (search result picked): default to the focused
-  // relationship diagram for whoever is currently selected, with a
-  // toggle to see the whole family at once.
   if (!activeRoot) return null;
   const focusId = focusViewId ?? activeRoot.id;
 

@@ -31,15 +31,11 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
   const relLabel = getRelLabel(m);
   const upgrades = UPGRADE_PATHS[m.type] ?? [];
 
-  // True biological parents — prefer a linked Member (clickable),
-  // fall back to a free-text name, then to the legacy field.
   const fatherMember = m.fatherId ? getMember(members, m.fatherId) : null;
   const motherMember = m.motherId ? getMember(members, m.motherId) : null;
   const fatherDisplay = fatherMember?.name ?? m.fatherName ?? m.father;
   const motherDisplay = motherMember?.name ?? m.motherName ?? m.mother;
 
-  // Core members (anyone who isn't themselves an A4D/Associate slot)
-  // get their own A4D quota — show how much of it is in use.
   const isSponsorType = m.type !== 'A4D' && m.type !== 'Associate';
   const quota = getA4DQuota(members, m.id);
 
@@ -50,8 +46,25 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
   };
 
   return (
+    <>
+      {/* Mobile backdrop */}
+      <div
+        className="fixed inset-0 bg-black/20 z-30 md:hidden"
+        onClick={() => setSelected(null)}
+      />
+    <div className="
+      fixed bottom-0 left-0 right-0 z-40 max-h-[70vh] rounded-t-2xl
+      md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto md:max-h-none md:rounded-none
+      w-full md:w-80
+      border-t md:border-t-0 md:border-l border-gray-200
+      bg-white overflow-y-auto flex-shrink-0 p-4
+      shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)] md:shadow-[-6px_0_16px_-8px_rgba(0,0,0,0.06)]
+    ">
+      {/* Mobile drag handle */}
+      <div className="flex justify-center mb-3 md:hidden">
+        <div className="w-10 h-1 bg-gray-300 rounded-full" />
+      </div>
 
-    <div className="w-80 border-l border-gray-200 bg-white overflow-y-auto flex-shrink-0 p-4 shadow-[-6px_0_16px_-8px_rgba(0,0,0,0.06)]">
       <div className="flex justify-between items-center mb-4">
         <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
           Member Details
@@ -229,45 +242,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
           )}
         </div>
       )}
-
-
-
-      {/* {upgrades.length > 0 && (
-        <div className="mt-2 pt-2 border-t border-gray-100">
-          <div className="text-[9px] font-medium text-gray-400 uppercase tracking-wide mb-1">
-            Upgrade Path
-          </div>
-
-          {upgrades.map(u => (
-            <div key={u} className="text-[10px] text-gray-500 py-0.5">
-              → {u}
-            </div>
-          ))}
-        </div>
-      )} */}
-
-      {/* <div className="mt-3 flex gap-1.5">
-        <button
-          onClick={() => onEdit(m.id)}
-          className="flex-1 flex items-center justify-center gap-1 text-[10px] border border-gray-200 rounded-lg py-1.5 hover:bg-gray-50"
-        >
-          <Edit2 size={11} /> Edit
-        </button>
-
-        <button
-          onClick={() => onAdd(m.id)}
-          className="flex-1 flex items-center justify-center gap-1 text-[10px] bg-blue-500 text-white rounded-lg py-1.5 hover:bg-blue-600"
-        >
-          <Plus size={11} /> Add
-        </button>
-      </div> */}
-
-      {/* <button
-        onClick={handleDelete}
-        className="w-full mt-1.5 flex items-center justify-center gap-1 text-[10px] text-red-500 border border-red-100 rounded-lg py-1.5 hover:bg-red-50"
-      >
-        <Trash2 size={11} /> Delete
-      </button> */}
     </div>
+    </>
   );
 }
