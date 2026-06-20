@@ -40,49 +40,77 @@ export default function Home() {
   return (
     <div className="h-screen flex flex-col bg-gray-50 font-sans">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-5 py-4 flex items-center gap-4 flex-wrap">
-        <div>
-          <div className="text-[17px] font-semibold text-gray-800">
-            Gulshan Club Limited
+      <div className="bg-white border-b border-gray-100 px-4 py-3 flex flex-col gap-2 md:flex-row md:items-center md:gap-4 md:px-5 md:py-4">
+        {/* Row 1: Title + mobile action buttons */}
+        <div className="flex items-center justify-between md:block">
+          <div>
+            <div className="text-[15px] md:text-[17px] font-semibold text-gray-800">
+              Gulshan Club Limited
+            </div>
+            <div className="text-[10px] md:text-[11px] text-gray-400">
+              Membership Relationship Tree
+            </div>
           </div>
 
-          <div className="text-[11px] text-gray-400">
-            Membership Relationship Tree
+          {/* Mobile-only: view toggle + new member */}
+          <div className="flex items-center gap-2 md:hidden">
+            <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setView('tree')}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] transition-colors ${
+                  view === 'tree' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
+                }`}
+              >
+                <Network size={12} />
+              </button>
+              <button
+                onClick={() => setView('grid')}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] transition-colors ${
+                  view === 'grid' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
+                }`}
+              >
+                <LayoutGrid size={12} />
+              </button>
+            </div>
+            <button
+              onClick={() => setFormState({ open: true })}
+              className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded-lg text-[12px] hover:bg-blue-600 font-medium transition-colors"
+            >
+              <Plus size={13} />
+            </button>
           </div>
         </div>
 
+        {/* Row 2: SearchBar (full width on mobile) */}
         <SearchBar />
 
-        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+        {/* Desktop-only: view toggle + new member */}
+        <div className="hidden md:flex items-center gap-2">
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setView('tree')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] transition-colors ${
+                view === 'tree' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
+              }`}
+            >
+              <Network size={13} /> Tree
+            </button>
+            <button
+              onClick={() => setView('grid')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] transition-colors ${
+                view === 'grid' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
+              }`}
+            >
+              <LayoutGrid size={13} /> Grid
+            </button>
+          </div>
           <button
-            onClick={() => setView('tree')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] transition-colors ${
-              view === 'tree'
-                ? 'bg-white text-gray-800 shadow-sm'
-                : 'text-gray-400'
-            }`}
+            onClick={() => setFormState({ open: true })}
+            className="flex items-center gap-1.5 px-4 py-2 bg-blue-500 text-white rounded-lg text-[12px] hover:bg-blue-600 font-medium transition-colors"
           >
-            <Network size={13} /> Tree
-          </button>
-
-          <button
-            onClick={() => setView('grid')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] transition-colors ${
-              view === 'grid'
-                ? 'bg-white text-gray-800 shadow-sm'
-                : 'text-gray-400'
-            }`}
-          >
-            <LayoutGrid size={13} /> Grid
+            <Plus size={14} /> New Member
           </button>
         </div>
-
-        <button
-          onClick={() => setFormState({ open: true })}
-          className="flex items-center gap-1.5 px-4 py-2 bg-blue-500 text-white rounded-lg text-[12px] hover:bg-blue-600 font-medium transition-colors"
-        >
-          <Plus size={14} /> New Member
-        </button>
       </div>
 
       {/* Legend / Filter Bar */}
@@ -143,7 +171,7 @@ export default function Home() {
       </div> */}
 
       {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         <div className="flex-1 overflow-auto">
           <MemberTree />
         </div>

@@ -97,7 +97,7 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl border border-gray-200 w-72 max-h-[90vh] overflow-y-auto p-4"
+        className="bg-white rounded-xl border border-gray-200 w-[calc(100vw-2rem)] max-w-xs max-h-[90vh] overflow-y-auto p-4"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-3">

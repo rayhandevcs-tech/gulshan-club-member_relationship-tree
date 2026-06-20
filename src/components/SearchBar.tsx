@@ -41,7 +41,7 @@ export default function SearchBar() {
   };
 
   return (
-    <div ref={wrapRef} className="relative flex-1 max-w-sm ml-4">
+    <div ref={wrapRef} className="relative w-full md:flex-1 md:max-w-sm">
       <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
         <Search size={14} className="text-gray-400" />
         <input
