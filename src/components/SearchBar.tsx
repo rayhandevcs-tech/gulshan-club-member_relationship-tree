@@ -6,7 +6,7 @@ import { getRootMember, getInitials, TYPE_CONFIG } from '@/lib/memberUtils';
 import { Search } from 'lucide-react';
 
 export default function SearchBar() {
-  const { members, searchQuery, setSearch, setActiveRoot, setSelected } = useMemberStore();
+  const { members, searchQuery, setSearch, setActiveRoot, setSelected, setFocusView } = useMemberStore();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -37,6 +37,7 @@ export default function SearchBar() {
     setSearch(m.name);
     setActiveRoot(root ? root.id : id);
     setSelected(id);
+    setFocusView(id);
     setOpen(false);
   };
 
@@ -82,7 +83,7 @@ export default function SearchBar() {
 
       {open && q && suggestions.length === 0 && (
         <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-xl shadow-lg z-50 px-3.5 py-2.5 text-[12px] text-gray-400">
-          No member found
+          No member found.
         </div>
       )}
     </div>

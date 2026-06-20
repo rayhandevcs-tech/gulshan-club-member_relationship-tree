@@ -1,190 +1,58 @@
 'use client';
-
-import { useState } from 'react';
+import { Member } from '@/lib/types';
+import { getInitials, TYPE_CONFIG, getRelLabel } from '@/lib/memberUtils';
 import { useMemberStore } from '@/store/memberStore';
-import { getMember, TYPE_CONFIG } from '@/lib/memberUtils';
-import { Member, MemberType, RelationType } from '@/lib/types';
-import { X } from 'lucide-react';
+import { clsx } from 'clsx';
 
 interface Props {
-  onClose: () => void;
-  editId?: string;
-  defaultPid?: string;
+  member: Member;
+  showRel?: boolean;
+  small?: boolean;
+  dashed?: boolean;
 }
 
-export default function MemberForm({ onClose, editId, defaultPid }: Props) {
-  const { members, addMember, updateMember } = useMemberStore();
-  const editing = editId ? getMember(members, editId) : null;
-  const parentMember = defaultPid ? getMember(members, defaultPid) : null;
+export default function MemberNode({ member, showRel, small, dashed }: Props) {
+  const { selectedId, setSelected } = useMemberStore();
+  const cfg = TYPE_CONFIG[member.type] ?? TYPE_CONFIG.Permanent;
+  const isSelected = selectedId === member.id;
+  const relLabel = getRelLabel(member);
 
-  const [form, setForm] = useState<Partial<Member>>({
-    id: editing?.id ?? '',
-    name: editing?.name ?? '',
-    type: editing?.type ?? 'Permanent',
-    since: editing?.since ?? '',
-    email: editing?.email ?? '',
-    phone: editing?.phone ?? '',
-    pid: editing?.pid ?? defaultPid ?? '',
-    rel: editing?.rel ?? null,
-    father: editing?.father ?? '',
-    mother: editing?.mother ?? '',
-    note: editing?.note ?? '',
-  });
-
-  const set = (k: keyof Member, v: string) =>
-    setForm(f => ({ ...f, [k]: v || undefined }));
-
-  const handleSave = () => {
-    if (!form.id || !form.name) {
-      alert('Name and A/C number are required');
-      return;
-    }
-
-    if (!editing && getMember(members, form.id!)) {
-      alert('This A/C number already exists');
-      return;
-    }
-
-    const member: Member = {
-      id: form.id!,
-      name: form.name!,
-      type: (form.type as MemberType) || 'Permanent',
-      since: form.since || '',
-      email: form.email,
-      phone: form.phone,
-      pid: form.pid || null,
-      rel: (form.rel as RelationType) || null,
-      father: form.father,
-      mother: form.mother,
-      note: form.note,
-    };
-
-    if (editing) updateMember(editId!, member);
-    else addMember(member);
-
-    onClose();
-  };
-
-  const Field = ({
-    label,
-    id,
-    type = 'text',
-    readOnly,
-  }: {
-    label: string;
-    id: keyof Member;
-    type?: string;
-    readOnly?: boolean;
-  }) => (
-    <div className="mb-2">
-      <label className="block text-[10px] text-gray-400 mb-0.5">
-        {label}
-      </label>
-      <input
-        type={type}
-        value={(form[id] as string) ?? ''}
-        onChange={e => set(id, e.target.value)}
-        readOnly={readOnly}
-        className="w-full px-2 py-1.5 text-[12px] border border-gray-200 rounded-lg bg-white text-gray-800 focus:outline-none focus:border-blue-300 disabled:opacity-50"
-        style={readOnly ? { opacity: 0.5 } : {}}
-      />
-    </div>
-  );
+  const size = small ? 'w-12 h-12 text-[13px]' : 'w-[68px] h-[68px] text-[16px]';
+  const pipSize = small ? 'w-[18px] h-[18px] text-[8px]' : 'w-[22px] h-[22px] text-[9px]';
 
   return (
     <div
-      className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center"
-      onClick={onClose}
+      onClick={() => setSelected(isSelected ? null : member.id)}
+      className={clsx(
+        'flex flex-col items-center cursor-pointer px-2.5 py-2 rounded-xl transition-all',
+        'hover:bg-gray-100',
+        isSelected ? 'bg-gray-50 shadow-sm' : '',
+        dashed && 'border border-dashed border-gray-300'
+      )}
+      style={isSelected ? { boxShadow: `0 0 0 2.5px ${cfg.color}` } : undefined}
     >
+      {showRel && relLabel && (
+        <span className="text-[9px] font-medium text-gray-500 bg-gray-100 rounded-full px-2 py-0.5 mb-1">
+          {relLabel}
+        </span>
+      )}
       <div
-        className="bg-white rounded-xl border border-gray-200 w-72 max-h-[90vh] overflow-y-auto p-4"
-        onClick={e => e.stopPropagation()}
+        className={clsx('rounded-full flex items-center justify-center font-semibold relative shadow-sm', size)}
+        style={{ background: cfg.bg, color: cfg.dark }}
       >
-        <div className="flex justify-between items-center mb-3">
-          <div className="text-[13px] font-medium text-gray-800">
-            {editing ? `Edit · ${editId}` : 'Add New Member'}
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X size={16} />
-          </button>
+        {getInitials(member.name)}
+        <div
+          className={clsx('absolute -bottom-1 -right-1 rounded-full flex items-center justify-center font-bold text-white border-2 border-white', pipSize)}
+          style={{ background: cfg.color, borderColor: '#fff' }}
+        >
+          {cfg.short}
         </div>
-
-        {parentMember && (
-          <div className="text-[10px] text-gray-400 bg-gray-50 rounded-lg px-2 py-1.5 mb-3">
-            Primary: {parentMember.name} ({parentMember.id})
-          </div>
-        )}
-
-        <Field label="Full Name *" id="name" />
-        <Field label="A/C Number *" id="id" readOnly={!!editing} />
-
-        <div className="mb-2">
-          <label className="block text-[10px] text-gray-400 mb-0.5">
-            Membership Type
-          </label>
-          <select
-            value={form.type}
-            onChange={e =>
-              setForm(f => ({ ...f, type: e.target.value as MemberType }))
-            }
-            className="w-full px-2 py-1.5 text-[12px] border border-gray-200 rounded-lg bg-white text-gray-800"
-          >
-            {Object.keys(TYPE_CONFIG).map(t => (
-              <option key={t}>{t}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="mb-2">
-          <label className="block text-[10px] text-gray-400 mb-0.5">
-            Relationship
-          </label>
-          <select
-            value={form.rel ?? ''}
-            onChange={e =>
-              setForm(f => ({
-                ...f,
-                rel: (e.target.value as RelationType) || null,
-              }))
-            }
-            className="w-full px-2 py-1.5 text-[12px] border border-gray-200 rounded-lg bg-white text-gray-800"
-          >
-            <option value="">Primary Member</option>
-            <option value="spouse">Spouse</option>
-            <option value="a4d">A4D Child</option>
-            <option value="associate">Associate</option>
-            <option value="nominee">Nominee Corporate</option>
-          </select>
-        </div>
-
-        {!defaultPid && !editing && (
-          <Field label="Primary Member A/C, if any" id="pid" />
-        )}
-
-        <Field label="Membership Date (DD/MM/YYYY)" id="since" />
-        <Field label="Father's Name" id="father" />
-        <Field label="Mother's Name" id="mother" />
-        <Field label="Email" id="email" type="email" />
-        <Field label="Phone" id="phone" type="tel" />
-        <Field label="Note" id="note" />
-
-        <div className="flex gap-2 mt-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2 text-[11px] border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="flex-1 py-2 text-[11px] bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium"
-          >
-            {editing ? 'Update' : 'Save'}
-          </button>
-        </div>
+      </div>
+      <div className={clsx('font-medium text-gray-800 text-center mt-1.5 leading-tight', small ? 'text-[11px] max-w-[72px]' : 'text-[13px] max-w-[96px]')}>
+        {member.name.split(' ').slice(0, 2).join(' ')}
+      </div>
+      <div className={clsx('text-gray-400 text-center', small ? 'text-[10px]' : 'text-[11px]')}>
+        {member.id}
       </div>
     </div>
   );

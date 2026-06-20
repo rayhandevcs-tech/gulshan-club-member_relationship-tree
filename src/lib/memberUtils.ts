@@ -189,6 +189,121 @@ export const getQuotaSourceCaption = (
   return `${noun} of ${refs.join(' & ')}`;
 };
 
+// Bare relational role (Son/Daughter/Husband/Wife/Sibling) with no type
+// suffix — used for diagram edge labels, where the membership type
+// (A4D etc.) is shown separately as the box's own subtitle instead of
+// being folded into the relationship label.
+export const getRelRoleLabel = (member: Member): string => {
+  if (!member.rel) return '';
+  if (member.rel === 'spouse' && member.gender) {
+    return member.gender === 'M' ? 'Husband' : 'Wife';
+  }
+  if ((member.rel === 'a4d' || member.rel === 'child') && member.gender) {
+    return member.gender === 'M' ? 'Son' : 'Daughter';
+  }
+  return REL_LABELS[member.rel] ?? member.rel;
+};
+
+// ---- Focused (single-person) relationship view ----------------------
+// Given any member, resolves to the "owner" of their family unit (a
+// spouse resolves to their partner, so clicking either side of a couple
+// shows the same picture), then returns everyone DIRECTLY connected to
+// that owner — their spouse, and everyone they personally sponsor.
+// This is the primary, default diagram: small, focused, one hop only.
+
+export interface FocusedConnection {
+  member: Member;
+  edgeLabel: string;
+  reversed: boolean;     // true for a succession arrow (spouse -> deceased predecessor)
+  isSpouse: boolean;     // renders beside the owner, not in the lower A4D row
+  refNote?: string;      // e.g. "Article 6(c)" extracted from a succession note
+  caption: string | null; // true biological parent, when it differs from who's sponsoring them
+}
+
+export interface FocusedView {
+  owner: Member;
+  ownerCaption: string | null;
+  connections: FocusedConnection[];
+  associateCount: number;
+  nomineeCount: number;
+  membershipRef: { label: string; detail: string } | null;
+}
+
+const parseMembershipRef = (text?: string) => {
+  if (!text) return null;
+  const match = text.match(/([A-Z]{1,3}-\d+)\s*(?:\(([^)]+)\))?/);
+  return match ? { label: match[1], detail: match[2] ?? '' } : null;
+};
+
+const extractArticleRef = (text?: string) => {
+  const m = text?.match(/Article\s+[\d()a-zA-Z]+/);
+  return m ? m[0] : undefined;
+};
+
+// Click on anyone, and this shows ONLY what's directly connected to
+// THAT exact person — their own sponsored spouse (if any) and their own
+// sponsored children/A4D — not their partner's. A spouse who succeeded
+// into a deceased predecessor's position is the one exception: the most
+// relevant "direct connection" for them IS that succession link, shown
+// as a reversed arrow, since they may not have sponsored anyone yet
+// themselves.
+export const buildFocusedRelationship = (members: Member[], focusId: string): FocusedView | null => {
+  const focus = getMember(members, focusId);
+  if (!focus) return null;
+
+  const connections: FocusedConnection[] = [];
+
+  if (focus.rel === 'spouse' && focus.succession && focus.pid) {
+    const predecessor = getMember(members, focus.pid);
+    if (predecessor) {
+      connections.push({
+        member: predecessor,
+        edgeLabel: getRelRoleLabel(focus) || 'Spouse',
+        reversed: true,
+        isSpouse: true,
+        refNote: extractArticleRef(focus.succession),
+        caption: null,
+      });
+    }
+  }
+
+  const spouse = getSpouse(members, focus.id);
+  if (spouse) {
+    connections.push({
+      member: spouse,
+      edgeLabel: getRelRoleLabel(spouse) || 'Spouse',
+      reversed: false,
+      isSpouse: true,
+      refNote: extractArticleRef(spouse.succession),
+      caption: null,
+    });
+  }
+
+  getNonSpouseChildren(members, focus.id)
+    .filter(k => k.rel === 'a4d')
+    .forEach(k => {
+      connections.push({
+        member: k,
+        edgeLabel: getRelRoleLabel(k) || 'Child',
+        reversed: false,
+        isSpouse: false,
+        caption: k.type === 'A4D' ? getQuotaSourceCaption(k, [focus.id], members) : null,
+      });
+    });
+
+  const associateCount = getAssociates(members, focus.id).length;
+  const nomineeCount = getNominees(members, focus.id).length;
+
+  return {
+    owner: focus,
+    ownerCaption: focus.type === 'A4D' ? getQuotaSourceCaption(focus, focus.pid ? [focus.pid] : [], members) : null,
+    connections,
+    associateCount,
+    nomineeCount,
+    membershipRef: parseMembershipRef(focus.membershipRef),
+  };
+};
+
 export const UPGRADE_PATHS: Partial<Record<string, string[]>> = {
   Permanent: ['Life (7.5 Lac)', 'Donor (10 Lac)', 'Senior (25 Thousand)'],
   Life: ['Donor (2.5 Lac)', 'Senior (25 Thousand)'],

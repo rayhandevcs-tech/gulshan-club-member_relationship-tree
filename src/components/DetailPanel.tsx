@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useMemberStore } from '@/store/memberStore';
 import {
   getMember,
@@ -8,11 +7,9 @@ import {
   TYPE_CONFIG,
   getRelLabel,
   getA4DQuota,
-  getRootMember,
   UPGRADE_PATHS,
 } from '@/lib/memberUtils';
-import { X, Edit2, Plus, Trash2, ChevronRight, Users, GitBranch } from 'lucide-react';
-import RelationshipDiagram from './RelationshipDiagram';
+import { X, Edit2, Plus, Trash2, ChevronRight, Users } from 'lucide-react';
 
 interface Props {
   onEdit: (id: string) => void;
@@ -20,8 +17,7 @@ interface Props {
 }
 
 export default function DetailPanel({ onEdit, onAdd }: Props) {
-  const { members, selectedId, setSelected, deleteMember } = useMemberStore();
-  const [showDiagram, setShowDiagram] = useState(false);
+  const { members, selectedId, setSelected, navigateTo, deleteMember } = useMemberStore();
 
   if (!selectedId) return null;
 
@@ -93,25 +89,11 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
       </div>
 
       {isSponsorType && (
-        <div className="text-[10px] text-gray-400 text-center mb-2">
+        <div className="text-[10px] text-gray-400 text-center mb-4">
           A4D Quota: <span className="text-gray-600 font-medium">{quota.used}/{quota.total}</span> used
         </div>
       )}
-      {!isSponsorType && <div className="mb-2" />}
-
-      <button
-        onClick={() => setShowDiagram(true)}
-        className="w-full flex items-center justify-center gap-1.5 text-[11px] text-gray-600 border border-gray-200 rounded-lg py-1.5 mb-4 hover:bg-gray-50 transition-colors"
-      >
-        <GitBranch size={12} /> View Relationship Diagram
-      </button>
-
-      {showDiagram && (
-        <RelationshipDiagram
-          rootId={getRootMember(members, m.id)?.id ?? m.id}
-          onClose={() => setShowDiagram(false)}
-        />
-      )}
+      {!isSponsorType && <div className="mb-4" />}
 
       {[
         ['Joined', m.since],
@@ -151,7 +133,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
 
                   <div
                     className="flex items-center gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
-                    onClick={() => setSelected(parent.id)}
+                    onClick={() => navigateTo(parent.id)}
                   >
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0"
@@ -185,7 +167,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
               {fatherDisplay && (
                 <div
                   className={`flex items-center gap-2 text-[11px] py-1 ${fatherMember ? 'cursor-pointer hover:text-blue-600' : ''}`}
-                  onClick={() => fatherMember && setSelected(fatherMember.id)}
+                  onClick={() => fatherMember && navigateTo(fatherMember.id)}
                 >
                   <span className="text-gray-400 w-12 flex-shrink-0">Father</span>
                   <span className="text-gray-700">{fatherDisplay}</span>
@@ -196,7 +178,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
               {motherDisplay && (
                 <div
                   className={`flex items-center gap-2 text-[11px] py-1 ${motherMember ? 'cursor-pointer hover:text-blue-600' : ''}`}
-                  onClick={() => motherMember && setSelected(motherMember.id)}
+                  onClick={() => motherMember && navigateTo(motherMember.id)}
                 >
                   <span className="text-gray-400 w-12 flex-shrink-0">Mother</span>
                   <span className="text-gray-700">{motherDisplay}</span>
@@ -220,7 +202,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
                   <div
                     key={ch.id}
                     className="flex items-center gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
-                    onClick={() => setSelected(ch.id)}
+                    onClick={() => navigateTo(ch.id)}
                   >
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0"

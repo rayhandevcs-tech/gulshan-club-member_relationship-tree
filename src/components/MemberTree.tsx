@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { useMemberStore } from '@/store/memberStore';
 import { Member } from '@/lib/types';
 import {
@@ -6,10 +7,11 @@ import {
   getNominees, getAllDescendants, getQuotaSourceCaption, TYPE_CONFIG
 } from '@/lib/memberUtils';
 import MemberNode from './MemberNode';
-import { Search } from 'lucide-react';
+import { FocusedDiagram, WholeMapDiagram } from './RelationshipDiagram';
+import { Search, Network, GitBranch } from 'lucide-react';
 
 function AssocGroup({ parentId }: { parentId: string }) {
-  const { members } = useMemberStore();
+  const { members, navigateTo } = useMemberStore();
   const assocs = getAssociates(members, parentId);
   const noms   = getNominees(members, parentId);
   const all = [...assocs, ...noms];
@@ -21,14 +23,18 @@ function AssocGroup({ parentId }: { parentId: string }) {
         {noms.length ? `Nominee (${all.length})` : `Associate (${all.length})`}
       </div>
       <div className="flex gap-2 flex-wrap justify-center">
-        {all.map(a => <MemberNode key={a.id} member={a} small dashed />)}
+        {all.map(a => (
+          <div key={a.id} onClick={() => navigateTo(a.id)}>
+            <MemberNode member={a} small dashed />
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
 function FamilySubtree({ member }: { member: Member }) {
-  const { members } = useMemberStore();
+  const { members, navigateTo } = useMemberStore();
   const spouse = getSpouse(members, member.id);
 
   // A couple can each sponsor their own A4D/child slots, so combine
@@ -47,11 +53,15 @@ function FamilySubtree({ member }: { member: Member }) {
     <div className="flex flex-col items-center">
       {/* couple row */}
       <div className="flex items-start gap-1">
-        <MemberNode member={member} />
+        <div onClick={() => navigateTo(member.id)}>
+          <MemberNode member={member} />
+        </div>
         {spouse && (
           <>
             <span className="text-pink-400 text-[15px] pt-5 px-1">♥</span>
-            <MemberNode member={spouse} showRel />
+            <div onClick={() => navigateTo(spouse.id)}>
+              <MemberNode member={spouse} showRel />
+            </div>
           </>
         )}
       </div>
@@ -76,7 +86,9 @@ function FamilySubtree({ member }: { member: Member }) {
                   </div>
                 ) : (
                   <>
-                    <MemberNode member={kid} showRel />
+                    <div onClick={() => navigateTo(kid.id)}>
+                      <MemberNode member={kid} showRel />
+                    </div>
                     {(() => {
                       const caption = getQuotaSourceCaption(kid, sponsorIds, members);
                       return caption ? (
@@ -103,16 +115,15 @@ function EmptyPrompt() {
       <Search size={34} className="text-gray-300" />
       <div className="text-[15px] font-medium text-gray-500">Search for a member</div>
       <div className="text-[12px] max-w-[300px] leading-relaxed">
-        Type a name or A/C number in the search box above, then pick the
-        specific member from the list — their full family relationship
-        will be shown here.
+        Type a name or A/C number..
       </div>
     </div>
   );
 }
 
 export default function MemberTree() {
-  const { members, filterType, activeRootId, view } = useMemberStore();
+  const { members, filterType, activeRootId, focusViewId, view, navigateTo } = useMemberStore();
+  const [diagramMode, setDiagramMode] = useState<'focused' | 'whole'>('focused');
 
   // Category-pill browse mode: show every family that has a member of
   // this type. This is the one case where multiple cards is intentional.
@@ -154,7 +165,7 @@ export default function MemberTree() {
           return (
             <div
               key={m.id}
-              onClick={() => useMemberStore.getState().setSelected(m.id)}
+              onClick={() => useMemberStore.getState().navigateTo(m.id)}
               className="border border-gray-100 rounded-xl p-4 cursor-pointer hover:border-gray-300 hover:shadow-sm transition-all flex flex-col items-center gap-1.5 bg-white"
             >
               <div className="w-12 h-12 rounded-full flex items-center justify-center text-[13px] font-semibold relative shadow-sm"
@@ -174,27 +185,65 @@ export default function MemberTree() {
     );
   }
 
-  const roots = filterType ? categoryRoots : activeRoot ? [activeRoot] : [];
-
-  if (!roots.length) {
-    return <div className="flex items-center justify-center h-40 text-gray-400 text-sm">কোনো সদস্য পাওয়া যায়নি</div>;
+  // Category browsing always shows the multi-family card view — there's
+  // no single "focus person" to center a relationship diagram on here.
+  if (filterType) {
+    if (!categoryRoots.length) {
+      return <div className="flex items-center justify-center h-40 text-gray-400 text-sm">কোনো সদস্য পাওয়া যায়নি</div>;
+    }
+    return (
+      <div className="flex flex-wrap gap-6 p-8 items-start justify-center">
+        {categoryRoots.map(r => {
+          const cfg = TYPE_CONFIG[r.type];
+          return (
+            <div key={r.id} className="inline-flex flex-col items-center border rounded-2xl p-6 bg-white shadow-sm"
+              style={{ borderColor: cfg.color + '33' }}>
+              <div className="text-[10px] font-medium px-2.5 py-1 rounded-full mb-5"
+                style={{ background: cfg.bg, color: cfg.dark }}>
+                {r.type} · {r.id}
+              </div>
+              <FamilySubtree member={r} />
+            </div>
+          );
+        })}
+      </div>
+    );
   }
 
+  // Single-family mode (search result picked): default to the focused
+  // relationship diagram for whoever is currently selected, with a
+  // toggle to see the whole family at once.
+  if (!activeRoot) return null;
+  const focusId = focusViewId ?? activeRoot.id;
+
   return (
-    <div className="flex flex-wrap gap-6 p-8 items-start justify-center">
-      {roots.map(r => {
-        const cfg = TYPE_CONFIG[r.type];
-        return (
-          <div key={r.id} className="inline-flex flex-col items-center border rounded-2xl p-6 bg-white shadow-sm"
-            style={{ borderColor: cfg.color + '33' }}>
-            <div className="text-[10px] font-medium px-2.5 py-1 rounded-full mb-5"
-              style={{ background: cfg.bg, color: cfg.dark }}>
-              {r.type} · {r.id}
-            </div>
-            <FamilySubtree member={r} />
-          </div>
-        );
-      })}
+    <div className="flex flex-col items-center w-full">
+      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 mt-4 mb-2">
+        <button
+          onClick={() => setDiagramMode('focused')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] transition-colors ${
+            diagramMode === 'focused' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
+          }`}
+        >
+          <GitBranch size={12} /> Relationship Diagram
+        </button>
+        <button
+          onClick={() => setDiagramMode('whole')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] transition-colors ${
+            diagramMode === 'whole' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
+          }`}
+        >
+          <Network size={12} /> Whole Family Map
+        </button>
+      </div>
+
+      <div className="w-full overflow-auto p-3 sm:p-6 flex items-start justify-center">
+        {diagramMode === 'focused' ? (
+          <FocusedDiagram focusId={focusId} members={members} onPick={navigateTo} />
+        ) : (
+          <WholeMapDiagram rootId={activeRoot.id} members={members} onPick={navigateTo} />
+        )}
+      </div>
     </div>
   );
 }
