@@ -54,8 +54,25 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
   };
 
   return (
+    <>
+      {/* Mobile backdrop */}
+      <div
+        className="fixed inset-0 bg-black/20 z-30 md:hidden"
+        onClick={() => setSelected(null)}
+      />
+    <div className="
+      fixed bottom-0 left-0 right-0 z-40 max-h-[70vh] rounded-t-2xl
+      md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto md:max-h-none md:rounded-none
+      w-full md:w-80
+      border-t md:border-t-0 md:border-l border-gray-200
+      bg-white overflow-y-auto flex-shrink-0 p-4
+      shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)] md:shadow-[-6px_0_16px_-8px_rgba(0,0,0,0.06)]
+    ">
+      {/* Mobile drag handle */}
+      <div className="flex justify-center mb-3 md:hidden">
+        <div className="w-10 h-1 bg-gray-300 rounded-full" />
+      </div>
 
-    <div className="w-80 border-l border-gray-200 bg-white overflow-y-auto flex-shrink-0 p-4 shadow-[-6px_0_16px_-8px_rgba(0,0,0,0.06)]">
       <div className="flex justify-between items-center mb-4">
         <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
           Member Details
@@ -287,5 +304,6 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
         <Trash2 size={11} /> Delete
       </button> */}
     </div>
+    </>
   );
 }

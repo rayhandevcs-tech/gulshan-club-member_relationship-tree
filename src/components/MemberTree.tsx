@@ -148,7 +148,7 @@ export default function MemberTree() {
           )
         : [];
     return (
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 p-6">
+      <div className="grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 p-4 md:p-6">
         {visible.map(m => {
           const cfg = TYPE_CONFIG[m.type];
           return (
@@ -181,7 +181,7 @@ export default function MemberTree() {
   }
 
   return (
-    <div className="flex flex-wrap gap-6 p-8 items-start justify-center">
+    <div className="flex flex-wrap gap-4 md:gap-6 p-4 md:p-8 items-start justify-center">
       {roots.map(r => {
         const cfg = TYPE_CONFIG[r.type];
         return (
