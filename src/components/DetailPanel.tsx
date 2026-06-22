@@ -160,7 +160,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
                         {parent.name}
                       </div>
                       <div className="text-[10px] text-gray-400">
-                        {parent.id} · {parent.type}
+                        {parent.id}
                       </div>
                     </div>
 
