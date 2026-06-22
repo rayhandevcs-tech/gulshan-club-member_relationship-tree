@@ -93,13 +93,13 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
         {m.id}
       </div>
 
-      <div
+      {/* <div
         className="text-[11px] font-medium px-3.5 py-1 rounded-full mx-auto w-fit mb-2"
         style={{ background: cfg.bg, color: cfg.dark }}
       >
         {m.type}
         {relLabel ? ` · ${relLabel}` : ''}
-      </div>
+      </div> */}
 
       {isSponsorType && (
         <div className="text-[10px] text-gray-400 text-center mb-4">
@@ -209,7 +209,6 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
 
               {children.map(ch => {
                 const cc = TYPE_CONFIG[ch.type];
-                const chRelLabel = getRelLabel(ch);
 
                 return (
                   <div
@@ -230,7 +229,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
                       </div>
 
                       <div className="text-[10px] text-gray-400">
-                        {ch.id}{chRelLabel ? ` · ${chRelLabel}` : ` · ${ch.type}`}
+                        {ch.id}
                       </div>
                     </div>
 

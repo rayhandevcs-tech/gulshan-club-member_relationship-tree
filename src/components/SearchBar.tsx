@@ -36,7 +36,6 @@ export default function SearchBar() {
     const root = getRootMember(members, id);
     setSearch(m.name);
     setActiveRoot(root ? root.id : id);
-    setSelected(id);
     setFocusView(id);
     setOpen(false);
   };

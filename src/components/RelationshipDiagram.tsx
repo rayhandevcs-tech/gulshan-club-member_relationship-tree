@@ -26,29 +26,26 @@ export function FocusedDiagram({ focusId, members, onPick }: Props) {
 
   return (
     <div className="inline-flex flex-col items-center border border-gray-100 rounded-2xl p-5 sm:p-8 bg-white shadow-sm max-w-full overflow-x-auto">
-      {membershipRef && (
-        <div className="flex items-center gap-2 mb-4 sm:mb-5 text-[10px] sm:text-[11px] text-gray-500">
-          <div className="border border-gray-300 rounded-lg px-2.5 sm:px-3 py-1 sm:py-1.5 bg-white font-medium text-gray-700">
-            {membershipRef.label}
-          </div>
-          {membershipRef.detail && <span>→ [{membershipRef.detail}]</span>}
-        </div>
-      )}
-
-      <div className="flex items-start">
-        <div onClick={() => onPick(owner.id)}>
+      <div className="flex items-center gap-0">
+        <div
+          className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
+          onClick={() => onPick(owner.id)}
+        >
           <MemberNode member={owner} />
         </div>
         {lateralSpouse && (
           <>
-            <div className="flex flex-col items-center pt-9 px-1 w-10">
-              <div className="w-full h-[1.5px] bg-gray-400" />
-              <div className="text-[8px] text-gray-400 mt-0.5 whitespace-nowrap">[Spouse]</div>
+            <div className="flex flex-col items-center px-2">
+              <div className="text-[8px] text-gray-400 whitespace-nowrap mb-0.5">[Spouse]</div>
+              <div className="w-8 h-[1.5px] bg-gray-300" />
             </div>
-            <div className="flex flex-col items-center" onClick={() => onPick(lateralSpouse.member.id)}>
-              <MemberNode member={lateralSpouse.member} showRel />
+            <div
+              className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
+              onClick={() => onPick(lateralSpouse.member.id)}
+            >
+              <MemberNode member={lateralSpouse.member} />
               {lateralSpouse.refNote && (
-                <div className="text-[9px] text-gray-400 -mt-0.5">({lateralSpouse.refNote})</div>
+                <div className="text-[9px] text-gray-400 px-3 pb-2">({lateralSpouse.refNote})</div>
               )}
             </div>
           </>
@@ -71,24 +68,26 @@ export function FocusedDiagram({ focusId, members, onPick }: Props) {
 
       {lowerConns.length > 0 && (
         <>
-          <div className="w-[1.5px] h-5 sm:h-6 bg-gray-300 mt-2" />
+          <div className="w-[1.5px] h-10 bg-gray-200 mt-4" />
           {lowerConns.length > 1 && (
-            <div className="h-[1.5px] bg-gray-300" style={{ width: Math.min(lowerConns.length * 140, 560) }} />
+            <div className="h-[1.5px] bg-gray-200" style={{ width: Math.min(lowerConns.length * 170, 600) }} />
           )}
-          <div className="flex gap-3 sm:gap-5 items-start flex-wrap justify-center">
+          <div className="flex gap-8 sm:gap-12 items-start flex-wrap justify-center">
             {lowerConns.map(c => (
               <div
                 key={c.member.id}
-                className="flex flex-col items-center border border-gray-100 rounded-xl p-3 sm:p-4 bg-gray-50/50"
+                className="flex flex-col items-center"
                 onClick={() => onPick(c.member.id)}
               >
-                <div className="w-[1.5px] h-3 bg-gray-300 -mt-3 sm:-mt-4 mb-1" />
-                <MemberNode member={c.member} showRel />
+                <div className="w-[1.5px] h-7 bg-gray-200" />
+                <div className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors">
+                  <MemberNode member={c.member} />
+                </div>
                 {c.refNote && (
-                  <div className="text-[9px] text-gray-400">({c.refNote})</div>
+                  <div className="text-[9px] text-gray-400 mt-1.5">({c.refNote})</div>
                 )}
                 {c.caption && (
-                  <div className="text-[8px] sm:text-[9px] text-gray-400 italic max-w-[100px] text-center leading-tight mt-0.5">
+                  <div className="text-[8px] sm:text-[9px] text-gray-400 italic max-w-[120px] text-center leading-tight mt-1.5">
                     {c.caption}
                   </div>
                 )}

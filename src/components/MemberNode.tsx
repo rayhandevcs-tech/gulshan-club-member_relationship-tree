@@ -23,7 +23,6 @@ export default function MemberNode({ member, showRel, small, dashed }: Props) {
   const relLabel = getRelLabel(member);
 
   const size = small ? 'w-12 h-12 text-[13px]' : 'w-[68px] h-[68px] text-[16px]';
-  const pipSize = small ? 'w-[18px] h-[18px] text-[8px]' : 'w-[22px] h-[22px] text-[9px]';
 
   return (
     <div
@@ -41,19 +40,13 @@ export default function MemberNode({ member, showRel, small, dashed }: Props) {
         </span>
       )}
       <div
-        className={clsx('rounded-full flex items-center justify-center font-semibold relative shadow-sm', size)}
+        className={clsx('rounded-full flex items-center justify-center font-semibold shadow-sm', size)}
         style={{ background: cfg.bg, color: cfg.dark }}
       >
         {getInitials(member.name)}
-        <div
-          className={clsx('absolute -bottom-1 -right-1 rounded-full flex items-center justify-center font-bold text-white border-2 border-white', pipSize)}
-          style={{ background: cfg.color, borderColor: '#fff' }}
-        >
-          {cfg.short}
-        </div>
       </div>
-      <div className={clsx('font-medium text-gray-800 text-center mt-1.5 leading-tight', small ? 'text-[11px] max-w-[72px]' : 'text-[13px] max-w-[96px]')}>
-        {member.name.split(' ').slice(0, 2).join(' ')}
+      <div className={clsx('font-medium text-gray-800 text-center mt-1.5 leading-tight', small ? 'text-[11px] max-w-[80px]' : 'text-[13px] max-w-[120px]')}>
+        {member.name}
       </div>
       <div className={clsx('text-gray-400 text-center', small ? 'text-[10px]' : 'text-[11px]')}>
         {member.id}
