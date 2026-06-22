@@ -39,6 +39,14 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
   const isSponsorType = m.type !== 'A4D' && m.type !== 'Associate';
   const quota = getA4DQuota(members, m.id);
 
+  const spouseMember = m.rel === 'spouse' && parent
+    ? parent
+    : (members.find(c => c.pid === m.id && c.rel === 'spouse') ?? null);
+  const showPrimary = !!parent && m.rel !== 'spouse';
+  const bioChildren = members.filter(c => c.fatherId === m.id || c.motherId === m.id);
+  const bioChildIds = new Set(bioChildren.map(c => c.id));
+  const dependents = children.filter(c => c.rel !== 'spouse' && !bioChildIds.has(c.id));
+
   const handleDelete = () => {
     if (confirm('Delete this member and all related members?')) {
       deleteMember(m.id);
@@ -132,38 +140,59 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
           </div>
         ))}
 
-      {(parent || children.length > 0) && (
+      {(showPrimary || spouseMember || fatherDisplay || motherDisplay || bioChildren.length > 0 || dependents.length > 0) && (
         <div className="mt-3 pt-3 border-t border-gray-100">
-          {parent &&
-            (() => {
-              const pc = TYPE_CONFIG[parent.type];
 
+          {showPrimary &&
+            (() => {
+              const pc = TYPE_CONFIG[parent!.type];
               return (
                 <>
                   <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
                     Primary Member
                   </div>
-
                   <div
                     className="flex items-center gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
-                    onClick={() => navigateTo(parent.id)}
+                    onClick={() => navigateTo(parent!.id)}
                   >
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0"
                       style={{ background: pc.bg, color: pc.dark }}
                     >
-                      {getInitials(parent.name)}
+                      {getInitials(parent!.name)}
                     </div>
-
                     <div className="flex-1 min-w-0">
-                      <div className="text-[12px] font-medium text-gray-800 truncate">
-                        {parent.name}
-                      </div>
-                      <div className="text-[10px] text-gray-400">
-                        {parent.id}
-                      </div>
+                      <div className="text-[12px] font-medium text-gray-800 truncate">{parent!.name}</div>
+                      <div className="text-[10px] text-gray-400">{parent!.id}</div>
                     </div>
+                    <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
+                  </div>
+                </>
+              );
+            })()}
 
+          {spouseMember &&
+            (() => {
+              const sc = TYPE_CONFIG[spouseMember.type];
+              return (
+                <>
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 mt-3">
+                    Spouse
+                  </div>
+                  <div
+                    className="flex items-center gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => navigateTo(spouseMember.id)}
+                  >
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0"
+                      style={{ background: sc.bg, color: sc.dark }}
+                    >
+                      {getInitials(spouseMember.name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-medium text-gray-800 truncate">{spouseMember.name}</div>
+                      <div className="text-[10px] text-gray-400">{spouseMember.id}</div>
+                    </div>
                     <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
                   </div>
                 </>
@@ -201,15 +230,13 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
             </div>
           )}
 
-          {children.length > 0 && (
+          {bioChildren.length > 0 && (
             <>
               <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mt-3 mb-1.5">
-                Family Members ({children.length})
+                Children ({bioChildren.length})
               </div>
-
-              {children.map(ch => {
+              {bioChildren.map(ch => {
                 const cc = TYPE_CONFIG[ch.type];
-
                 return (
                   <div
                     key={ch.id}
@@ -222,17 +249,40 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
                     >
                       {getInitials(ch.name)}
                     </div>
-
                     <div className="flex-1 min-w-0">
-                      <div className="text-[12px] font-medium text-gray-800 truncate">
-                        {ch.name}
-                      </div>
-
-                      <div className="text-[10px] text-gray-400">
-                        {ch.id}
-                      </div>
+                      <div className="text-[12px] font-medium text-gray-800 truncate">{ch.name}</div>
+                      <div className="text-[10px] text-gray-400">{ch.id}</div>
                     </div>
+                    <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
+                  </div>
+                );
+              })}
+            </>
+          )}
 
+          {dependents.length > 0 && (
+            <>
+              <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mt-3 mb-1.5">
+                Family Members ({dependents.length})
+              </div>
+              {dependents.map(ch => {
+                const cc = TYPE_CONFIG[ch.type];
+                return (
+                  <div
+                    key={ch.id}
+                    className="flex items-center gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => navigateTo(ch.id)}
+                  >
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0"
+                      style={{ background: cc.bg, color: cc.dark }}
+                    >
+                      {getInitials(ch.name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-medium text-gray-800 truncate">{ch.name}</div>
+                      <div className="text-[10px] text-gray-400">{ch.id}</div>
+                    </div>
                     <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
                   </div>
                 );

@@ -248,15 +248,15 @@ export const buildFocusedRelationship = (members: Member[], focusId: string): Fo
 
   const connections: FocusedConnection[] = [];
 
-  if (focus.rel === 'spouse' && focus.succession && focus.pid) {
-    const predecessor = getMember(members, focus.pid);
-    if (predecessor) {
+  if (focus.rel === 'spouse' && focus.pid) {
+    const partner = getMember(members, focus.pid);
+    if (partner) {
       connections.push({
-        member: predecessor,
+        member: partner,
         edgeLabel: getRelRoleLabel(focus) || 'Spouse',
         reversed: true,
         isSpouse: true,
-        refNote: extractArticleRef(focus.succession),
+        refNote: focus.succession ? extractArticleRef(focus.succession) : undefined,
         caption: null,
       });
     }
