@@ -26,15 +26,33 @@ export function FocusedDiagram({ focusId, members, onPick }: Props) {
 
   return (
     <div className="inline-flex flex-col items-center border border-gray-100 rounded-2xl p-5 sm:p-8 bg-white shadow-sm max-w-full overflow-x-auto">
-      <div className="flex items-center gap-0">
+
+      {/* Top row: invisible mirror | owner | connector + spouse
+          The mirror is identical to the right side but hidden — this keeps
+          the owner card perfectly centered so the vertical line below falls
+          straight down from it, not from the midpoint of the whole row. */}
+      <div className="flex items-center">
+        {lateralSpouse && (
+          <div className="invisible pointer-events-none flex items-center">
+            <div className="flex flex-col items-center px-2">
+              <div className="text-[8px] whitespace-nowrap mb-0.5">x</div>
+              <div className="w-8 h-[1.5px]" />
+            </div>
+            <div className="border border-transparent rounded-2xl">
+              <MemberNode member={lateralSpouse.member} />
+            </div>
+          </div>
+        )}
+
         <div
           className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
           onClick={() => onPick(owner.id)}
         >
           <MemberNode member={owner} />
         </div>
+
         {lateralSpouse && (
-          <>
+          <div className="flex items-center">
             <div className="flex flex-col items-center px-2">
               <div className="text-[8px] text-gray-400 whitespace-nowrap mb-0.5">[Spouse]</div>
               <div className="w-8 h-[1.5px] bg-gray-300" />
@@ -48,7 +66,7 @@ export function FocusedDiagram({ focusId, members, onPick }: Props) {
                 <div className="text-[9px] text-gray-400 px-3 pb-2">({lateralSpouse.refNote})</div>
               )}
             </div>
-          </>
+          </div>
         )}
       </div>
 
