@@ -354,6 +354,7 @@ const relEdgeLabel = (m: Member): string => {
     case 'child': return 'Children';
     case 'associate': return 'Associate';
     case 'nominee': return 'Nominee';
+    case 'spouse': return 'Spouse';
     default: return '';
   }
 };
@@ -378,22 +379,11 @@ export const buildRelationshipDiagram = (members: Member[], rootId: string): Dia
     if (resolving.has(m.id)) return 0;
     resolving.add(m.id);
 
-    let row: number;
-    if (m.rel === 'spouse' && m.pid && byId.has(m.pid)) {
-      row = computeRow(byId.get(m.pid)!);
-    } else {
-      const father = m.fatherId ? byId.get(m.fatherId) : undefined;
-      const mother = m.motherId ? byId.get(m.motherId) : undefined;
-      if (father || mother) {
-        const fr = father ? computeRow(father) : -1;
-        const mr = mother ? computeRow(mother) : -1;
-        row = Math.max(fr, mr) + 1;
-      } else {
-        const pidRow = m.pid && byId.has(m.pid) ? computeRow(byId.get(m.pid)!) : 0;
-        const looksLikeExternalSkip = m.type === 'A4D' && (m.fatherName || m.motherName);
-        row = pidRow + (looksLikeExternalSkip ? 2 : 1);
-      }
-    }
+    const pidMember = m.pid ? byId.get(m.pid) : undefined;
+    const pidRow = pidMember ? computeRow(pidMember) : 0;
+    // Only the root's direct spouse stays at the same row (rendered side-by-side).
+    // Every other member — including non-root spouses — goes one row below their sponsor.
+    const row = (m.rel === 'spouse' && m.pid === root.id) ? pidRow : pidRow + 1;
 
     resolving.delete(m.id);
     bioRow.set(m.id, row);
@@ -455,7 +445,7 @@ export const buildRelationshipDiagram = (members: Member[], rootId: string): Dia
   const edges: DiagramEdge[] = [];
   family.forEach(m => {
     if (!m.pid || !byId.has(m.pid)) return;
-    if (m.rel === 'spouse') {
+    if (m.rel === 'spouse' && m.pid === root.id) {
       edges.push({ fromId: m.pid, toId: m.id, label: 'Spouse', kind: 'spouse' });
     } else {
       edges.push({ fromId: m.pid, toId: m.id, label: relEdgeLabel(m), kind: 'vertical' });
