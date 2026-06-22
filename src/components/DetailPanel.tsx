@@ -171,34 +171,6 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
               );
             })()}
 
-          {spouseMember &&
-            (() => {
-              const sc = TYPE_CONFIG[spouseMember.type];
-              return (
-                <>
-                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 mt-3">
-                    Spouse
-                  </div>
-                  <div
-                    className="flex items-center gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
-                    onClick={() => navigateTo(spouseMember.id)}
-                  >
-                    <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0"
-                      style={{ background: sc.bg, color: sc.dark }}
-                    >
-                      {getInitials(spouseMember.name)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[12px] font-medium text-gray-800 truncate">{spouseMember.name}</div>
-                      <div className="text-[10px] text-gray-400">{spouseMember.id}</div>
-                    </div>
-                    <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
-                  </div>
-                </>
-              );
-            })()}
-
           {(fatherDisplay || motherDisplay) && (
             <div className="mt-3 bg-gray-50 rounded-xl p-3 border border-gray-100">
               <div className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
@@ -229,6 +201,34 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
               )}
             </div>
           )}
+
+          {spouseMember &&
+            (() => {
+              const sc = TYPE_CONFIG[spouseMember.type];
+              return (
+                <>
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 mt-3">
+                    Spouse
+                  </div>
+                  <div
+                    className="flex items-center gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => navigateTo(spouseMember.id)}
+                  >
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0"
+                      style={{ background: sc.bg, color: sc.dark }}
+                    >
+                      {getInitials(spouseMember.name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-medium text-gray-800 truncate">{spouseMember.name}</div>
+                      <div className="text-[10px] text-gray-400">{spouseMember.id}</div>
+                    </div>
+                    <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
+                  </div>
+                </>
+              );
+            })()}
 
           {bioChildren.length > 0 && (
             <>
