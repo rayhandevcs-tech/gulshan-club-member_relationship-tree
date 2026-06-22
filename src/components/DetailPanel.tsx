@@ -42,7 +42,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
   const spouseMember = m.rel === 'spouse' && parent
     ? parent
     : (members.find(c => c.pid === m.id && c.rel === 'spouse') ?? null);
-  const showPrimary = !!parent && m.rel !== 'spouse';
+  const showPrimary = !!parent && (m.rel === 'a4d' || m.rel === 'associate' || m.rel === 'nominee');
   const bioChildren = members.filter(c => c.fatherId === m.id || c.motherId === m.id);
   const bioChildIds = new Set(bioChildren.map(c => c.id));
   const dependents = children.filter(c => c.rel !== 'spouse' && !bioChildIds.has(c.id));
@@ -263,7 +263,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
           {dependents.length > 0 && (
             <>
               <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mt-3 mb-1.5">
-                Sponsored Members ({dependents.length})
+                Associated Members ({dependents.length})
               </div>
               {dependents.map(ch => {
                 const cc = TYPE_CONFIG[ch.type];
