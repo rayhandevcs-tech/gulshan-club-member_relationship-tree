@@ -5,19 +5,12 @@ import {
   getMember,
   getInitials,
   TYPE_CONFIG,
-  getRelLabel,
   getA4DQuota,
-  UPGRADE_PATHS,
 } from '@/lib/memberUtils';
-import { X, Edit2, Plus, Trash2, ChevronRight, Users } from 'lucide-react';
+import { X, ChevronRight, Users } from 'lucide-react';
 
-interface Props {
-  onEdit: (id: string) => void;
-  onAdd: (pid: string) => void;
-}
-
-export default function DetailPanel({ onEdit, onAdd }: Props) {
-  const { members, selectedId, setSelected, navigateTo, deleteMember } = useMemberStore();
+export default function DetailPanel() {
+  const { members, selectedId, setSelected, navigateTo } = useMemberStore();
 
   if (!selectedId) return null;
 
@@ -28,8 +21,6 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
   const cfg = TYPE_CONFIG[m.type];
   const parent = m.pid ? getMember(members, m.pid) : null;
   const children = members.filter(c => c.pid === m.id);
-  const relLabel = getRelLabel(m);
-  const upgrades = UPGRADE_PATHS[m.type] ?? [];
 
   const fatherMember = m.fatherId ? getMember(members, m.fatherId) : null;
   const motherMember = m.motherId ? getMember(members, m.motherId) : null;
@@ -46,12 +37,6 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
   const bioChildren = members.filter(c => c.fatherId === m.id || c.motherId === m.id);
   const bioChildIds = new Set(bioChildren.map(c => c.id));
   const dependents = children.filter(c => c.rel !== 'spouse' && !bioChildIds.has(c.id));
-
-  const handleDelete = () => {
-    if (confirm('Delete this member and all related members?')) {
-      deleteMember(m.id);
-    }
-  };
 
   return (
     <>
@@ -263,7 +248,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
           {dependents.length > 0 && (
             <>
               <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mt-3 mb-1.5">
-                Associated Members ({dependents.length})
+                A4D Members ({dependents.length})
               </div>
               {dependents.map(ch => {
                 const cc = TYPE_CONFIG[ch.type];

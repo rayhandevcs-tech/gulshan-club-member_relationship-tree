@@ -177,20 +177,7 @@ export default function Home() {
         </div>
 
         {selectedId && (
-          <DetailPanel
-            onEdit={id =>
-              setFormState({
-                open: true,
-                editId: id,
-              })
-            }
-            onAdd={pid =>
-              setFormState({
-                open: true,
-                pid,
-              })
-            }
-          />
+          <DetailPanel />
         )}
       </div>
 
