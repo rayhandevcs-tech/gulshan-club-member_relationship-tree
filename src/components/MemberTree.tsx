@@ -209,14 +209,16 @@ export default function MemberTree() {
         >
           <GitBranch size={12} /> Relationship Diagram
         </button>
-        <button
+
+        {/* <button
           onClick={() => setDiagramMode('whole')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] transition-colors ${
             diagramMode === 'whole' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
           }`}
         >
           <Network size={12} /> Whole Family Map
-        </button>
+        </button> */}
+
       </div>
 
       <div className="w-full overflow-auto p-3 sm:p-6 flex items-start justify-center">
