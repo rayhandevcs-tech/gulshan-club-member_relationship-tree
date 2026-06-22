@@ -1,8 +1,8 @@
 import { Member } from './types';
 
 export const demoMembers: Member[] = [
-  { id:'LM-11',    name:'Md. Saiful Islam',             type:'Life',      gender:'M', since:'10/03/1995', email:'saiful@example.com',   phone:'01711100011', pid:null,     rel:null,      membershipRef:'Linked to LS-35 (Article 6C & 10B)', fatherName:'Ahafiqur Rahman' },
-  { id:'LS-8',     name:'Sultana Shaheda Islam',        type:'Life',      gender:'F', since:'10/03/1995', email:'shaheda@example.com',  pid:'LM-11', rel:'spouse', fatherName:'Md. Serajul Islam' },
+  { id:'LM-11',    name:'Md. Saiful Islam',             type:'Life',      gender:'M', since:'10/03/1995', email:'saiful@example.com',   phone:'01711100011', pid:null,     rel:null,      membershipRef:'Linked to LS-35 (Article 6C & 10B)', fatherName:'Ahafiqur Rahman', motherName:'0' },
+  { id:'LS-8',     name:'Sultana Shaheda Islam',        type:'Life',      gender:'F', since:'10/03/1995', email:'shaheda@example.com',  pid:'LM-11', rel:'spouse', fatherName:'Md. Serajul Islam', motherName:'0' },
 
   { id:'PT-7',     name:'Tahmina Rehman',               type:'Permanent', gender:'F', since:'05/06/2015', pid:'LM-11', rel:'child',  fatherId:'LM-11', motherId:'LS-8' },
   { id:'PW-6',     name:'Late Wasim Sajjad',            type:'Permanent', gender:'M', since:'05/06/2015', pid:'LM-11', rel:'child',  fatherId:'LM-11', motherId:'LS-8' },
