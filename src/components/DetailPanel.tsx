@@ -61,12 +61,12 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
         onClick={() => setSelected(null)}
       />
     <div className="
-      fixed bottom-0 left-0 right-0 z-40 max-h-[70vh] rounded-t-2xl
+      fixed bottom-3 left-3 right-3 z-40 max-h-[62vh] rounded-2xl
       md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto md:max-h-none md:rounded-none
-      w-full md:w-80
-      border-t md:border-t-0 md:border-l border-gray-200
+      md:w-80
+      border md:border-t-0 md:border-l md:border-r-0 md:border-b-0 border-gray-200
       bg-white overflow-y-auto flex-shrink-0 p-4
-      shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)] md:shadow-[-6px_0_16px_-8px_rgba(0,0,0,0.06)]
+      shadow-[0_4px_24px_-4px_rgba(0,0,0,0.18)] md:shadow-[-6px_0_16px_-8px_rgba(0,0,0,0.06)]
     ">
       {/* Mobile drag handle */}
       <div className="flex justify-center mb-3 md:hidden">
@@ -143,34 +143,6 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
       {(showPrimary || spouseMember || fatherDisplay || motherDisplay || bioChildren.length > 0 || dependents.length > 0) && (
         <div className="mt-3 pt-3 border-t border-gray-100">
 
-          {showPrimary &&
-            (() => {
-              const pc = TYPE_CONFIG[parent!.type];
-              return (
-                <>
-                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
-                    Primary Member
-                  </div>
-                  <div
-                    className="flex items-center gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
-                    onClick={() => navigateTo(parent!.id)}
-                  >
-                    <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0"
-                      style={{ background: pc.bg, color: pc.dark }}
-                    >
-                      {getInitials(parent!.name)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[12px] font-medium text-gray-800 truncate">{parent!.name}</div>
-                      <div className="text-[10px] text-gray-400">{parent!.id}</div>
-                    </div>
-                    <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
-                  </div>
-                </>
-              );
-            })()}
-
           {(fatherDisplay || motherDisplay) && (
             <div className="mt-3 bg-gray-50 rounded-xl p-3 border border-gray-100">
               <div className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
@@ -201,6 +173,34 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
               )}
             </div>
           )}
+
+          {showPrimary &&
+            (() => {
+              const pc = TYPE_CONFIG[parent!.type];
+              return (
+                <>
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 mt-3">
+                    Primary Member
+                  </div>
+                  <div
+                    className="flex items-center gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => navigateTo(parent!.id)}
+                  >
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0"
+                      style={{ background: pc.bg, color: pc.dark }}
+                    >
+                      {getInitials(parent!.name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-medium text-gray-800 truncate">{parent!.name}</div>
+                      <div className="text-[10px] text-gray-400">{parent!.id}</div>
+                    </div>
+                    <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
+                  </div>
+                </>
+              );
+            })()}
 
           {spouseMember &&
             (() => {
@@ -263,7 +263,7 @@ export default function DetailPanel({ onEdit, onAdd }: Props) {
           {dependents.length > 0 && (
             <>
               <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mt-3 mb-1.5">
-                Family Members ({dependents.length})
+                Sponsored Members ({dependents.length})
               </div>
               {dependents.map(ch => {
                 const cc = TYPE_CONFIG[ch.type];
