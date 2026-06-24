@@ -211,6 +211,8 @@ export function WholeMapDiagram({ rootId, members, onPick }: WholeProps) {
   );
 }
 
+// ─── Bio Family Tree ──────────────────────────────────────────────────────────
+
 type BioNode = {
   member: Member;
   spouse: Member | null;
@@ -235,6 +237,7 @@ function buildBioTree(rootId: string, members: Member[]): BioNode | null {
            ((k.fatherId != null && parentIds.has(k.fatherId)) ||
             (k.motherId != null && parentIds.has(k.motherId)))
     );
+
     return {
       member,
       spouse,
@@ -245,24 +248,55 @@ function buildBioTree(rootId: string, members: Member[]): BioNode | null {
   return build(rootId);
 }
 
-const BIO_GAP = 32; // px between child units
+// ── Layout constants (based on desktop card w-40 = 160px) ──
+const BIO_CARD = 160; // w-40
+const BIO_CONN = 72;  // estimated width of the Spouse connector div
+const BIO_GAP  = 32;  // gap between sibling slots
+const BIO_STEM = 24;  // height of per-child vertical stems
 
-function BioNodeCard({ node, onPick }: { node: BioNode; onPick: (id: string) => void }) {
-  const L = 'bg-gray-300';
-  const STEM = 24; // px height of vertical stems below horizontal bar
+function coupleW(node: BioNode): number {
+  return node.spouse ? 2 * BIO_CARD + BIO_CONN : BIO_CARD;
+}
+
+// Minimum width the full subtree needs.
+// Uses equal-width slots for all siblings so the parent stem always
+// lands on the exact horizontal centre of the connector bar.
+function nodeW(node: BioNode): number {
+  const cw = coupleW(node);
+  if (!node.children.length) return cw;
+  const slot = Math.max(...node.children.map(nodeW));
+  const kids  = node.children.length * slot + (node.children.length - 1) * BIO_GAP;
+  return Math.max(cw, kids);
+}
+
+function BioNodeCard({
+  node, onPick, width,
+}: {
+  node: BioNode;
+  onPick: (id: string) => void;
+  width?: number;
+}) {
+  const L   = 'bg-gray-300';
+  const myW = width ?? nodeW(node);
+  const slot = node.children.length ? Math.max(...node.children.map(nodeW)) : 0;
+
+  // Husband (male) on LEFT, wife on RIGHT regardless of structural anchor.
+  const spouseLeft = node.spouse?.gender === 'M' && node.member.gender === 'F';
+  const leftCard   = spouseLeft ? node.spouse! : node.member;
+  const rightCard  = spouseLeft ? node.member  : node.spouse ?? null;
 
   return (
-    <div className="flex flex-col items-center">
+    <div style={{ width: myW }} className="flex flex-col items-center">
 
-      {/* Couple row: member LEFT, spouse RIGHT */}
+      {/* ── Couple row ── */}
       <div className="flex items-center">
         <div
           className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
-          onClick={() => onPick(node.member.id)}
+          onClick={() => onPick(leftCard.id)}
         >
-          <MemberNode member={node.member} fixed />
+          <MemberNode member={leftCard} fixed />
         </div>
-        {node.spouse && (
+        {rightCard && (
           <>
             <div className="flex flex-col items-center px-2 sm:px-3">
               <span className="text-[7px] sm:text-[8px] font-medium text-gray-400 bg-gray-100 rounded-full px-1.5 py-px mb-1 whitespace-nowrap">
@@ -272,56 +306,52 @@ function BioNodeCard({ node, onPick }: { node: BioNode; onPick: (id: string) => 
             </div>
             <div
               className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
-              onClick={() => onPick(node.spouse!.id)}
+              onClick={() => onPick(rightCard.id)}
             >
-              <MemberNode member={node.spouse} fixed />
+              <MemberNode member={rightCard} fixed />
             </div>
           </>
         )}
       </div>
 
-      {/* Children subtree */}
+      {/* ── Children subtree ── */}
       {node.children.length > 0 && (
         <>
-          {/* Vertical drop from couple */}
           <div className={`w-0.5 h-5 sm:h-7 ${L} mt-3 sm:mt-4`} />
           <span className="text-[8px] sm:text-[9px] font-semibold text-gray-400 bg-gray-100 rounded-full px-2 sm:px-2.5 py-0.5 mb-1.5">
             Children
           </span>
-          {/* Stem to horizontal bar */}
           <div className={`w-0.5 h-4 ${L}`} />
 
-          {/* Children row — CSS border trick: each child extends bar into its gap half */}
           <div className="flex items-start" style={{ gap: BIO_GAP }}>
             {node.children.map((child, idx) => {
               const isFirst = idx === 0;
-              const isLast = idx === node.children.length - 1;
-              const isOnly = node.children.length === 1;
+              const isLast  = idx === node.children.length - 1;
+              const multi   = node.children.length > 1;
               return (
                 <div
                   key={child.member.id}
                   className="relative flex flex-col items-center"
-                  style={{ paddingTop: isOnly ? 0 : STEM }}
+                  style={{ width: slot, paddingTop: BIO_STEM }}
                 >
-                  {!isOnly && (
-                    <>
-                      {/* Horizontal bar segment — extends into adjacent gaps to close the connector */}
-                      <div
-                        className={`absolute h-0.5 ${L}`}
-                        style={{
-                          top: 0,
-                          left: isFirst ? '50%' : -(BIO_GAP / 2),
-                          right: isLast ? '50%' : -(BIO_GAP / 2),
-                        }}
-                      />
-                      {/* Vertical stem from bar down to child */}
-                      <div
-                        className={`absolute w-0.5 ${L}`}
-                        style={{ top: 0, height: STEM }}
-                      />
-                    </>
+                  {/* Horizontal bar — each segment extends BIO_GAP/2 into its neighbour
+                      gap so adjacent segments always meet at the gap midpoint.          */}
+                  {multi && (
+                    <div
+                      className={`absolute h-0.5 ${L}`}
+                      style={{
+                        top: 0,
+                        left:  isFirst ? '50%'          : -(BIO_GAP / 2),
+                        right: isLast  ? '50%'          : -(BIO_GAP / 2),
+                      }}
+                    />
                   )}
-                  <BioNodeCard node={child} onPick={onPick} />
+                  {/* Vertical stem — centred in the slot */}
+                  <div
+                    className={`absolute w-0.5 ${L}`}
+                    style={{ top: 0, height: BIO_STEM, left: '50%', transform: 'translateX(-50%)' }}
+                  />
+                  <BioNodeCard node={child} onPick={onPick} width={slot} />
                 </div>
               );
             })}
@@ -345,12 +375,10 @@ function findBioRoot(startId: string, members: Member[]): string {
     seen.add(current);
     const m = members.find(x => x.id === current);
     if (!m) break;
-    // If structural spouse, go to the anchor first
     if (m.rel === 'spouse' && m.pid) {
       const anchor = members.find(x => x.id === m.pid);
       if (anchor) { current = anchor.id; continue; }
     }
-    // Walk up via biological father, then mother
     const father = m.fatherId ? members.find(x => x.id === m.fatherId) : null;
     if (father) { current = father.id; continue; }
     const mother = m.motherId ? members.find(x => x.id === m.motherId) : null;
