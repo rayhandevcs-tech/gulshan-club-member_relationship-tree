@@ -245,47 +245,65 @@ function buildBioTree(rootId: string, members: Member[]): BioNode | null {
   return build(rootId);
 }
 
+// w-40 card (160px) + 1px border each side = 162px; couple = 162 + connector(~52px) + 162 = 376px
+const BIO_LEAF_W = 162;
+const BIO_COUPLE_W = 376;
+const BIO_GAP = 36;
+
+function bioConnectorWidth(children: BioNode[]): number {
+  if (children.length <= 1) return 0;
+  const ws = children.map(c => (c.spouse ? BIO_COUPLE_W : BIO_LEAF_W));
+  const middle = ws.slice(1, -1).reduce((s, w) => s + w, 0);
+  return ws[0] / 2 + middle + (ws.length - 1) * BIO_GAP + ws[ws.length - 1] / 2;
+}
+
 function BioNodeCard({ node, onPick }: { node: BioNode; onPick: (id: string) => void }) {
+  const LINE = 'bg-gray-300';
+
   return (
     <div className="flex flex-col items-center">
+
+      {/* Couple row — spouse LEFT, member RIGHT */}
       <div className="flex items-center">
-        <div
-          className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
-          onClick={() => onPick(node.member.id)}
-        >
-          <MemberNode member={node.member} fixed />
-        </div>
         {node.spouse && (
           <>
-            <div className="flex flex-col items-center px-2">
-              <div className="text-[8px] text-gray-400 whitespace-nowrap mb-0.5">[Spouse]</div>
-              <div className="w-8 h-[1.5px] bg-gray-300" />
-            </div>
             <div
               className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
               onClick={() => onPick(node.spouse!.id)}
             >
               <MemberNode member={node.spouse} fixed />
             </div>
+            <div className="flex flex-col items-center px-3">
+              <span className="text-[8px] font-medium text-gray-400 bg-gray-100 rounded-full px-2 py-px mb-1 whitespace-nowrap">
+                Spouse
+              </span>
+              <div className={`w-8 h-0.5 ${LINE}`} />
+            </div>
           </>
         )}
+        <div
+          className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
+          onClick={() => onPick(node.member.id)}
+        >
+          <MemberNode member={node.member} fixed />
+        </div>
       </div>
 
+      {/* Children subtree */}
       {node.children.length > 0 && (
         <>
-          <div className="w-[1.5px] h-4 bg-gray-200 mt-2" />
-          <div className="text-[8px] text-gray-400 mb-1">[Children]</div>
-          <div className="w-[1.5px] h-3 bg-gray-200" />
+          <div className={`w-0.5 h-6 ${LINE} mt-4`} />
+          <span className="text-[9px] font-semibold text-gray-400 bg-gray-100 rounded-full px-2.5 py-0.5 mb-2 tracking-wide">
+            Children
+          </span>
+          <div className={`w-0.5 h-5 ${LINE}`} />
           {node.children.length > 1 && (
-            <div
-              className="h-[1.5px] bg-gray-200"
-              style={{ width: Math.min(node.children.length * 220, 900) }}
-            />
+            <div className={`h-0.5 ${LINE}`} style={{ width: bioConnectorWidth(node.children) }} />
           )}
-          <div className="flex gap-6 items-start">
+          <div className="flex items-start" style={{ gap: BIO_GAP }}>
             {node.children.map(child => (
               <div key={child.member.id} className="flex flex-col items-center">
-                <div className="w-[1.5px] h-4 bg-gray-200" />
+                {node.children.length > 1 && <div className={`w-0.5 h-6 ${LINE}`} />}
                 <BioNodeCard node={child} onPick={onPick} />
               </div>
             ))}
