@@ -23,14 +23,18 @@ export default function MemberNode({ member, showRel, small, dashed, fixed }: Pr
   const isSelected = selectedId === member.id;
   const relLabel = getRelLabel(member);
 
-  const size = small ? 'w-14 h-14 text-[14px]' : 'w-[88px] h-[88px] text-[20px]';
+  const size = fixed
+    ? 'w-14 h-14 text-[16px] sm:w-[88px] sm:h-[88px] sm:text-[20px]'
+    : small
+      ? 'w-14 h-14 text-[14px]'
+      : 'w-[88px] h-[88px] text-[20px]';
 
   return (
     <div
       className={clsx(
         'flex flex-col items-center cursor-pointer px-4 py-3.5 rounded-2xl transition-all',
         'hover:bg-gray-100',
-        fixed ? 'w-40' : '',
+        fixed ? 'w-28 sm:w-40' : '',
         isSelected ? 'bg-gray-50 shadow-sm' : '',
         dashed && 'border border-dashed border-gray-300'
       )}
@@ -49,7 +53,7 @@ export default function MemberNode({ member, showRel, small, dashed, fixed }: Pr
       </div>
       <div className={clsx(
         'font-medium text-gray-800 text-center mt-2 leading-tight',
-        fixed ? 'text-[13px] w-full line-clamp-2' : small ? 'text-[12px] max-w-24' : 'text-[14px] max-w-35'
+        fixed ? 'text-[11px] sm:text-[13px] w-full line-clamp-2' : small ? 'text-[12px] max-w-24' : 'text-[14px] max-w-35'
       )}>
         {member.name}
       </div>

@@ -245,68 +245,86 @@ function buildBioTree(rootId: string, members: Member[]): BioNode | null {
   return build(rootId);
 }
 
-// w-40 card (160px) + 1px border each side = 162px; couple = 162 + connector(~52px) + 162 = 376px
-const BIO_LEAF_W = 162;
-const BIO_COUPLE_W = 376;
-const BIO_GAP = 36;
-
-function bioConnectorWidth(children: BioNode[]): number {
-  if (children.length <= 1) return 0;
-  const ws = children.map(c => (c.spouse ? BIO_COUPLE_W : BIO_LEAF_W));
-  const middle = ws.slice(1, -1).reduce((s, w) => s + w, 0);
-  return ws[0] / 2 + middle + (ws.length - 1) * BIO_GAP + ws[ws.length - 1] / 2;
-}
+const BIO_GAP = 32; // px between child units
 
 function BioNodeCard({ node, onPick }: { node: BioNode; onPick: (id: string) => void }) {
-  const LINE = 'bg-gray-300';
+  const L = 'bg-gray-300';
+  const STEM = 24; // px height of vertical stems below horizontal bar
 
   return (
     <div className="flex flex-col items-center">
 
-      {/* Couple row — spouse LEFT, member RIGHT */}
+      {/* Couple row: member LEFT, spouse RIGHT */}
       <div className="flex items-center">
-        {node.spouse && (
-          <>
-            <div
-              className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
-              onClick={() => onPick(node.spouse!.id)}
-            >
-              <MemberNode member={node.spouse} fixed />
-            </div>
-            <div className="flex flex-col items-center px-3">
-              <span className="text-[8px] font-medium text-gray-400 bg-gray-100 rounded-full px-2 py-px mb-1 whitespace-nowrap">
-                Spouse
-              </span>
-              <div className={`w-8 h-0.5 ${LINE}`} />
-            </div>
-          </>
-        )}
         <div
           className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
           onClick={() => onPick(node.member.id)}
         >
           <MemberNode member={node.member} fixed />
         </div>
+        {node.spouse && (
+          <>
+            <div className="flex flex-col items-center px-2 sm:px-3">
+              <span className="text-[7px] sm:text-[8px] font-medium text-gray-400 bg-gray-100 rounded-full px-1.5 py-px mb-1 whitespace-nowrap">
+                Spouse
+              </span>
+              <div className={`w-6 sm:w-8 h-0.5 ${L}`} />
+            </div>
+            <div
+              className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
+              onClick={() => onPick(node.spouse!.id)}
+            >
+              <MemberNode member={node.spouse} fixed />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Children subtree */}
       {node.children.length > 0 && (
         <>
-          <div className={`w-0.5 h-6 ${LINE} mt-4`} />
-          <span className="text-[9px] font-semibold text-gray-400 bg-gray-100 rounded-full px-2.5 py-0.5 mb-2 tracking-wide">
+          {/* Vertical drop from couple */}
+          <div className={`w-0.5 h-5 sm:h-7 ${L} mt-3 sm:mt-4`} />
+          <span className="text-[8px] sm:text-[9px] font-semibold text-gray-400 bg-gray-100 rounded-full px-2 sm:px-2.5 py-0.5 mb-1.5">
             Children
           </span>
-          <div className={`w-0.5 h-5 ${LINE}`} />
-          {node.children.length > 1 && (
-            <div className={`h-0.5 ${LINE}`} style={{ width: bioConnectorWidth(node.children) }} />
-          )}
+          {/* Stem to horizontal bar */}
+          <div className={`w-0.5 h-4 ${L}`} />
+
+          {/* Children row — CSS border trick: each child extends bar into its gap half */}
           <div className="flex items-start" style={{ gap: BIO_GAP }}>
-            {node.children.map(child => (
-              <div key={child.member.id} className="flex flex-col items-center">
-                {node.children.length > 1 && <div className={`w-0.5 h-6 ${LINE}`} />}
-                <BioNodeCard node={child} onPick={onPick} />
-              </div>
-            ))}
+            {node.children.map((child, idx) => {
+              const isFirst = idx === 0;
+              const isLast = idx === node.children.length - 1;
+              const isOnly = node.children.length === 1;
+              return (
+                <div
+                  key={child.member.id}
+                  className="relative flex flex-col items-center"
+                  style={{ paddingTop: isOnly ? 0 : STEM }}
+                >
+                  {!isOnly && (
+                    <>
+                      {/* Horizontal bar segment — extends into adjacent gaps to close the connector */}
+                      <div
+                        className={`absolute h-0.5 ${L}`}
+                        style={{
+                          top: 0,
+                          left: isFirst ? '50%' : -(BIO_GAP / 2),
+                          right: isLast ? '50%' : -(BIO_GAP / 2),
+                        }}
+                      />
+                      {/* Vertical stem from bar down to child */}
+                      <div
+                        className={`absolute w-0.5 ${L}`}
+                        style={{ top: 0, height: STEM }}
+                      />
+                    </>
+                  )}
+                  <BioNodeCard node={child} onPick={onPick} />
+                </div>
+              );
+            })}
           </div>
         </>
       )}
@@ -348,7 +366,7 @@ export function BioFamilyDiagram({ rootId, members, onPick }: BioProps) {
   if (!tree) return null;
 
   return (
-    <div className="inline-flex flex-col items-center border border-gray-100 rounded-2xl p-5 sm:p-8 bg-white shadow-sm overflow-x-auto">
+    <div className="inline-flex flex-col items-center border border-gray-100 rounded-2xl p-4 sm:p-8 bg-white shadow-sm">
       <BioNodeCard node={tree} onPick={onPick} />
     </div>
   );

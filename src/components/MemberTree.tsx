@@ -221,7 +221,7 @@ export default function MemberTree() {
 
       </div>
 
-      <div className="w-full overflow-auto p-3 sm:p-6 flex items-start justify-center">
+      <div className={`w-full overflow-auto p-3 sm:p-6 flex items-start ${diagramMode === 'bio' ? 'justify-start sm:justify-center' : 'justify-center'}`}>
         {diagramMode === 'focused' && (
           <FocusedDiagram focusId={focusId} members={members} onPick={navigateTo} />
         )}
@@ -229,7 +229,9 @@ export default function MemberTree() {
           <WholeMapDiagram rootId={activeRoot.id} members={members} onPick={navigateTo} />
         )}
         {diagramMode === 'bio' && (
-          <BioFamilyDiagram rootId={activeRoot.id} members={members} onPick={navigateTo} />
+          <div className="min-w-max">
+            <BioFamilyDiagram rootId={activeRoot.id} members={members} onPick={navigateTo} />
+          </div>
         )}
       </div>
     </div>
