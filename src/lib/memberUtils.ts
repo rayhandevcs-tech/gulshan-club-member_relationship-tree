@@ -483,3 +483,162 @@ export const buildRelationshipDiagram = (members: Member[], rootId: string): Dia
 
   return { nodes, edges, refs, width, height };
 };
+
+// ---- Biological family tree layout ---------------------------------
+// Builds a pure biological genealogy tree: rows by fatherId/motherId
+// generation, structural spouses placed beside their partner, children
+// connected vertically to their biological father (or mother if no father).
+// Unlike buildRelationshipDiagram this ignores quota/pid structure and
+// only follows blood-line and marriage links.
+
+export const buildBioFamilyTree = (members: Member[], rootId: string): DiagramLayout | null => {
+  const root = getMember(members, rootId);
+  if (!root) return null;
+
+  // Collect all members reachable via biological or marriage links
+  const bioSet = new Set<string>([root.id]);
+
+  const addSpouse = (id: string) => {
+    const sp = members.find(m => m.pid === id && m.rel === 'spouse');
+    if (sp && !bioSet.has(sp.id)) bioSet.add(sp.id);
+  };
+
+  addSpouse(root.id);
+
+  let frontier = [...bioSet];
+  while (frontier.length) {
+    const next: string[] = [];
+    for (const pid of frontier) {
+      members
+        .filter(m => m.fatherId === pid || m.motherId === pid)
+        .forEach(kid => {
+          if (!bioSet.has(kid.id)) {
+            bioSet.add(kid.id);
+            addSpouse(kid.id);
+            next.push(kid.id);
+          }
+        });
+    }
+    frontier = next;
+  }
+
+  const family = [...bioSet].map(id => getMember(members, id)).filter((m): m is Member => !!m);
+  const byId = new Map(family.map(m => [m.id, m]));
+
+  // Row = biological generation; structural spouses share their partner's row
+  const rowMap = new Map<string, number>();
+  const resolving = new Set<string>();
+
+  const computeRow = (m: Member): number => {
+    if (rowMap.has(m.id)) return rowMap.get(m.id)!;
+    if (m.id === root.id) { rowMap.set(m.id, 0); return 0; }
+    if (resolving.has(m.id)) return 0;
+    resolving.add(m.id);
+
+    let row: number;
+    if (m.rel === 'spouse' && m.pid && byId.has(m.pid)) {
+      row = computeRow(byId.get(m.pid)!);
+    } else {
+      const father = m.fatherId ? byId.get(m.fatherId) : undefined;
+      const mother = m.motherId ? byId.get(m.motherId) : undefined;
+      if (father || mother) {
+        const fr = father ? computeRow(father) : -1;
+        const mr = mother ? computeRow(mother) : -1;
+        row = Math.max(fr, mr) + 1;
+      } else {
+        row = m.pid && byId.has(m.pid) ? computeRow(byId.get(m.pid)!) + 1 : 1;
+      }
+    }
+
+    resolving.delete(m.id);
+    rowMap.set(m.id, row);
+    return row;
+  };
+
+  family.forEach(computeRow);
+
+  const maxRow = Math.max(...family.map(m => rowMap.get(m.id) ?? 0));
+  const rows: Member[][] = Array.from({ length: maxRow + 1 }, () => []);
+  family.forEach(m => rows[rowMap.get(m.id) ?? 0].push(m));
+
+  const xOf = new Map<string, number>();
+  const nodes: DiagramNode[] = [];
+
+  rows.forEach((row, rowIdx) => {
+    const spouseOf = new Map<string, Member>();
+    const anchors: Member[] = [];
+    const inRow = new Set(row.map(m => m.id));
+
+    row.forEach(m => {
+      if (m.rel === 'spouse' && m.pid && inRow.has(m.pid)) {
+        spouseOf.set(m.pid, m);
+      } else {
+        anchors.push(m);
+      }
+    });
+
+    const sortedAnchors = [...anchors].sort((a, b) => {
+      const px = (m: Member) => {
+        const fid = m.fatherId && xOf.has(m.fatherId) ? xOf.get(m.fatherId)! : null;
+        const mid = m.motherId && xOf.has(m.motherId) ? xOf.get(m.motherId)! : null;
+        const pid = m.pid && xOf.has(m.pid) ? xOf.get(m.pid)! : null;
+        return fid ?? mid ?? pid ?? 0;
+      };
+      return px(a) - px(b) || family.indexOf(a) - family.indexOf(b);
+    });
+
+    const ordered: Member[] = [];
+    sortedAnchors.forEach(a => {
+      ordered.push(a);
+      const sp = spouseOf.get(a.id);
+      if (sp) ordered.push(sp);
+    });
+
+    const totalWidth = ordered.length * (DIAGRAM_BOX_W + DIAGRAM_COL_GAP) - DIAGRAM_COL_GAP;
+    let x = -totalWidth / 2;
+    ordered.forEach(m => {
+      xOf.set(m.id, x);
+      nodes.push({ member: m, x, y: rowIdx * DIAGRAM_ROW_GAP, row: rowIdx, caption: null });
+      x += DIAGRAM_BOX_W + DIAGRAM_COL_GAP;
+    });
+  });
+
+  const edges: DiagramEdge[] = [];
+
+  // Couple (horizontal) edges
+  family.forEach(m => {
+    if (m.rel === 'spouse' && m.pid && byId.has(m.pid)) {
+      if ((rowMap.get(m.id) ?? 0) === (rowMap.get(m.pid) ?? -1)) {
+        edges.push({ fromId: m.pid, toId: m.id, label: 'Spouse', kind: 'spouse' });
+      }
+    }
+  });
+
+  // Parent→child (vertical) edges — from biological father (or mother)
+  family.forEach(m => {
+    const father = m.fatherId ? byId.get(m.fatherId) : undefined;
+    const mother = m.motherId ? byId.get(m.motherId) : undefined;
+    const fromParent = father ?? mother;
+    if (fromParent) {
+      edges.push({ fromId: fromParent.id, toId: m.id, label: '', kind: 'vertical' });
+    }
+  });
+
+  // Sibling edges between same-parent adjacent members
+  rows.forEach(row => {
+    const sorted = [...row].sort((a, b) => (xOf.get(a.id) ?? 0) - (xOf.get(b.id) ?? 0));
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const a = sorted[i], b = sorted[i + 1];
+      if (a.fatherId && a.fatherId === b.fatherId && a.motherId && a.motherId === b.motherId) {
+        edges.push({ fromId: a.id, toId: b.id, label: '', kind: 'sibling' });
+      }
+    }
+  });
+
+  const minX = Math.min(...nodes.map(n => n.x));
+  const maxX = Math.max(...nodes.map(n => n.x + DIAGRAM_BOX_W));
+  const width = maxX - minX + 200;
+  const height = (maxRow + 1) * DIAGRAM_ROW_GAP + DIAGRAM_BOX_H + 80;
+
+  return { nodes, edges, refs: [], width, height };
+};

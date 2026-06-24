@@ -7,8 +7,8 @@ import {
   getNominees, getAllDescendants, getQuotaSourceCaption, TYPE_CONFIG
 } from '@/lib/memberUtils';
 import MemberNode from './MemberNode';
-import { FocusedDiagram, WholeMapDiagram } from './RelationshipDiagram';
-import { Search, Network, GitBranch } from 'lucide-react';
+import { FocusedDiagram, WholeMapDiagram, BioFamilyDiagram } from './RelationshipDiagram';
+import { Search, Network, GitBranch, Users } from 'lucide-react';
 
 function AssocGroup({ parentId }: { parentId: string }) {
   const { members, navigateTo } = useMemberStore();
@@ -114,7 +114,7 @@ function EmptyPrompt() {
 
 export default function MemberTree() {
   const { members, filterType, activeRootId, focusViewId, view, navigateTo } = useMemberStore();
-  const [diagramMode, setDiagramMode] = useState<'focused' | 'whole'>('focused');
+  const [diagramMode, setDiagramMode] = useState<'focused' | 'whole' | 'bio'>('focused');
 
   const categoryMatchIds = filterType
     ? new Set(members.filter(m => m.type === filterType).map(m => m.id))
@@ -207,25 +207,29 @@ export default function MemberTree() {
             diagramMode === 'focused' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
           }`}
         >
-          <GitBranch size={12} /> Relationship Diagram
+          <GitBranch size={12} /> Relationship
         </button>
 
-        {/* <button
-          onClick={() => setDiagramMode('whole')}
+        <button
+          onClick={() => setDiagramMode('bio')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] transition-colors ${
-            diagramMode === 'whole' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
+            diagramMode === 'bio' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
           }`}
         >
-          <Network size={12} /> Whole Family Map
-        </button> */}
+          <Users size={12} /> Bio Family Tree
+        </button>
 
       </div>
 
       <div className="w-full overflow-auto p-3 sm:p-6 flex items-start justify-center">
-        {diagramMode === 'focused' ? (
+        {diagramMode === 'focused' && (
           <FocusedDiagram focusId={focusId} members={members} onPick={navigateTo} />
-        ) : (
+        )}
+        {diagramMode === 'whole' && (
           <WholeMapDiagram rootId={activeRoot.id} members={members} onPick={navigateTo} />
+        )}
+        {diagramMode === 'bio' && (
+          <BioFamilyDiagram rootId={activeRoot.id} members={members} onPick={navigateTo} />
         )}
       </div>
     </div>
