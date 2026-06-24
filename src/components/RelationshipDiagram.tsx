@@ -304,8 +304,31 @@ interface BioProps {
   onPick: (id: string) => void;
 }
 
+function findBioRoot(startId: string, members: Member[]): string {
+  let current = startId;
+  const seen = new Set<string>();
+  while (!seen.has(current)) {
+    seen.add(current);
+    const m = members.find(x => x.id === current);
+    if (!m) break;
+    // If structural spouse, go to the anchor first
+    if (m.rel === 'spouse' && m.pid) {
+      const anchor = members.find(x => x.id === m.pid);
+      if (anchor) { current = anchor.id; continue; }
+    }
+    // Walk up via biological father, then mother
+    const father = m.fatherId ? members.find(x => x.id === m.fatherId) : null;
+    if (father) { current = father.id; continue; }
+    const mother = m.motherId ? members.find(x => x.id === m.motherId) : null;
+    if (mother) { current = mother.id; continue; }
+    break;
+  }
+  return current;
+}
+
 export function BioFamilyDiagram({ rootId, members, onPick }: BioProps) {
-  const tree = buildBioTree(rootId, members);
+  const bioRootId = findBioRoot(rootId, members);
+  const tree = buildBioTree(bioRootId, members);
   if (!tree) return null;
 
   return (
