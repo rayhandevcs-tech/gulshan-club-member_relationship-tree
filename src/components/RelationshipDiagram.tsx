@@ -3,7 +3,6 @@
 import {
   buildFocusedRelationship,
   buildRelationshipDiagram,
-  buildBioFamilyTree,
   DIAGRAM_BOX_W,
   DIAGRAM_BOX_H,
   TYPE_CONFIG,
@@ -212,81 +211,106 @@ export function WholeMapDiagram({ rootId, members, onPick }: WholeProps) {
   );
 }
 
+type BioNode = {
+  member: Member;
+  spouse: Member | null;
+  children: BioNode[];
+};
+
+function buildBioTree(rootId: string, members: Member[]): BioNode | null {
+  const visited = new Set<string>();
+
+  const build = (id: string): BioNode | null => {
+    if (visited.has(id)) return null;
+    const member = members.find(m => m.id === id);
+    if (!member) return null;
+    visited.add(id);
+
+    const spouse = members.find(m => m.pid === id && m.rel === 'spouse') ?? null;
+    if (spouse) visited.add(spouse.id);
+
+    const parentIds = new Set([id, ...(spouse ? [spouse.id] : [])]);
+    const kids = members.filter(
+      k => !visited.has(k.id) &&
+           ((k.fatherId != null && parentIds.has(k.fatherId)) ||
+            (k.motherId != null && parentIds.has(k.motherId)))
+    );
+    kids.forEach(k => visited.add(k.id));
+
+    return {
+      member,
+      spouse,
+      children: kids.map(k => build(k.id)).filter((n): n is BioNode => n !== null),
+    };
+  };
+
+  return build(rootId);
+}
+
+function BioNodeCard({ node, onPick }: { node: BioNode; onPick: (id: string) => void }) {
+  return (
+    <div className="flex flex-col items-center">
+      <div className="flex items-center">
+        <div
+          className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
+          onClick={() => onPick(node.member.id)}
+        >
+          <MemberNode member={node.member} />
+        </div>
+        {node.spouse && (
+          <>
+            <div className="flex flex-col items-center px-2">
+              <div className="text-[8px] text-gray-400 whitespace-nowrap mb-0.5">[Spouse]</div>
+              <div className="w-8 h-[1.5px] bg-gray-300" />
+            </div>
+            <div
+              className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
+              onClick={() => onPick(node.spouse!.id)}
+            >
+              <MemberNode member={node.spouse} />
+            </div>
+          </>
+        )}
+      </div>
+
+      {node.children.length > 0 && (
+        <>
+          <div className="w-[1.5px] h-4 bg-gray-200 mt-2" />
+          <div className="text-[8px] text-gray-400 mb-1">[Children]</div>
+          <div className="w-[1.5px] h-3 bg-gray-200" />
+          {node.children.length > 1 && (
+            <div
+              className="h-[1.5px] bg-gray-200"
+              style={{ width: Math.min(node.children.length * 220, 900) }}
+            />
+          )}
+          <div className="flex gap-6 items-start">
+            {node.children.map(child => (
+              <div key={child.member.id} className="flex flex-col items-center">
+                <div className="w-[1.5px] h-4 bg-gray-200" />
+                <BioNodeCard node={child} onPick={onPick} />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 interface BioProps {
   rootId: string;
-  members: import('@/lib/types').Member[];
+  members: Member[];
   onPick: (id: string) => void;
 }
 
 export function BioFamilyDiagram({ rootId, members, onPick }: BioProps) {
-  const layout = buildBioFamilyTree(members, rootId);
-  if (!layout) return null;
-
-  const { nodes, edges, width, height } = layout;
-  const byId = new Map(nodes.map(n => [n.member.id, n]));
-  const minX = Math.min(...nodes.map(n => n.x)) - 80;
-  const padTop = 20;
-
-  const centerX = (id: string) => (byId.get(id)?.x ?? 0) + DIAGRAM_BOX_W / 2 - minX;
-  const topY    = (id: string) => (byId.get(id)?.y ?? 0) + padTop;
-  const bottomY = (id: string) => topY(id) + DIAGRAM_BOX_H;
+  const tree = buildBioTree(rootId, members);
+  if (!tree) return null;
 
   return (
-    <svg width={width} height={height + padTop} viewBox={`0 0 ${width} ${height + padTop}`} style={{ minWidth: width }}>
-      <defs>
-        <marker id="bio-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
-          <path d="M0,0 L8,4 L0,8 Z" fill="#374151" />
-        </marker>
-      </defs>
-
-      {edges.map((e, i) => {
-        const from = byId.get(e.fromId);
-        const to   = byId.get(e.toId);
-        if (!from || !to) return null;
-
-        if (e.kind === 'spouse') {
-          const y  = topY(e.fromId) + DIAGRAM_BOX_H / 2;
-          const x1 = from.x + DIAGRAM_BOX_W - minX;
-          const x2 = to.x - minX;
-          return (
-            <g key={i}>
-              <line x1={x1} y1={y} x2={x2} y2={y} stroke="#374151" strokeWidth={1.5} />
-            </g>
-          );
-        }
-
-        if (e.kind === 'sibling') {
-          const y  = topY(e.fromId) + DIAGRAM_BOX_H / 2;
-          const x1 = from.x + DIAGRAM_BOX_W - minX;
-          const x2 = to.x - minX;
-          return <line key={i} x1={x1} y1={y} x2={x2} y2={y} stroke="#D1D5DB" strokeWidth={1.5} />;
-        }
-
-        const x1   = centerX(e.fromId);
-        const y1   = bottomY(e.fromId);
-        const x2   = centerX(e.toId);
-        const y2   = topY(e.toId);
-        const midY = y1 + (y2 - y1) / 2;
-        const path = `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2 - 6}`;
-        return (
-          <path key={i} d={path} fill="none" stroke="#374151" strokeWidth={1.5} markerEnd="url(#bio-arrow)" />
-        );
-      })}
-
-      {nodes.map(n => {
-        const cfg = TYPE_CONFIG[n.member.type];
-        const x = n.x - minX;
-        const y = n.y + padTop;
-        return (
-          <g key={n.member.id} style={{ cursor: 'pointer' }} onClick={() => onPick(n.member.id)}>
-            <rect x={x} y={y} width={DIAGRAM_BOX_W} height={DIAGRAM_BOX_H} rx={12} fill="#fff" stroke={cfg.color} strokeWidth={1.5} />
-            <text x={x + 12} y={y + 22} fontSize="13" fontWeight={600} fill="#1F2937">
-              {n.member.name.length > 22 ? n.member.name.slice(0, 21) + '…' : n.member.name}
-            </text>
-            <text x={x + 12} y={y + 40} fontSize="11" fill="#9CA3AF">{n.member.id} · {n.member.type}</text>
-          </g>
-        );
-      })}
-    </svg>
+    <div className="inline-flex flex-col items-center border border-gray-100 rounded-2xl p-5 sm:p-8 bg-white shadow-sm overflow-x-auto">
+      <BioNodeCard node={tree} onPick={onPick} />
+    </div>
   );
 }
