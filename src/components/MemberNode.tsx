@@ -9,6 +9,7 @@ interface Props {
   showRel?: boolean;
   small?: boolean;
   dashed?: boolean;
+  fixed?: boolean;
 }
 
 // Purely presentational — no click handling of its own. Whoever renders
@@ -16,7 +17,7 @@ interface Props {
 // navigateTo), since different contexts need different click behavior
 // (e.g. the relationship diagram shouldn't re-anchor itself just
 // because an A4D leaf got clicked).
-export default function MemberNode({ member, showRel, small, dashed }: Props) {
+export default function MemberNode({ member, showRel, small, dashed, fixed }: Props) {
   const { selectedId } = useMemberStore();
   const cfg = TYPE_CONFIG[member.type] ?? TYPE_CONFIG.Permanent;
   const isSelected = selectedId === member.id;
@@ -29,6 +30,7 @@ export default function MemberNode({ member, showRel, small, dashed }: Props) {
       className={clsx(
         'flex flex-col items-center cursor-pointer px-4 py-3.5 rounded-2xl transition-all',
         'hover:bg-gray-100',
+        fixed ? 'w-40' : '',
         isSelected ? 'bg-gray-50 shadow-sm' : '',
         dashed && 'border border-dashed border-gray-300'
       )}
@@ -45,7 +47,10 @@ export default function MemberNode({ member, showRel, small, dashed }: Props) {
       >
         {getInitials(member.name)}
       </div>
-      <div className={clsx('font-medium text-gray-800 text-center mt-2 leading-tight', small ? 'text-[12px] max-w-[96px]' : 'text-[14px] max-w-[140px]')}>
+      <div className={clsx(
+        'font-medium text-gray-800 text-center mt-2 leading-tight',
+        fixed ? 'text-[13px] w-full line-clamp-2' : small ? 'text-[12px] max-w-24' : 'text-[14px] max-w-35'
+      )}>
         {member.name}
       </div>
       <div className={clsx('text-gray-400 text-center mt-0.5', small ? 'text-[11px]' : 'text-[12px]')}>

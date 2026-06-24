@@ -253,7 +253,7 @@ function BioNodeCard({ node, onPick }: { node: BioNode; onPick: (id: string) => 
           className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
           onClick={() => onPick(node.member.id)}
         >
-          <MemberNode member={node.member} />
+          <MemberNode member={node.member} fixed />
         </div>
         {node.spouse && (
           <>
@@ -265,7 +265,7 @@ function BioNodeCard({ node, onPick }: { node: BioNode; onPick: (id: string) => 
               className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
               onClick={() => onPick(node.spouse!.id)}
             >
-              <MemberNode member={node.spouse} />
+              <MemberNode member={node.spouse} fixed />
             </div>
           </>
         )}
