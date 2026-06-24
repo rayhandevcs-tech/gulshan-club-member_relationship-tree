@@ -12,8 +12,10 @@ export const demoMembers: Member[] = [
   { id:'PS-338',   name:'Shareef Omar Hamid Chowdhury', type:'A4D',       gender:'M', since:'03/11/2021', pid:'LS-8',  rel:'a4d',   fatherId:'PO-10', motherId:'PT-7' },
 
   { id:'PK-49',    name:'Kaniz Fatema',                 type:'Permanent', gender:'F', since:'12/08/2016', pid:'PW-6',  rel:'spouse' },
-  { id:'AFD-0927', name:'Daniyah Fatema Sajjad',        type:'A4D',       gender:'F', since:'01/05/2020', pid:'LM-11', rel:'a4d',   fatherId:'PW-6', motherId:'PK-49' },
-  { id:'AFD-0928', name:'Dameer Sajjad',                type:'A4D',       gender:'M', since:'01/05/2020', pid:'LM-11', rel:'a4d',   fatherId:'PW-6', motherId:'PK-49' },
+  { id:'AFD-0443', name:'Areesh Sajjad',                type:'A4D',       gender:'F', since:'01/05/2020', pid:'LM-11', rel:'a4d',   fatherId:'PW-6', motherId:'PK-49' },
+  { id:'AFD-0444', name:'Ayyaz  Sajjad',                type:'A4D',       gender:'M', since:'01/05/2020', pid:'LM-11', rel:'a4d',   fatherId:'PW-6', motherId:'PK-49' },
+  { id:'AFD-0927', name:'Daniyah Fatema Sajjad',        type:'A4D',       gender:'F', since:'01/05/2020', pid:'PK-49', rel:'a4d',   fatherId:'PW-6', motherId:'PK-49' },
+  { id:'AFD-0928', name:'Dameer  Sajjad',                type:'A4D',       gender:'M', since:'01/05/2020', pid:'PK-49', rel:'a4d',   fatherId:'PW-6', motherId:'PK-49' },
 
   { id:'AFD-0529', name:'Daneen Arif',                  type:'A4D',       gender:'F', since:'15/09/2022', pid:'LS-8',  rel:'a4d' },
 ];

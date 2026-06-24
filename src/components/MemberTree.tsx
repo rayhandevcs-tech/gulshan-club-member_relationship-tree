@@ -216,7 +216,7 @@ export default function MemberTree() {
             diagramMode === 'bio' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
           }`}
         >
-          <Users size={12} /> Bio Family Tree
+          <Users size={12} /> Family Tree
         </button>
 
       </div>
