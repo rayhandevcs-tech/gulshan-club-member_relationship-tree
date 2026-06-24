@@ -235,8 +235,6 @@ function buildBioTree(rootId: string, members: Member[]): BioNode | null {
            ((k.fatherId != null && parentIds.has(k.fatherId)) ||
             (k.motherId != null && parentIds.has(k.motherId)))
     );
-    kids.forEach(k => visited.add(k.id));
-
     return {
       member,
       spouse,
