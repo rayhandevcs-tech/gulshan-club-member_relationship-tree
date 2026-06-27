@@ -18,8 +18,8 @@ function AssocGroup({ parentId }: { parentId: string }) {
   if (!all.length) return null;
   return (
     <div className="flex flex-col items-center">
-      <div className="w-[1.5px] h-3 bg-gray-300" />
-      <div className="text-[9px] font-medium text-gray-500 mb-1.5">
+      <div className="w-[1.5px] h-3 bg-gray-300 dark:bg-gray-600" />
+      <div className="text-[9px] font-medium text-gray-500 dark:text-gray-400 mb-1.5">
         {noms.length ? `Nominee (${all.length})` : `Associate (${all.length})`}
       </div>
       <div className="flex gap-2 flex-wrap justify-center">
@@ -63,16 +63,16 @@ function FamilySubtree({ member }: { member: Member }) {
       {spouse && <AssocGroup parentId={spouse.id} />}
       {allKids.length > 0 && (
         <>
-          <div className="w-[1.5px] h-5 bg-gray-300" />
+          <div className="w-[1.5px] h-5 bg-gray-300 dark:bg-gray-600" />
           {allKids.length > 1 && (
-            <div className="h-[1.5px] bg-gray-300" style={{ width: Math.min(allKids.length * 108, 460) }} />
+            <div className="h-[1.5px] bg-gray-300 dark:bg-gray-600" style={{ width: Math.min(allKids.length * 108, 460) }} />
           )}
           <div className="flex gap-4 items-start">
             {allKids.map(kid => (
               <div key={kid.id} className="flex flex-col items-center">
-                <div className="w-[1.5px] h-5 bg-gray-300" />
+                <div className="w-[1.5px] h-5 bg-gray-300 dark:bg-gray-600" />
                 {kid.rel === 'child' ? (
-                  <div className="border border-gray-100 rounded-xl p-4 bg-gray-50/60">
+                  <div className="border border-gray-100 dark:border-gray-700 rounded-xl p-4 bg-gray-50/60 dark:bg-gray-800/40">
                     <FamilySubtree member={kid} />
                   </div>
                 ) : (
@@ -83,7 +83,7 @@ function FamilySubtree({ member }: { member: Member }) {
                     {(() => {
                       const caption = getQuotaSourceCaption(kid, sponsorIds, members);
                       return caption ? (
-                        <div className="text-[8px] text-gray-400 text-center max-w-[96px] leading-tight -mt-0.5 mb-0.5 italic">
+                        <div className="text-[8px] text-gray-400 dark:text-gray-500 text-center max-w-24 leading-tight -mt-0.5 mb-0.5 italic">
                           {caption}
                         </div>
                       ) : null;
@@ -102,10 +102,10 @@ function FamilySubtree({ member }: { member: Member }) {
 
 function EmptyPrompt() {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3 px-6 text-center">
-      <Search size={34} className="text-gray-300" />
-      <div className="text-[15px] font-medium text-gray-500">Search for a member</div>
-      <div className="text-[12px] max-w-[300px] leading-relaxed">
+    <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600 gap-3 px-6 text-center">
+      <Search size={34} className="text-gray-300 dark:text-gray-600" />
+      <div className="text-[15px] font-medium text-gray-500 dark:text-gray-400">Search for a member</div>
+      <div className="text-[12px] max-w-75 leading-relaxed">
         Type a name or A/C number..
       </div>
     </div>
@@ -153,7 +153,7 @@ export default function MemberTree() {
             <div
               key={m.id}
               onClick={() => useMemberStore.getState().navigateTo(m.id)}
-              className="border border-gray-100 rounded-xl p-4 cursor-pointer hover:border-gray-300 hover:shadow-sm transition-all flex flex-col items-center gap-1.5 bg-white"
+              className="border border-gray-100 dark:border-gray-700 rounded-xl p-4 cursor-pointer hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-sm transition-all flex flex-col items-center gap-1.5 bg-white dark:bg-gray-900"
             >
               <div className="w-12 h-12 rounded-full flex items-center justify-center text-[13px] font-semibold relative shadow-sm"
                 style={{ background: cfg.bg, color: cfg.dark }}>
@@ -161,8 +161,8 @@ export default function MemberTree() {
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full text-[7px] flex items-center justify-center font-bold text-white border-2 border-white"
                   style={{ background: cfg.color }}>{cfg.short}</div>
               </div>
-              <div className="text-[11px] font-medium text-center text-gray-800 leading-tight">{m.name}</div>
-              <div className="text-[10px] text-gray-400">{m.id}</div>
+              <div className="text-[11px] font-medium text-center text-gray-800 dark:text-gray-100 leading-tight">{m.name}</div>
+              <div className="text-[10px] text-gray-400 dark:text-gray-500">{m.id}</div>
               <div className="text-[9px] px-2 py-1 rounded-full font-medium"
                 style={{ background: cfg.bg, color: cfg.dark }}>{m.type}</div>
             </div>
@@ -181,7 +181,7 @@ export default function MemberTree() {
         {categoryRoots.map(r => {
           const cfg = TYPE_CONFIG[r.type];
           return (
-            <div key={r.id} className="inline-flex flex-col items-center border rounded-2xl p-4 md:p-6 bg-white shadow-sm"
+            <div key={r.id} className="inline-flex flex-col items-center border rounded-2xl p-4 md:p-6 bg-white dark:bg-gray-900 shadow-sm"
               style={{ borderColor: cfg.color + '33' }}>
               <div className="text-[10px] font-medium px-2.5 py-1 rounded-full mb-5"
                 style={{ background: cfg.bg, color: cfg.dark }}>
@@ -200,11 +200,11 @@ export default function MemberTree() {
 
   return (
     <div className="flex flex-col items-center w-full">
-      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 mt-4 mb-2">
+      <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 mt-4 mb-2">
         <button
           onClick={() => setDiagramMode('focused')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] transition-colors ${
-            diagramMode === 'focused' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
+            diagramMode === 'focused' ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm' : 'text-gray-400 dark:text-gray-500'
           }`}
         >
           <GitBranch size={12} /> Relationship
@@ -213,7 +213,7 @@ export default function MemberTree() {
         <button
           onClick={() => setDiagramMode('bio')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] transition-colors ${
-            diagramMode === 'bio' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
+            diagramMode === 'bio' ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm' : 'text-gray-400 dark:text-gray-500'
           }`}
         >
           <Users size={12} /> Family Tree

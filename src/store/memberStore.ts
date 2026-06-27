@@ -58,15 +58,17 @@ export const useMemberStore = create<MemberStore>((set, get) => ({
   setActiveRoot: (id) => set({ activeRootId: id }),
   setFocusView: (id) => set({ focusViewId: id }),
   // The one navigation entry point used everywhere a person is clicked
-  // to "go look at them": always updates the sidebar, but only re-anchors
-  // the relationship diagram for non-A4D members — an A4D slot is a
-  // dead end (no connections of their own), so clicking one should just
-  // show their details without losing the family context on screen.
+  // to "go look at them": always updates the sidebar, and re-anchors the
+  // relationship diagram for root members, 'child' members, and spouses.
+  // Spouses each own their own A4D quota so they get their own focused
+  // view when clicked. A4D, associate, and nominee members are leaf
+  // dependents — clicking them just opens their sidebar.
   navigateTo: (id) => {
     const member = get().members.find(m => m.id === id);
+    const isAnchor = member && (member.rel === null || member.rel === 'child' || member.rel === 'spouse');
     set(s => ({
       selectedId: id,
-      focusViewId: member && member.type !== 'A4D' ? id : s.focusViewId,
+      focusViewId: isAnchor ? id : s.focusViewId,
     }));
   },
   // Browsing by category pill is a different mode from "view one family",

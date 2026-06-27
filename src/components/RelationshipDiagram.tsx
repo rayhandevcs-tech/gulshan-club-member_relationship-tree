@@ -25,7 +25,7 @@ export function FocusedDiagram({ focusId, members, onPick }: Props) {
   const lowerConns = connections.filter(c => c !== lateralSpouse);
 
   return (
-    <div className="inline-flex flex-col items-center border border-gray-100 rounded-2xl p-5 sm:p-8 bg-white shadow-sm max-w-full overflow-x-auto">
+    <div className="inline-flex flex-col items-center border border-gray-100 dark:border-gray-700 rounded-2xl p-5 sm:p-8 bg-white dark:bg-gray-900 shadow-sm max-w-full overflow-x-auto">
 
       {/* Top row: invisible mirror | owner | connector + spouse
           The mirror is identical to the right side but hidden — this keeps
@@ -45,7 +45,7 @@ export function FocusedDiagram({ focusId, members, onPick }: Props) {
         )}
 
         <div
-          className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
+          className="border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
           onClick={() => onPick(owner.id)}
         >
           <MemberNode member={owner} />
@@ -54,11 +54,11 @@ export function FocusedDiagram({ focusId, members, onPick }: Props) {
         {lateralSpouse && (
           <div className="flex items-center">
             <div className="flex flex-col items-center px-2">
-              <div className="text-[8px] text-gray-400 whitespace-nowrap mb-0.5">[Spouse]</div>
-              <div className="w-8 h-[1.5px] bg-gray-300" />
+              <div className="text-[8px] text-gray-400 dark:text-gray-500 whitespace-nowrap mb-0.5">[Spouse]</div>
+              <div className="w-8 h-[1.5px] bg-gray-300 dark:bg-gray-600" />
             </div>
             <div
-              className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
+              className="border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
               onClick={() => onPick(lateralSpouse.member.id)}
             >
               <MemberNode member={lateralSpouse.member} />
@@ -71,7 +71,7 @@ export function FocusedDiagram({ focusId, members, onPick }: Props) {
       </div>
 
       {ownerCaption && (
-        <div className="text-[10px] text-gray-400 italic mt-1 mb-1 max-w-[140px] text-center">
+        <div className="text-[10px] text-gray-400 dark:text-gray-500 italic mt-1 mb-1 max-w-[140px] text-center">
           {ownerCaption}
         </div>
       )}
@@ -86,9 +86,9 @@ export function FocusedDiagram({ focusId, members, onPick }: Props) {
 
       {lowerConns.length > 0 && (
         <>
-          <div className="w-[1.5px] h-10 bg-gray-200 mt-4" />
+          <div className="w-[1.5px] h-10 bg-gray-200 dark:bg-gray-600 mt-4" />
           {lowerConns.length > 1 && (
-            <div className="h-[1.5px] bg-gray-200" style={{ width: Math.min(lowerConns.length * 170, 600) }} />
+            <div className="h-[1.5px] bg-gray-200 dark:bg-gray-600" style={{ width: Math.min(lowerConns.length * 170, 600) }} />
           )}
           <div className="flex gap-8 sm:gap-12 items-start flex-wrap justify-center">
             {lowerConns.map(c => (
@@ -97,8 +97,8 @@ export function FocusedDiagram({ focusId, members, onPick }: Props) {
                 className="flex flex-col items-center"
                 onClick={() => onPick(c.member.id)}
               >
-                <div className="w-[1.5px] h-7 bg-gray-200" />
-                <div className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors">
+                <div className="w-[1.5px] h-7 bg-gray-200 dark:bg-gray-600" />
+                <div className="border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-colors">
                   <MemberNode member={c.member} />
                 </div>
                 {c.refNote && (
@@ -276,7 +276,7 @@ function BioNodeCard({
   onPick: (id: string) => void;
   width?: number;
 }) {
-  const L   = 'bg-gray-300';
+  const L   = 'bg-gray-300 dark:bg-gray-600';
   const myW = width ?? nodeW(node);
   const slot = node.children.length ? Math.max(...node.children.map(nodeW)) : 0;
 
@@ -291,7 +291,7 @@ function BioNodeCard({
       {/* ── Couple row ── */}
       <div className="flex items-center">
         <div
-          className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
+          className="border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
           onClick={() => onPick(leftCard.id)}
         >
           <MemberNode member={leftCard} fixed />
@@ -299,13 +299,13 @@ function BioNodeCard({
         {rightCard && (
           <>
             <div className="flex flex-col items-center px-2 sm:px-3">
-              <span className="text-[7px] sm:text-[8px] font-medium text-gray-400 bg-gray-100 rounded-full px-1.5 py-px mb-1 whitespace-nowrap">
+              <span className="text-[7px] sm:text-[8px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded-full px-1.5 py-px mb-1 whitespace-nowrap">
                 Spouse
               </span>
               <div className={`w-6 sm:w-8 h-0.5 ${L}`} />
             </div>
             <div
-              className="border border-gray-200 rounded-2xl bg-white shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
+              className="border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
               onClick={() => onPick(rightCard.id)}
             >
               <MemberNode member={rightCard} fixed />

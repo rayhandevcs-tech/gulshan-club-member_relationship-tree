@@ -77,7 +77,7 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
     readOnly?: boolean;
   }) => (
     <div className="mb-2">
-      <label className="block text-[10px] text-gray-400 mb-0.5">
+      <label className="block text-[10px] text-gray-400 dark:text-gray-500 mb-0.5">
         {label}
       </label>
       <input
@@ -85,7 +85,7 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
         value={(form[id] as string) ?? ''}
         onChange={e => set(id, e.target.value)}
         readOnly={readOnly}
-        className="w-full px-2 py-1.5 text-[12px] border border-gray-200 rounded-lg bg-white text-gray-800 focus:outline-none focus:border-blue-300 disabled:opacity-50"
+        className="w-full px-2 py-1.5 text-[12px] border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:border-blue-300 dark:focus:border-blue-600 disabled:opacity-50"
         style={readOnly ? { opacity: 0.5 } : {}}
       />
     </div>
@@ -97,23 +97,23 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl border border-gray-200 w-[calc(100vw-2rem)] max-w-xs max-h-[90vh] overflow-y-auto p-4"
+        className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 w-[calc(100vw-2rem)] max-w-xs max-h-[90vh] overflow-y-auto p-4"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-3">
-          <div className="text-[13px] font-medium text-gray-800">
+          <div className="text-[13px] font-medium text-gray-800 dark:text-gray-100">
             {editing ? `Edit · ${editId}` : 'Add New Member'}
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
           >
             <X size={16} />
           </button>
         </div>
 
         {parentMember && (
-          <div className="text-[10px] text-gray-400 bg-gray-50 rounded-lg px-2 py-1.5 mb-3">
+          <div className="text-[10px] text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 rounded-lg px-2 py-1.5 mb-3">
             Primary: {parentMember.name} ({parentMember.id})
           </div>
         )}
@@ -122,7 +122,7 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
         <Field label="A/C Number *" id="id" readOnly={!!editing} />
 
         <div className="mb-2">
-          <label className="block text-[10px] text-gray-400 mb-0.5">
+          <label className="block text-[10px] text-gray-400 dark:text-gray-500 mb-0.5">
             Membership Type
           </label>
           <select
@@ -130,7 +130,7 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
             onChange={e =>
               setForm(f => ({ ...f, type: e.target.value as MemberType }))
             }
-            className="w-full px-2 py-1.5 text-[12px] border border-gray-200 rounded-lg bg-white text-gray-800"
+            className="w-full px-2 py-1.5 text-[12px] border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
           >
             {Object.keys(TYPE_CONFIG).map(t => (
               <option key={t}>{t}</option>
@@ -139,7 +139,7 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
         </div>
 
         <div className="mb-2">
-          <label className="block text-[10px] text-gray-400 mb-0.5">
+          <label className="block text-[10px] text-gray-400 dark:text-gray-500 mb-0.5">
             Relationship
           </label>
           <select
@@ -150,7 +150,7 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
                 rel: (e.target.value as RelationType) || null,
               }))
             }
-            className="w-full px-2 py-1.5 text-[12px] border border-gray-200 rounded-lg bg-white text-gray-800"
+            className="w-full px-2 py-1.5 text-[12px] border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
           >
             <option value="">Primary Member</option>
             <option value="spouse">Spouse</option>
@@ -174,7 +174,7 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
         <div className="flex gap-2 mt-3">
           <button
             onClick={onClose}
-            className="flex-1 py-2 text-[11px] border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50"
+            className="flex-1 py-2 text-[11px] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             Cancel
           </button>

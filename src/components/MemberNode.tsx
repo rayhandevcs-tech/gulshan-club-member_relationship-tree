@@ -33,15 +33,15 @@ export default function MemberNode({ member, showRel, small, dashed, fixed }: Pr
     <div
       className={clsx(
         'flex flex-col items-center cursor-pointer px-4 py-3.5 rounded-2xl transition-all',
-        'hover:bg-gray-100',
+        'hover:bg-gray-100 dark:hover:bg-gray-800',
         fixed ? 'w-28 sm:w-40' : '',
-        isSelected ? 'bg-gray-50 shadow-sm' : '',
-        dashed && 'border border-dashed border-gray-300'
+        isSelected ? 'bg-gray-50 dark:bg-gray-800 shadow-sm' : '',
+        dashed && 'border border-dashed border-gray-300 dark:border-gray-600'
       )}
       style={isSelected ? { boxShadow: `0 0 0 2.5px ${cfg.color}` } : undefined}
     >
       {showRel && relLabel && (
-        <span className="text-[9px] font-medium text-gray-500 bg-gray-100 rounded-full px-2 py-0.5 mb-1.5">
+        <span className="text-[9px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5 mb-1.5">
           {relLabel}
         </span>
       )}
@@ -52,12 +52,12 @@ export default function MemberNode({ member, showRel, small, dashed, fixed }: Pr
         {getInitials(member.name)}
       </div>
       <div className={clsx(
-        'font-medium text-gray-800 text-center mt-2 leading-tight',
+        'font-medium text-gray-800 dark:text-gray-100 text-center mt-2 leading-tight',
         fixed ? 'text-[11px] sm:text-[13px] w-full line-clamp-2' : small ? 'text-[12px] max-w-24' : 'text-[14px] max-w-35'
       )}>
         {member.name}
       </div>
-      <div className={clsx('text-gray-400 text-center mt-0.5', small ? 'text-[11px]' : 'text-[12px]')}>
+      <div className={clsx('text-gray-400 dark:text-gray-500 text-center mt-0.5', small ? 'text-[11px]' : 'text-[12px]')}>
         {member.id}
       </div>
     </div>
