@@ -9,6 +9,7 @@ import {
 } from '@/lib/memberUtils';
 import { Member } from '@/lib/types';
 import MemberNode from './MemberNode';
+import { QuotaFamilyDiagram } from './QuotaFamilyDiagram';
 
 interface Props {
   focusId: string;
@@ -211,156 +212,7 @@ export function WholeMapDiagram({ rootId, members, onPick }: WholeProps) {
   );
 }
 
-// ─── Bio Family Tree ──────────────────────────────────────────────────────────
-
-type BioNode = {
-  member: Member;
-  spouse: Member | null;
-  children: BioNode[];
-};
-
-function buildBioTree(rootId: string, members: Member[]): BioNode | null {
-  const visited = new Set<string>();
-
-  const build = (id: string): BioNode | null => {
-    if (visited.has(id)) return null;
-    const member = members.find(m => m.id === id);
-    if (!member) return null;
-    visited.add(id);
-
-    const spouse = members.find(m => m.pid === id && m.rel === 'spouse') ?? null;
-    if (spouse) visited.add(spouse.id);
-
-    const parentIds = new Set([id, ...(spouse ? [spouse.id] : [])]);
-    const kids = members.filter(
-      k => !visited.has(k.id) &&
-           ((k.fatherId != null && parentIds.has(k.fatherId)) ||
-            (k.motherId != null && parentIds.has(k.motherId)))
-    );
-
-    return {
-      member,
-      spouse,
-      children: kids.map(k => build(k.id)).filter((n): n is BioNode => n !== null),
-    };
-  };
-
-  return build(rootId);
-}
-
-// ── Layout constants (based on desktop card w-40 = 160px) ──
-const BIO_CARD = 160; // w-40
-const BIO_CONN = 72;  // estimated width of the Spouse connector div
-const BIO_GAP  = 32;  // gap between sibling slots
-const BIO_STEM = 24;  // height of per-child vertical stems
-
-function coupleW(node: BioNode): number {
-  return node.spouse ? 2 * BIO_CARD + BIO_CONN : BIO_CARD;
-}
-
-// Minimum width the full subtree needs.
-// Uses equal-width slots for all siblings so the parent stem always
-// lands on the exact horizontal centre of the connector bar.
-function nodeW(node: BioNode): number {
-  const cw = coupleW(node);
-  if (!node.children.length) return cw;
-  const slot = Math.max(...node.children.map(nodeW));
-  const kids  = node.children.length * slot + (node.children.length - 1) * BIO_GAP;
-  return Math.max(cw, kids);
-}
-
-function BioNodeCard({
-  node, onPick, width,
-}: {
-  node: BioNode;
-  onPick: (id: string) => void;
-  width?: number;
-}) {
-  const L   = 'bg-gray-300 dark:bg-gray-600';
-  const myW = width ?? nodeW(node);
-  const slot = node.children.length ? Math.max(...node.children.map(nodeW)) : 0;
-
-  // Husband (male) on LEFT, wife on RIGHT regardless of structural anchor.
-  const spouseLeft = node.spouse?.gender === 'M' && node.member.gender === 'F';
-  const leftCard   = spouseLeft ? node.spouse! : node.member;
-  const rightCard  = spouseLeft ? node.member  : node.spouse ?? null;
-
-  return (
-    <div style={{ width: myW }} className="flex flex-col items-center">
-
-      {/* ── Couple row ── */}
-      <div className="flex items-center">
-        <div
-          className="border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
-          onClick={() => onPick(leftCard.id)}
-        >
-          <MemberNode member={leftCard} fixed />
-        </div>
-        {rightCard && (
-          <>
-            <div className="flex flex-col items-center px-2 sm:px-3">
-              <span className="text-[7px] sm:text-[8px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded-full px-1.5 py-px mb-1 whitespace-nowrap">
-                Spouse
-              </span>
-              <div className={`w-6 sm:w-8 h-0.5 ${L}`} />
-            </div>
-            <div
-              className="border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
-              onClick={() => onPick(rightCard.id)}
-            >
-              <MemberNode member={rightCard} fixed />
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* ── Children subtree ── */}
-      {node.children.length > 0 && (
-        <>
-          <div className={`w-0.5 h-5 sm:h-7 ${L} mt-3 sm:mt-4`} />
-          <span className="text-[8px] sm:text-[9px] font-semibold text-gray-400 bg-gray-100 rounded-full px-2 sm:px-2.5 py-0.5 mb-1.5">
-            Children
-          </span>
-          <div className={`w-0.5 h-4 ${L}`} />
-
-          <div className="flex items-start" style={{ gap: BIO_GAP }}>
-            {node.children.map((child, idx) => {
-              const isFirst = idx === 0;
-              const isLast  = idx === node.children.length - 1;
-              const multi   = node.children.length > 1;
-              return (
-                <div
-                  key={child.member.id}
-                  className="relative flex flex-col items-center"
-                  style={{ width: slot, paddingTop: BIO_STEM }}
-                >
-                  {/* Horizontal bar — each segment extends BIO_GAP/2 into its neighbour
-                      gap so adjacent segments always meet at the gap midpoint.          */}
-                  {multi && (
-                    <div
-                      className={`absolute h-0.5 ${L}`}
-                      style={{
-                        top: 0,
-                        left:  isFirst ? '50%'          : -(BIO_GAP / 2),
-                        right: isLast  ? '50%'          : -(BIO_GAP / 2),
-                      }}
-                    />
-                  )}
-                  {/* Vertical stem — centred in the slot */}
-                  <div
-                    className={`absolute w-0.5 ${L}`}
-                    style={{ top: 0, height: BIO_STEM, left: '50%', transform: 'translateX(-50%)' }}
-                  />
-                  <BioNodeCard node={child} onPick={onPick} width={slot} />
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
+// ─── Bio Family Tree (delegates to QuotaFamilyDiagram) ───────────────────────
 
 interface BioProps {
   rootId: string;
@@ -368,34 +220,7 @@ interface BioProps {
   onPick: (id: string) => void;
 }
 
-function findBioRoot(startId: string, members: Member[]): string {
-  let current = startId;
-  const seen = new Set<string>();
-  while (!seen.has(current)) {
-    seen.add(current);
-    const m = members.find(x => x.id === current);
-    if (!m) break;
-    if (m.rel === 'spouse' && m.pid) {
-      const anchor = members.find(x => x.id === m.pid);
-      if (anchor) { current = anchor.id; continue; }
-    }
-    const father = m.fatherId ? members.find(x => x.id === m.fatherId) : null;
-    if (father) { current = father.id; continue; }
-    const mother = m.motherId ? members.find(x => x.id === m.motherId) : null;
-    if (mother) { current = mother.id; continue; }
-    break;
-  }
-  return current;
-}
-
 export function BioFamilyDiagram({ rootId, members, onPick }: BioProps) {
-  const bioRootId = findBioRoot(rootId, members);
-  const tree = buildBioTree(bioRootId, members);
-  if (!tree) return null;
-
-  return (
-    <div className="inline-flex flex-col items-center border border-gray-100 rounded-2xl p-4 sm:p-8 bg-white shadow-sm">
-      <BioNodeCard node={tree} onPick={onPick} />
-    </div>
-  );
+  return <QuotaFamilyDiagram rootId={rootId} members={members} onPick={onPick} />;
 }
+

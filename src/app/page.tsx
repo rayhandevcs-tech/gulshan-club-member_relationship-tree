@@ -6,7 +6,7 @@ import MemberTree from '@/components/MemberTree';
 import DetailPanel from '@/components/DetailPanel';
 import MemberForm from '@/components/MemberForm';
 import SearchBar from '@/components/SearchBar';
-import { Plus, LayoutGrid, Network, Moon, Sun, Database } from 'lucide-react';
+import { Plus, LayoutGrid, Network, Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 
 export default function Home() {
@@ -77,12 +77,6 @@ export default function Home() {
             >
               {dark ? <Sun size={14} /> : <Moon size={14} />}
             </button>
-            <a
-              href="/dynamic"
-              className="flex items-center p-1.5 border border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-            >
-              <Database size={14} />
-            </a>
             <button
               onClick={() => setFormState({ open: true })}
               className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded-lg text-[12px] hover:bg-blue-600 font-medium transition-colors"
@@ -121,12 +115,6 @@ export default function Home() {
           >
             {dark ? <Sun size={15} /> : <Moon size={15} />}
           </button>
-          <a
-            href="/dynamic"
-            className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 rounded-lg text-[12px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            <Database size={14} /> Dynamic DB
-          </a>
           <button
             onClick={() => setFormState({ open: true })}
             className="flex items-center gap-1.5 px-4 py-2 bg-blue-500 text-white rounded-lg text-[12px] hover:bg-blue-600 font-medium transition-colors"

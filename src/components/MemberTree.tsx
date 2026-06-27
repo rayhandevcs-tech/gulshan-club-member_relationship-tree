@@ -207,7 +207,7 @@ export default function MemberTree() {
             diagramMode === 'focused' ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm' : 'text-gray-400 dark:text-gray-500'
           }`}
         >
-          <GitBranch size={12} /> Relationship
+          <GitBranch size={12} /> Family Relationship
         </button>
 
         <button
@@ -216,7 +216,7 @@ export default function MemberTree() {
             diagramMode === 'bio' ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm' : 'text-gray-400 dark:text-gray-500'
           }`}
         >
-          <Users size={12} /> Family Tree
+          <Users size={12} /> Membership Relationship
         </button>
 
       </div>
