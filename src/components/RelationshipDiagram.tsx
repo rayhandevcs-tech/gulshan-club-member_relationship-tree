@@ -10,6 +10,7 @@ import {
 import { Member } from '@/lib/types';
 import MemberNode from './MemberNode';
 import { QuotaFamilyDiagram } from './QuotaFamilyDiagram';
+import styles from './RelationshipDiagram.module.css';
 
 interface Props {
   focusId: string;
@@ -21,50 +22,42 @@ export function FocusedDiagram({ focusId, members, onPick }: Props) {
   const view = buildFocusedRelationship(members, focusId);
   if (!view) return null;
 
-  const { owner, ownerCaption, connections, associateCount, nomineeCount, membershipRef } = view;
+  const { owner, ownerCaption, connections, associateCount, nomineeCount } = view;
   const lateralSpouse = connections.find(c => c.isSpouse && c.member.type !== 'A4D');
   const lowerConns = connections.filter(c => c !== lateralSpouse);
 
   return (
-    <div className="inline-flex flex-col items-center border border-gray-100 dark:border-gray-700 rounded-2xl p-5 sm:p-8 bg-white dark:bg-gray-900 shadow-sm max-w-full overflow-x-auto">
+    <div className={styles.focusedWrap}>
 
-      {/* Top row: invisible mirror | owner | connector + spouse
-          The mirror is identical to the right side but hidden — this keeps
-          the owner card perfectly centered so the vertical line below falls
-          straight down from it, not from the midpoint of the whole row. */}
-      <div className="flex items-center">
+      <div className={styles.topRow}>
         {lateralSpouse && (
-          <div className="invisible pointer-events-none flex items-center">
-            <div className="flex flex-col items-center px-2">
-              <div className="text-[8px] whitespace-nowrap mb-0.5">x</div>
-              <div className="w-8 h-[1.5px]" />
+          <div className={styles.invisible}>
+            <div className={styles.spouseConnectorMirror}>
+              <div style={{ fontSize: 8, whiteSpace: 'nowrap', marginBottom: 2 }}>x</div>
+              <div style={{ width: 32, height: 1.5 }} />
             </div>
-            <div className="border border-transparent rounded-2xl">
+            <div style={{ border: '1px solid transparent', borderRadius: '1rem' }}>
               <MemberNode member={lateralSpouse.member} />
             </div>
           </div>
         )}
 
-        <div
-          className="border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
-          onClick={() => onPick(owner.id)}
-        >
+        <div className={styles.ownerCard} onClick={() => onPick(owner.id)}>
           <MemberNode member={owner} />
         </div>
 
         {lateralSpouse && (
-          <div className="flex items-center">
-            <div className="flex flex-col items-center px-2">
-              <div className="text-[8px] text-gray-400 dark:text-gray-500 whitespace-nowrap mb-0.5">[Spouse]</div>
-              <div className="w-8 h-[1.5px] bg-gray-300 dark:bg-gray-600" />
+          <div className={styles.spouseConnector}>
+            <div className={styles.spouseConnectorInner}>
+              <div className={styles.spouseLabel}>[Spouse]</div>
+              <div className={styles.spouseLine} />
             </div>
-            <div
-              className="border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
-              onClick={() => onPick(lateralSpouse.member.id)}
-            >
+            <div className={styles.ownerCard} onClick={() => onPick(lateralSpouse.member.id)}>
               <MemberNode member={lateralSpouse.member} />
               {lateralSpouse.refNote && (
-                <div className="text-[9px] text-gray-400 px-3 pb-2">({lateralSpouse.refNote})</div>
+                <div style={{ fontSize: 9, color: '#9ca3af', padding: '0 0.75rem 0.5rem' }}>
+                  ({lateralSpouse.refNote})
+                </div>
               )}
             </div>
           </div>
@@ -72,13 +65,11 @@ export function FocusedDiagram({ focusId, members, onPick }: Props) {
       </div>
 
       {ownerCaption && (
-        <div className="text-[10px] text-gray-400 dark:text-gray-500 italic mt-1 mb-1 max-w-[140px] text-center">
-          {ownerCaption}
-        </div>
+        <div className={styles.ownerCaption}>{ownerCaption}</div>
       )}
 
       {(associateCount > 0 || nomineeCount > 0) && (
-        <div className="text-[10px] text-gray-400 mt-1">
+        <div className={styles.assocCount}>
           {associateCount > 0 ? `${associateCount} Associate(s)` : ''}
           {associateCount > 0 && nomineeCount > 0 ? ' · ' : ''}
           {nomineeCount > 0 ? `${nomineeCount} Nominee(s)` : ''}
@@ -87,29 +78,19 @@ export function FocusedDiagram({ focusId, members, onPick }: Props) {
 
       {lowerConns.length > 0 && (
         <>
-          <div className="w-[1.5px] h-10 bg-gray-200 dark:bg-gray-600 mt-4" />
+          <div className={styles.vline} style={{ width: 1.5, height: 40 }} />
           {lowerConns.length > 1 && (
-            <div className="h-[1.5px] bg-gray-200 dark:bg-gray-600" style={{ width: Math.min(lowerConns.length * 170, 600) }} />
+            <div className={styles.hline} style={{ height: 1.5, width: Math.min(lowerConns.length * 170, 600) }} />
           )}
-          <div className="flex gap-8 sm:gap-12 items-start flex-wrap justify-center">
+          <div className={styles.childrenRow}>
             {lowerConns.map(c => (
-              <div
-                key={c.member.id}
-                className="flex flex-col items-center"
-                onClick={() => onPick(c.member.id)}
-              >
-                <div className="w-[1.5px] h-7 bg-gray-200 dark:bg-gray-600" />
-                <div className="border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-colors">
+              <div key={c.member.id} className={styles.childCol} onClick={() => onPick(c.member.id)}>
+                <div className={styles.vline} style={{ width: 1.5, height: 28 }} />
+                <div className={styles.childCard}>
                   <MemberNode member={c.member} />
                 </div>
-                {c.refNote && (
-                  <div className="text-[9px] text-gray-400 mt-1.5">({c.refNote})</div>
-                )}
-                {c.caption && (
-                  <div className="text-[8px] sm:text-[9px] text-gray-400 italic max-w-[120px] text-center leading-tight mt-1.5">
-                    {c.caption}
-                  </div>
-                )}
+                {c.refNote && <div className={styles.refNote}>({c.refNote})</div>}
+                {c.caption && <div className={styles.caption}>{c.caption}</div>}
               </div>
             ))}
           </div>
@@ -223,4 +204,3 @@ interface BioProps {
 export function BioFamilyDiagram({ rootId, members, onPick }: BioProps) {
   return <QuotaFamilyDiagram rootId={rootId} members={members} onPick={onPick} />;
 }
-

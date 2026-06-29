@@ -1,0 +1,386 @@
+.root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f9fafb;
+  font-family: sans-serif;
+}
+
+/* Header */
+.header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #f3f4f6;
+  padding: 0.625rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.backLink {
+  font-size: 11px;
+  color: #3b82f6;
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: #2563eb;
+}
+
+.divider {
+  width: 1px;
+  height: 1rem;
+  background-color: #e5e7eb;
+  flex-shrink: 0;
+}
+
+.dbIcon {
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
+.headerTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.memberCount {
+  font-size: 10px;
+  color: #9ca3af;
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.headerActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background-color: #3b82f6;
+  color: #ffffff;
+  border-radius: 0.5rem;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  transition: background-color 150ms;
+}
+
+.addBtn:hover {
+  background-color: #2563eb;
+}
+
+.clearBtn {
+  padding: 0.375rem;
+  border: 1px solid #fecaca;
+  color: #f87171;
+  border-radius: 0.5rem;
+  transition: background-color 150ms;
+  background: none;
+}
+
+.clearBtn:hover {
+  background-color: #fef2f2;
+}
+
+.clearBtn:disabled {
+  opacity: 0.5;
+}
+
+/* Main layout */
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 14rem;
+  flex-shrink: 0;
+  border-right: 1px solid #f3f4f6;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.searchWrap {
+  padding: 0.625rem;
+  border-bottom: 1px solid #f3f4f6;
+  flex-shrink: 0;
+}
+
+.searchInner {
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 0.625rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #d1d5db;
+}
+
+.searchInput {
+  width: 100%;
+  padding-left: 1.75rem;
+  padding-right: 0.75rem;
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+  font-size: 12px;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  color: #1f2937;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.searchInput::placeholder {
+  color: #d1d5db;
+}
+
+.searchInput:focus {
+  border-color: #93c5fd;
+}
+
+.memberList {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.memberListEmpty {
+  padding: 1.25rem;
+  text-align: center;
+  font-size: 11px;
+  color: #d1d5db;
+}
+
+.memberListInner {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.memberItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  transition: background-color 150ms;
+  border-left: 2px solid transparent;
+  background: none;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  cursor: pointer;
+}
+
+.memberItemSelected {
+  background-color: #eff6ff;
+  border-left-color: #60a5fa;
+}
+
+.memberItemDefault:hover {
+  background-color: #f9fafb;
+}
+
+.memberAvatar {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.memberItemInfo {
+  min-width: 0;
+  flex: 1;
+}
+
+.memberItemNameRow {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.memberItemName {
+  font-size: 11px;
+  font-weight: 500;
+  color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memberItemInactiveDot {
+  font-size: 8px;
+  color: #fb923c;
+  flex-shrink: 0;
+}
+
+.memberItemMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.memberItemId {
+  font-size: 9px;
+  font-family: monospace;
+  color: #9ca3af;
+}
+
+.memberItemType {
+  font-size: 8px;
+  padding: 0.125rem 0.25rem;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
+/* Test data section */
+.testSection {
+  border-top: 1px solid #f3f4f6;
+  flex-shrink: 0;
+}
+
+.testToggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  font-size: 11px;
+  color: #9ca3af;
+  transition: background-color 150ms;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.testToggle:hover {
+  background-color: #f9fafb;
+}
+
+.testToggleLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.chevron {
+  transition: transform 150ms;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.testCases {
+  padding: 0 0.5rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.caseBtn {
+  width: 100%;
+  text-align: left;
+  padding: 0.375rem 0.625rem;
+  border-radius: 0.5rem;
+  background-color: #f9fafb;
+  color: #4b5563;
+  font-size: 11px;
+  border: none;
+  transition: background-color 150ms, color 150ms;
+  cursor: pointer;
+}
+
+.caseBtn:hover {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+.caseBtn:disabled {
+  opacity: 0.5;
+}
+
+.caseBtnLabel {
+  font-weight: 500;
+}
+
+.caseBtnDesc {
+  color: #9ca3af;
+  margin-left: 0.375rem;
+  font-size: 10px;
+}
+
+.loadingText {
+  font-size: 10px;
+  color: #60a5fa;
+  text-align: center;
+  padding: 0.25rem 0;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Content area */
+.content {
+  flex: 1;
+  overflow: auto;
+  background-color: #f9fafb;
+}
+
+.emptyState {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.emptyIcon {
+  color: #e5e7eb;
+}
+
+.emptyTitle {
+  font-size: 13px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.emptyHint {
+  font-size: 11px;
+  color: #d1d5db;
+}
+
+.contentPad {
+  padding: 1.5rem;
+  display: flex;
+  justify-content: center;
+}

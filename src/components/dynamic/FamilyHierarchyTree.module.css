@@ -1,0 +1,526 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  min-width: max-content;
+  padding-bottom: 2.5rem;
+}
+
+/* Generation label */
+.genLabel {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  color: #9ca3af;
+  margin-bottom: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.genLabelNormal {
+  font-size: 9px;
+}
+
+.genLabelSmall {
+  font-size: 7px;
+}
+
+/* VLine */
+.vline {
+  width: 1px;
+  background-color: #e5e7eb;
+}
+
+/* Horizontal separator between siblings */
+.hSeparator {
+  align-self: stretch;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Children / grandchildren rows */
+.childrenRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.grandChildrenRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.childCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+/* MemberGroup */
+.memberGroup {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  border-radius: 1rem;
+  border: 1px solid #f3f4f6;
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  overflow: hidden;
+}
+
+.memberGroupLarge {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+/* Core section inside MemberGroup */
+.coreSection {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.coreSectionLg {
+  padding: 0.75rem;
+}
+
+.coreSectionMd {
+  padding: 0.5rem;
+}
+
+/* A4D section */
+.a4dSection {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  border-left: 2px solid #f3e8ff;
+}
+
+.a4dSectionLg {
+  padding: 0.75rem;
+}
+
+.a4dSectionMd {
+  padding: 0.5rem;
+}
+
+.a4dInner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.a4dLabel {
+  font-size: 7px;
+  font-weight: 700;
+  color: #c084fc;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.a4dCards {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Associate section */
+.assocSection {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  border-left: 2px solid #ffedd5;
+}
+
+.assocSectionLg {
+  padding: 0.75rem;
+}
+
+.assocSectionMd {
+  padding: 0.5rem;
+}
+
+.assocInner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.assocLabel {
+  font-size: 7px;
+  font-weight: 700;
+  color: #fb923c;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.assocCards {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Succession out section */
+.succSection {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-left: 2px solid #fee2e2;
+  align-self: center;
+}
+
+.succSectionLg {
+  padding: 0.75rem;
+}
+
+.succSectionMd {
+  padding: 0.5rem;
+}
+
+.succArrow {
+  color: #fca5a5;
+  flex-shrink: 0;
+}
+
+.succInner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.succLabel {
+  font-size: 7px;
+  font-weight: 700;
+  color: #f87171;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* CoreCard */
+.coreCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  transition: opacity 150ms;
+}
+
+.coreCard:hover {
+  opacity: 0.8;
+}
+
+.coreCardLg {
+  min-width: 7.5rem;
+}
+
+.coreCardMd {
+  min-width: 6.25rem;
+}
+
+.coreCardSm {
+  min-width: 5rem;
+}
+
+.coreAvatar {
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.coreAvatarLg {
+  width: 3rem;
+  height: 3rem;
+  font-size: 14px;
+}
+
+.coreAvatarMd {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 11px;
+}
+
+.coreAvatarSm {
+  width: 2rem;
+  height: 2rem;
+  font-size: 9px;
+}
+
+.coreName {
+  font-weight: 600;
+  color: #1f2937;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.coreNameLg {
+  font-size: 12px;
+  max-width: 7.25rem;
+}
+
+.coreNameMd {
+  font-size: 10px;
+  max-width: 6rem;
+}
+
+.coreNameSm {
+  font-size: 9px;
+  max-width: 4.75rem;
+}
+
+.coreId {
+  font-family: monospace;
+  color: #9ca3af;
+}
+
+.coreIdNormal {
+  font-size: 8px;
+}
+
+.coreIdSm {
+  font-size: 7px;
+}
+
+.coreBadges {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.coreTypeBadge {
+  font-weight: 500;
+  padding: 0.125rem 0.375rem;
+  border-radius: 9999px;
+}
+
+.coreBadgeNormal {
+  font-size: 8px;
+}
+
+.coreBadgeSm {
+  font-size: 7px;
+}
+
+.coreStatusBadge {
+  padding: 0.125rem 0.25rem;
+  border-radius: 9999px;
+}
+
+.coreStatusDeceased {
+  font-size: 8px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.coreStatusDeceasedSm {
+  font-size: 7px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.coreStatusCancelled {
+  font-size: 8px;
+  color: #f87171;
+}
+
+.coreStatusCancelledSm {
+  font-size: 7px;
+  color: #f87171;
+}
+
+.coreStatusOther {
+  font-size: 8px;
+  color: #fb923c;
+}
+
+.coreStatusOtherSm {
+  font-size: 7px;
+  color: #fb923c;
+}
+
+/* Received badges section */
+.receivedSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  align-items: center;
+  width: 100%;
+  border-top: 1px solid #f3f4f6;
+  padding-top: 0.25rem;
+  margin-top: 0.125rem;
+}
+
+.receivedBadge {
+  padding: 0.125rem 0.375rem;
+  border-radius: 9999px;
+}
+
+.receivedA4d {
+  font-size: 8px;
+  color: #a855f7;
+  background-color: #faf5ff;
+}
+
+.receivedA4dSm {
+  font-size: 7px;
+  color: #a855f7;
+  background-color: #faf5ff;
+}
+
+.receivedAssoc {
+  font-size: 8px;
+  color: #f97316;
+  background-color: #fff7ed;
+}
+
+.receivedAssocSm {
+  font-size: 7px;
+  color: #f97316;
+  background-color: #fff7ed;
+}
+
+.receivedSuccBtn {
+  padding: 0.125rem 0.375rem;
+  border-radius: 9999px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.receivedSuccBtn:hover {
+  text-decoration: underline;
+}
+
+.receivedSuccNormal {
+  font-size: 8px;
+  color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.receivedSuccSm {
+  font-size: 7px;
+  color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+/* SpouseConnector */
+.spouseConnector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.125rem;
+}
+
+.spouseLabel {
+  font-size: 7px;
+  color: #f472b6;
+  font-weight: 500;
+}
+
+.spouseLineLg {
+  height: 1px;
+  background-color: #fbcfe8;
+  width: 1.5rem;
+}
+
+.spouseLineSm {
+  height: 1px;
+  background-color: #fbcfe8;
+  width: 1rem;
+}
+
+/* SideCard */
+.sideCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  border-radius: 0.75rem;
+  border: 1px solid;
+  padding: 0.375rem 0.5rem;
+}
+
+.sideCardLg {
+  min-width: 5rem;
+}
+
+.sideCardSm {
+  min-width: 4.25rem;
+}
+
+.sideCardCancelled {
+  opacity: 0.5;
+}
+
+.sideCardClickable {
+  cursor: pointer;
+  transition: opacity 150ms;
+}
+
+.sideCardClickable:hover {
+  opacity: 0.75;
+}
+
+.sideCardLabel {
+  font-size: 7px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.sideCardAvatar {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.sideCardName {
+  font-size: 8px;
+  font-weight: 500;
+  color: #1f2937;
+  text-align: center;
+  line-height: 1.25;
+  max-width: 4.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sideCardId {
+  font-size: 7px;
+  font-family: monospace;
+  color: #9ca3af;
+}
+
+.sideCardStatus {
+  font-size: 7px;
+}
+
+.sideCardStatusDeceased {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.sideCardStatusRed {
+  color: #f87171;
+}
+
+.sideCardCancelledLabel {
+  font-size: 7px;
+  color: #f87171;
+}
+
+.sideCardEmpty {
+  font-size: 8px;
+  color: #9ca3af;
+}

@@ -10,6 +10,7 @@ import {
 } from '@/lib/memberUtils';
 import { Member } from '@/lib/types';
 import { X, ChevronRight, Users, ArrowRight } from 'lucide-react';
+import s from './DetailPanel.module.css';
 
 function MemberPreviewModal({
   member,
@@ -38,102 +39,81 @@ function MemberPreviewModal({
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/30 z-50"
-        onClick={onClose}
-      />
+      <div className={s.backdrop} onClick={onClose} />
 
-      {/* Modal card */}
-      <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(340px,calc(100vw-32px))] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden">
-        {/* Header band */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-0">
-          <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Quick Preview</span>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-1 transition-colors"
-          >
+      <div className={s.previewModal}>
+        <div className={s.previewModalHeader}>
+          <span className={s.previewModalLabel}>Quick Preview</span>
+          <button onClick={onClose} className={s.closeBtn}>
             <X size={15} />
           </button>
         </div>
 
-        <div className="px-5 pt-4 pb-5">
-          {/* Avatar + name */}
-          <div className="flex flex-col items-center mb-4">
-            <div
-              className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-semibold shadow-sm mb-2"
-              style={{ background: cfg.bg, color: cfg.dark }}
-            >
+        <div className={s.previewModalBody}>
+          <div className={s.previewAvatarWrap}>
+            <div className={s.previewAvatar} style={{ background: cfg.bg, color: cfg.dark }}>
               {getInitials(member.name)}
             </div>
-            <div className="text-[14px] font-semibold text-gray-800 dark:text-gray-100 text-center leading-snug">{member.name}</div>
-            <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{member.id}</div>
-            <div
-              className="text-[10px] font-medium px-2.5 py-0.5 rounded-full mt-1.5"
-              style={{ background: cfg.bg, color: cfg.dark }}
-            >
+            <div className={s.previewName}>{member.name}</div>
+            <div className={s.previewId}>{member.id}</div>
+            <div className={s.previewTypeBadge} style={{ background: cfg.bg, color: cfg.dark }}>
               {member.type}
             </div>
           </div>
 
-          {/* Key fields */}
-          <div className="space-y-1 mb-3">
+          <div className={s.previewFields}>
             {[
               ['Joined', member.since],
-              ['Email', member.email],
-              ['Phone', member.phone],
+              ['Email',  member.email],
+              ['Phone',  member.phone],
             ]
               .filter(([, v]) => v)
               .map(([label, val]) => (
-                <div key={label} className="flex gap-2 text-[11px] py-1 border-t border-gray-100 dark:border-gray-700">
-                  <span className="text-gray-400 w-14 shrink-0">{label}</span>
-                  <span className="text-gray-700 break-all">{val}</span>
+                <div key={label} className={s.previewFieldRow}>
+                  <span className={s.previewFieldLabel}>{label}</span>
+                  <span className={s.previewFieldValue}>{val}</span>
                 </div>
               ))}
           </div>
 
-          {/* Parents */}
           {(fatherDisplay || motherDisplay) && (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700 mb-3">
-              <div className="flex items-center gap-1 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">
+            <div className={s.previewParentsBox}>
+              <div className={s.previewParentsLabel}>
                 <Users size={10} /> Parents
               </div>
               {fatherDisplay && (
-                <div className="text-[11px] py-0.5 flex gap-2">
-                  <span className="text-gray-400 dark:text-gray-500 w-12 shrink-0">Father</span>
-                  <span className="text-gray-700 dark:text-gray-200">{fatherDisplay}</span>
+                <div className={s.previewParentRow}>
+                  <span className={s.previewParentLabelCell}>Father</span>
+                  <span className={s.previewParentValue}>{fatherDisplay}</span>
                 </div>
               )}
               {motherDisplay && (
-                <div className="text-[11px] py-0.5 flex gap-2">
-                  <span className="text-gray-400 dark:text-gray-500 w-12 shrink-0">Mother</span>
-                  <span className="text-gray-700 dark:text-gray-200">{motherDisplay}</span>
+                <div className={s.previewParentRow}>
+                  <span className={s.previewParentLabelCell}>Mother</span>
+                  <span className={s.previewParentValue}>{motherDisplay}</span>
                 </div>
               )}
             </div>
           )}
 
-          {/* Spouse */}
           {spouseMember && (
-            <div className="text-[11px] py-1.5 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2">
-              <span className="text-gray-400 w-14 shrink-0">Spouse</span>
-              <span className="text-gray-700 font-medium">{spouseMember.name}</span>
-              <span className="text-gray-400">{spouseMember.id}</span>
+            <div className={s.previewSectionRow}>
+              <span className={s.previewFieldLabel}>Spouse</span>
+              <span className={s.previewSpouseName}>{spouseMember.name}</span>
+              <span className={s.previewSpouseId}>{spouseMember.id}</span>
             </div>
           )}
 
-          {/* Children count */}
           {bioChildren.length > 0 && (
-            <div className="text-[11px] py-1.5 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2">
-              <span className="text-gray-400 w-14 shrink-0">Children</span>
-              <span className="text-gray-700">{bioChildren.map(c => c.name).join(', ')}</span>
+            <div className={s.previewSectionRow}>
+              <span className={s.previewFieldLabel}>Children</span>
+              <span className={s.previewParentValue}>{bioChildren.map(c => c.name).join(', ')}</span>
             </div>
           )}
 
-          {/* Go to member */}
           <button
             onClick={() => { onNavigate(member.id); onClose(); }}
-            className="mt-4 w-full flex items-center justify-center gap-1.5 bg-gray-800 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-white text-[12px] font-medium py-2.5 rounded-xl transition-colors"
+            className={s.previewNavBtn}
           >
             Go to member <ArrowRight size={13} />
           </button>
@@ -152,21 +132,15 @@ function MemberRow({
 }) {
   const cfg = TYPE_CONFIG[member.type] ?? TYPE_CONFIG.Permanent;
   return (
-    <div
-      className="flex items-center gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-      onClick={() => onPreview(member.id)}
-    >
-      <div
-        className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-medium shrink-0"
-        style={{ background: cfg.bg, color: cfg.dark }}
-      >
+    <div className={s.memberRow} onClick={() => onPreview(member.id)}>
+      <div className={s.memberRowAvatar} style={{ background: cfg.bg, color: cfg.dark }}>
         {getInitials(member.name)}
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-[12px] font-medium text-gray-800 dark:text-gray-100 truncate">{member.name}</div>
-        <div className="text-[10px] text-gray-400 dark:text-gray-500">{member.id}</div>
+      <div className={s.memberRowInfo}>
+        <div className={s.memberRowName}>{member.name}</div>
+        <div className={s.memberRowId}>{member.id}</div>
       </div>
-      <ChevronRight size={14} className="text-gray-300 dark:text-gray-600 shrink-0" />
+      <ChevronRight size={14} className={s.memberRowChevron} />
     </div>
   );
 }
@@ -197,8 +171,6 @@ export default function DetailPanel() {
     : (members.find(c => c.pid === m.id && c.rel === 'spouse') ?? null);
   const showPrimary = !!parent && (m.rel === 'a4d' || m.rel === 'associate' || m.rel === 'nominee');
   const bioChildren = members.filter(c => c.fatherId === m.id || c.motherId === m.id);
-  // Life/Senior/Donor/Honorary members are independent — their spouse row should NOT appear in the A4D Members list.
-  // Permanent/A4D/Associate spouses do consume a quota slot, so they should appear.
   const isDependentType = (type: string) => type === 'A4D' || type === 'Associate' || type === 'Permanent';
   const dependents = children.filter(c =>
     c.rel !== 'child' && c.rel !== null &&
@@ -209,114 +181,80 @@ export default function DetailPanel() {
 
   return (
     <>
-      {/* Mobile backdrop */}
-      <div
-        className="fixed inset-0 bg-black/20 z-30 md:hidden"
-        onClick={() => setSelected(null)}
-      />
+      <div className={s.mobileBackdrop} onClick={() => setSelected(null)} />
 
-      <div className="
-        fixed bottom-3 left-3 right-3 z-40 max-h-[62vh] rounded-2xl
-        md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto md:max-h-none md:rounded-none
-        md:w-80
-        border md:border-t-0 md:border-l md:border-r-0 md:border-b-0 border-gray-200 dark:border-gray-700
-        bg-white dark:bg-gray-900 overflow-y-auto shrink-0 p-4
-        shadow-[0_4px_24px_-4px_rgba(0,0,0,0.18)] md:shadow-[-6px_0_16px_-8px_rgba(0,0,0,0.06)]
-      ">
-        {/* Mobile drag handle */}
-        <div className="flex justify-center mb-3 md:hidden">
-          <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
+      <div className={s.panel}>
+        <div className={s.dragHandleWrap}>
+          <div className={s.dragHandle} />
         </div>
 
-        <div className="flex justify-between items-center mb-4">
-          <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
-            Member Details
-          </span>
-          <button
-            onClick={() => setSelected(null)}
-            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-1 transition-colors"
-          >
+        <div className={s.panelHeader}>
+          <span className={s.panelHeaderLabel}>Member Details</span>
+          <button onClick={() => setSelected(null)} className={s.closeBtn}>
             <X size={16} />
           </button>
         </div>
 
-        <div
-          className="w-16 h-16 rounded-full flex items-center justify-center text-lg font-semibold mx-auto mb-3 shadow-sm"
-          style={{ background: cfg.bg, color: cfg.dark }}
-        >
+        <div className={s.panelAvatar} style={{ background: cfg.bg, color: cfg.dark }}>
           {getInitials(m.name)}
         </div>
 
-        <div className="text-[15px] font-semibold text-center text-gray-800 dark:text-gray-100 leading-snug">
-          {m.name}
-        </div>
+        <div className={s.panelName}>{m.name}</div>
+        <div className={s.panelId}>{m.id}</div>
 
-        <div className="text-[11px] text-gray-400 dark:text-gray-500 text-center mb-2.5">
-          {m.id}
-        </div>
-
-        {isSponsorType && (
-          <div className="text-[10px] text-gray-400 dark:text-gray-500 text-center mb-4">
-            A4D Quota: <span className="text-gray-600 dark:text-gray-300 font-medium">{quota.used}/{quota.total}</span> used
+        {isSponsorType ? (
+          <div className={s.panelQuota}>
+            A4D Quota: <span className={s.panelQuotaValue}>{quota.used}/{quota.total}</span> used
           </div>
+        ) : (
+          <div className={s.panelQuotaSpacer} />
         )}
-        {!isSponsorType && <div className="mb-4" />}
 
         {[
-          ['Member ID',     m.memberId],
-          ['Joined',        m.since],
-          ['Birth Date',    m.birthDate],
-          ['Email',         m.email],
-          ['Phone',         m.phone ?? m.phoneRes ?? m.phoneOff],
-          ['A4D Source',    m.quotaNote],
-          ['Succession',    m.succession],
-          ['Membership Ref',m.membershipRef],
-          ['Note',          m.note],
+          ['Member ID',      m.memberId],
+          ['Joined',         m.since],
+          ['Birth Date',     m.birthDate],
+          ['Email',          m.email],
+          ['Phone',          m.phone ?? m.phoneRes ?? m.phoneOff],
+          ['A4D Source',     m.quotaNote],
+          ['Succession',     m.succession],
+          ['Membership Ref', m.membershipRef],
+          ['Note',           m.note],
         ]
           .filter(([, v]) => v)
           .map(([label, val]) => (
-            <div
-              key={label}
-              className="flex gap-2 py-1.5 border-t border-gray-100 dark:border-gray-700 text-[12px]"
-            >
-              <span className="text-gray-400 dark:text-gray-500 w-20 shrink-0 text-[11px]">
-                {label}
-              </span>
-              <span className="text-gray-700 dark:text-gray-200 break-all leading-snug">
-                {val}
-              </span>
+            <div key={label} className={s.panelFieldRow}>
+              <span className={s.panelFieldLabel}>{label}</span>
+              <span className={s.panelFieldValue}>{val}</span>
             </div>
           ))}
 
         {(showPrimary || spouseMember || fatherDisplay || motherDisplay || bioChildren.length > 0 || dependents.length > 0) && (
-          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+          <div className={s.panelRelSection}>
 
             {(fatherDisplay || motherDisplay) && (
-              <div className="mt-3 bg-gray-50 dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">
-                  <Users size={11} />
-                  Parents
+              <div className={s.panelParentsBox}>
+                <div className={s.panelParentsLabel}>
+                  <Users size={11} /> Parents
                 </div>
-
                 {fatherDisplay && (
                   <div
-                    className={`flex items-center gap-2 text-[11px] py-1 ${fatherMember ? 'cursor-pointer hover:text-blue-600' : ''}`}
+                    className={`${s.panelParentRow} ${fatherMember ? s.panelParentRowClickable : ''}`}
                     onClick={() => fatherMember && setPreviewId(fatherMember.id)}
                   >
-                    <span className="text-gray-400 dark:text-gray-500 w-12 shrink-0">Father</span>
-                    <span className="text-gray-700 dark:text-gray-200">{fatherDisplay}</span>
-                    {fatherMember && <ChevronRight size={12} className="text-gray-300" />}
+                    <span className={s.panelParentLabelCell}>Father</span>
+                    <span className={s.panelParentValue}>{fatherDisplay}</span>
+                    {fatherMember && <ChevronRight size={12} className={s.panelChevronSm} />}
                   </div>
                 )}
-
                 {motherDisplay && (
                   <div
-                    className={`flex items-center gap-2 text-[11px] py-1 ${motherMember ? 'cursor-pointer hover:text-blue-600' : ''}`}
+                    className={`${s.panelParentRow} ${motherMember ? s.panelParentRowClickable : ''}`}
                     onClick={() => motherMember && setPreviewId(motherMember.id)}
                   >
-                    <span className="text-gray-400 dark:text-gray-500 w-12 shrink-0">Mother</span>
-                    <span className="text-gray-700 dark:text-gray-200">{motherDisplay}</span>
-                    {motherMember && <ChevronRight size={12} className="text-gray-300" />}
+                    <span className={s.panelParentLabelCell}>Mother</span>
+                    <span className={s.panelParentValue}>{motherDisplay}</span>
+                    {motherMember && <ChevronRight size={12} className={s.panelChevronSm} />}
                   </div>
                 )}
               </div>
@@ -324,27 +262,21 @@ export default function DetailPanel() {
 
             {showPrimary && parent && (
               <>
-                <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5 mt-3">
-                  Primary Member
-                </div>
+                <div className={s.panelSectionLabel}>Primary Member</div>
                 <MemberRow member={parent} onPreview={setPreviewId} />
               </>
             )}
 
             {spouseMember && (
               <>
-                <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5 mt-3">
-                  Spouse
-                </div>
+                <div className={s.panelSectionLabel}>Spouse</div>
                 <MemberRow member={spouseMember} onPreview={setPreviewId} />
               </>
             )}
 
             {bioChildren.length > 0 && (
               <>
-                <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-3 mb-1.5">
-                  Children ({bioChildren.length})
-                </div>
+                <div className={s.panelSectionLabel}>Children ({bioChildren.length})</div>
                 {bioChildren.map(ch => (
                   <MemberRow key={ch.id} member={ch} onPreview={setPreviewId} />
                 ))}
@@ -353,9 +285,7 @@ export default function DetailPanel() {
 
             {dependents.length > 0 && (
               <>
-                <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-3 mb-1.5">
-                  A4D Members ({dependents.length})
-                </div>
+                <div className={s.panelSectionLabel}>A4D Members ({dependents.length})</div>
                 {dependents.map(ch => (
                   <MemberRow key={ch.id} member={ch} onPreview={setPreviewId} />
                 ))}
@@ -365,7 +295,6 @@ export default function DetailPanel() {
         )}
       </div>
 
-      {/* Preview modal */}
       {previewMember && (
         <MemberPreviewModal
           member={previewMember}

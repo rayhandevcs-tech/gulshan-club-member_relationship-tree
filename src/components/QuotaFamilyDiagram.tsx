@@ -2,6 +2,7 @@
 
 import { TYPE_CONFIG, getInitials } from '@/lib/memberUtils';
 import type { Member } from '@/lib/types';
+import styles from './QuotaFamilyDiagram.module.css';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -28,12 +29,10 @@ function bioLabel(grantee: Member, sponsorIds: Set<string>, members: Member[]): 
   return null;
 }
 
-// Spouse shows BESIDE only when they have their own A4D grantees (not just associates)
 function hasOwnQuota(id: string, members: Member[]): boolean {
   return members.some(m => m.pid === id && m.rel === 'a4d');
 }
 
-// Whether a member has any real data to show in their quota section
 function memberHasData(id: string, members: Member[], forSpouse = false): boolean {
   if (forSpouse) {
     return members.some(x => x.pid === id && (x.rel === 'a4d' || x.rel === 'associate' || x.rel === 'nominee'));
@@ -43,9 +42,6 @@ function memberHasData(id: string, members: Member[], forSpouse = false): boolea
     (x.rel === 'a4d' || (x.rel === 'spouse' && !hasOwnQuota(x.id, members)) || x.rel === 'associate' || x.rel === 'nominee')
   );
 }
-
-// Dark visible line class
-const LN = 'bg-gray-400 dark:bg-gray-500';
 
 // ── SlotCard ──────────────────────────────────────────────────────────────────
 
@@ -62,28 +58,28 @@ function SlotCard({ member: m, members, sponsorIds, small, onPick }: {
   const bl = bioLabel(m, sponsorIds, members);
   return (
     <button
-      className={`border-2 rounded-xl text-left transition-opacity hover:opacity-80 cursor-pointer ${small ? 'px-1.5 py-1 w-24' : 'px-2 py-1.5 w-32'}`}
+      className={`${styles.slotCard} ${small ? styles.slotCardSmall : styles.slotCardNormal}`}
       style={{ borderColor: border, background: cardBg }}
       onClick={onPick}
     >
-      <div className="flex items-center gap-1.5">
+      <div className={styles.slotHeader}>
         <div
-          className={`rounded-full flex items-center justify-center font-bold text-white shrink-0 ${small ? 'w-4 h-4 text-[6px]' : 'w-5 h-5 text-[7px]'}`}
+          className={`${styles.slotAvatar} ${small ? styles.slotAvatarSmall : styles.slotAvatarNormal}`}
           style={{ background: avatarBg }}
         >
           {getInitials(name)}
         </div>
-        <div className="min-w-0 flex-1">
-          <div className={`font-semibold text-gray-800 dark:text-gray-100 leading-tight line-clamp-2 ${small ? 'text-[7px]' : 'text-[8px]'}`}>{name}</div>
-          <div className={`text-gray-400 font-mono ${small ? 'text-[6px]' : 'text-[7px]'}`}>{m.id}</div>
+        <div className={styles.slotInfo}>
+          <div className={`${styles.slotName} ${small ? styles.slotNameSmall : styles.slotNameNormal}`}>{name}</div>
+          <div className={`${styles.slotId} ${small ? styles.slotIdSmall : styles.slotIdNormal}`}>{m.id}</div>
         </div>
       </div>
       {bl && !small && (
-        <div className="text-[6px] text-gray-500 italic mt-0.5 pl-0.5">{bl}</div>
+        <div className={styles.slotBioLabel}>{bl}</div>
       )}
       {!small && (
-        <div className="mt-0.5">
-          <span className="text-[6px] font-medium px-1 py-0.5 rounded-full" style={{ background: cfg.bg, color: cfg.dark }}>{m.type}</span>
+        <div>
+          <span className={styles.slotTypeBadge} style={{ background: cfg.bg, color: cfg.dark }}>{m.type}</span>
         </div>
       )}
     </button>
@@ -98,28 +94,22 @@ function CoreCard({ member: m, onPick }: { member: Member; onPick: () => void })
   const cfg = TYPE_CONFIG[m.type] ?? TYPE_CONFIG.Permanent;
   return (
     <button
-      className="border-2 rounded-2xl px-4 py-3.5 flex flex-col items-center gap-1.5 cursor-pointer hover:opacity-90 transition-opacity shadow-sm"
+      className={styles.coreCard}
       style={{ borderColor: border, background: cardBg }}
       onClick={onPick}
     >
-      <div
-        className="w-14 h-14 rounded-full flex items-center justify-center text-[16px] font-bold text-white shadow-sm"
-        style={{ background: avatarBg }}
-      >
+      <div className={styles.coreAvatar} style={{ background: avatarBg }}>
         {getInitials(name)}
       </div>
-      <div className="text-[12px] font-semibold text-gray-800 dark:text-gray-100 text-center leading-tight max-w-[108px]">{name}</div>
-      <div className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">{m.id}</div>
-      <span className="text-[8px] font-medium px-2 py-0.5 rounded-full" style={{ background: cfg.bg, color: cfg.dark }}>{m.type}</span>
-      {dead(m) && (
-        <span className="text-[8px] font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Deceased</span>
-      )}
+      <div className={styles.coreName}>{name}</div>
+      <div className={styles.coreId}>{m.id}</div>
+      <span className={styles.coreTypeBadge} style={{ background: cfg.bg, color: cfg.dark }}>{m.type}</span>
+      {dead(m) && <span className={styles.deceasedBadge}>Deceased</span>}
     </button>
   );
 }
 
 // ── QuotaSection ──────────────────────────────────────────────────────────────
-// Only renders filled slots — returns null when a member has no grantees
 
 function QuotaSection({ member: m, coupleIds, members, onPick }: {
   member: Member;
@@ -136,41 +126,33 @@ function QuotaSection({ member: m, coupleIds, members, onPick }: {
   if (a4dFilled.length === 0 && assocFilled.length === 0) return null;
 
   return (
-    <div className="flex gap-3 items-start">
+    <div className={styles.sectionRow}>
 
-      {/* A4D column */}
       {a4dFilled.length > 0 && (
-        <div className="flex flex-col items-center">
-          <div
-            className="text-[7px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full mb-1.5"
-            style={{ background: '#9333ea18', color: '#7c3aed' }}
-          >
-            A4D
-          </div>
-          {/* Relative wrapper for optional connecting bar above multiple slots */}
-          <div className="relative flex gap-2 items-start" style={{ paddingTop: a4dFilled.length > 1 ? 10 : 0 }}>
+        <div className={styles.a4dCol}>
+          <div className={styles.sectionLabel} style={{ background: '#9333ea18', color: '#7c3aed' }}>A4D</div>
+          <div className={styles.slotsRow} style={{ paddingTop: a4dFilled.length > 1 ? 10 : 0 }}>
             {a4dFilled.length > 1 && (
               <div
-                className={`absolute h-[1.5px] ${LN}`}
-                style={{ top: 0, left: '24%', right: '24%' }}
+                className={styles.hbar}
+                style={{ position: 'absolute', top: 0, left: '24%', right: '24%' }}
               />
             )}
             {a4dFilled.map(slot => {
               const granteeAssocs = members.filter(x => x.pid === slot.id && (x.rel === 'associate' || x.rel === 'nominee'));
               return (
-                <div key={slot.id} className="flex flex-col items-center">
+                <div key={slot.id} className={styles.slotItemCol}>
                   <SlotCard
                     member={slot}
                     members={members}
                     sponsorIds={coupleIds}
                     onPick={() => onPick(slot.id)}
                   />
-                  {/* Sub-associates of this A4D grantee — only when they exist */}
                   {granteeAssocs.length > 0 && (
-                    <div className="flex flex-col items-center mt-1">
-                      <div className={`w-[1.5px] h-3 ${LN}`} />
-                      <div className="text-[6px] text-gray-400 uppercase tracking-wide mb-0.5">Assoc</div>
-                      <div className="flex gap-1">
+                    <div className={styles.subAssocSection}>
+                      <div className={styles.vline} style={{ width: 1.5, height: 12 }} />
+                      <div className={styles.subAssocLabel}>Assoc</div>
+                      <div className={styles.subAssocRow}>
                         {granteeAssocs.map(ga => (
                           <SlotCard
                             key={ga.id}
@@ -191,16 +173,10 @@ function QuotaSection({ member: m, coupleIds, members, onPick }: {
         </div>
       )}
 
-      {/* Associate column */}
       {assocFilled.length > 0 && (
-        <div className="flex flex-col items-center">
-          <div
-            className="text-[7px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full mb-1.5"
-            style={{ background: '#ea580c18', color: '#c2410c' }}
-          >
-            Assoc
-          </div>
-          <div className="flex gap-2">
+        <div className={styles.assocCol}>
+          <div className={styles.sectionLabel} style={{ background: '#ea580c18', color: '#c2410c' }}>Assoc</div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
             {assocFilled.map(slot => (
               <SlotCard
                 key={slot.id}
@@ -241,17 +217,15 @@ function QuotaTree({ member: m, members, onPick }: {
   const hasAnyQuota = hasM || hasS;
 
   return (
-    <div className="flex flex-col items-center">
+    <div className={styles.treeCol}>
 
-      {/* ── Couple row ── */}
-      <div className="flex items-end gap-0">
+      {/* Couple row */}
+      <div className={styles.coupleRow}>
 
         {succNote && !isTransferToSpouse && (
-          <div className="flex items-center gap-2 mr-4 self-center">
-            <div className="px-2.5 py-1.5 rounded-xl border border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-800 text-[9px] text-red-600 dark:text-red-400 font-semibold text-center leading-snug max-w-[72px]">
-              {succNote}
-            </div>
-            <div className="text-[11px] font-semibold text-red-400">→</div>
+          <div className={styles.successionBox}>
+            <div className={styles.successionCard}>{succNote}</div>
+            <div className={styles.successionArrow}>→</div>
           </div>
         )}
 
@@ -259,41 +233,36 @@ function QuotaTree({ member: m, members, onPick }: {
 
         {spouseBeside && (
           <>
-            <div className="flex flex-col items-center px-3 pb-5 self-end">
+            <div className={styles.spouseConnector}>
               {isTransferToSpouse && (
-                <div className="text-[7px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-full px-2 py-0.5 mb-1.5 whitespace-nowrap">
-                  A/C transferred →
-                </div>
+                <div className={styles.transferBadge}>A/C transferred →</div>
               )}
-              <span className="text-[8px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 rounded-full px-2 py-0.5 mb-1.5 whitespace-nowrap">
-                Spouse
-              </span>
-              <div className={`w-8 h-[1.5px] ${LN}`} />
+              <span className={styles.spouseLabel}>Spouse</span>
+              <div className={styles.spouseLine} />
             </div>
             <CoreCard member={spouseBeside} onPick={() => onPick(spouseBeside.id)} />
           </>
         )}
       </div>
 
-      {/* ── Connector + Quota sections (only rendered when there is real data) ── */}
+      {/* Connector + Quota sections */}
       {hasAnyQuota && (
         <>
-          <div className={`w-[1.5px] h-5 ${LN} mt-2`} />
+          <div className={styles.vline} style={{ width: 1.5, height: 20, marginTop: 8 }} />
 
-          <div className="flex gap-8 items-start relative">
-            {/* Horizontal bar connecting the two quota sections when both have data */}
+          <div className={styles.quotaRow}>
             {showDual && hasM && hasS && (
               <div
-                className={`absolute h-[1.5px] ${LN}`}
-                style={{ top: -1, left: '22%', right: '22%' }}
+                className={styles.hbar}
+                style={{ position: 'absolute', top: -1, left: '22%', right: '22%' }}
               />
             )}
 
             {hasM && (
-              <div className="flex flex-col items-center">
+              <div className={styles.quotaCol}>
                 {showDual && (
                   <div
-                    className="text-[7px] font-bold font-mono mb-2 px-2 py-0.5 rounded-full"
+                    className={styles.memberIdBadge}
                     style={{
                       color: (TYPE_CONFIG[m.type] ?? TYPE_CONFIG.Permanent).color,
                       background: (TYPE_CONFIG[m.type] ?? TYPE_CONFIG.Permanent).bg,
@@ -307,9 +276,9 @@ function QuotaTree({ member: m, members, onPick }: {
             )}
 
             {spouseBeside && hasS && (
-              <div className="flex flex-col items-center">
+              <div className={styles.quotaCol}>
                 <div
-                  className="text-[7px] font-bold font-mono mb-2 px-2 py-0.5 rounded-full"
+                  className={styles.memberIdBadge}
                   style={{
                     color: (TYPE_CONFIG[spouseBeside.type] ?? TYPE_CONFIG.Permanent).color,
                     background: (TYPE_CONFIG[spouseBeside.type] ?? TYPE_CONFIG.Permanent).bg,
@@ -324,46 +293,38 @@ function QuotaTree({ member: m, members, onPick }: {
         </>
       )}
 
-      {/* ── Bio children who are independent core members ── */}
+      {/* Bio children */}
       {bioChildren.length > 0 && (
-        <>
-          <div className={`w-[1.5px] h-6 ${LN} mt-5`} />
-          <span className="text-[9px] font-semibold text-gray-400 bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-0.5 mb-1.5">
-            Children
-          </span>
-          <div className={`w-[1.5px] h-4 ${LN}`} />
+        <div className={styles.childrenSection}>
+          <div className={styles.vline} style={{ width: 1.5, height: 24, marginTop: 20 }} />
+          <span className={styles.childrenLabel}>Children</span>
+          <div className={styles.vline} style={{ width: 1.5, height: 16 }} />
 
-          <div className="flex gap-6 items-start">
+          <div className={styles.childrenRow}>
             {bioChildren.map((child, idx) => {
               const isFirst = idx === 0;
               const isLast = idx === bioChildren.length - 1;
               const multi = bioChildren.length > 1;
               return (
-                <div
-                  key={child.id}
-                  className="relative flex flex-col items-center"
-                  style={{ paddingTop: 24 }}
-                >
-                  {/* Horizontal sibling connector */}
+                <div key={child.id} className={styles.childWrapper}>
                   {multi && (
                     <div
-                      className={`absolute h-[1.5px] ${LN}`}
-                      style={{ top: 0, left: isFirst ? '50%' : -12, right: isLast ? '50%' : -12 }}
+                      className={
+                        isFirst ? styles.siblingBarLeft :
+                        isLast ? styles.siblingBarRight :
+                        styles.siblingBarBoth
+                      }
                     />
                   )}
-                  {/* Vertical stem down to this child */}
-                  <div
-                    className={`absolute w-[1.5px] ${LN}`}
-                    style={{ top: 0, height: 24, left: '50%', transform: 'translateX(-50%)' }}
-                  />
-                  <div className="border border-gray-100 dark:border-gray-800 rounded-2xl p-4 sm:p-5 bg-white dark:bg-gray-900 shadow-sm">
+                  <div className={styles.childStem} />
+                  <div className={styles.childCard}>
                     <QuotaTree member={child} members={members} onPick={onPick} />
                   </div>
                 </div>
               );
             })}
           </div>
-        </>
+        </div>
       )}
     </div>
   );
@@ -393,7 +354,7 @@ export function QuotaFamilyDiagram({ rootId, members, onPick }: {
   const rootMember = members.find(m => m.id === findRoot(rootId, members));
   if (!rootMember) return null;
   return (
-    <div className="inline-flex flex-col items-center border border-gray-100 dark:border-gray-800 rounded-2xl p-5 sm:p-8 bg-white dark:bg-gray-900 shadow-sm">
+    <div className={styles.root}>
       <QuotaTree member={rootMember} members={members} onPick={onPick} />
     </div>
   );

@@ -4,6 +4,7 @@ import type { Member as DBMember, QuotaGrant, SuccessionEvent } from '@prisma/cl
 import type { Member } from '@/lib/types';
 import { TYPE_CONFIG, getInitials } from '@/lib/memberUtils';
 import { ArrowRight } from 'lucide-react';
+import styles from './FamilyHierarchyTree.module.css';
 
 interface Props {
   member: Member;
@@ -19,8 +20,6 @@ export default function FamilyHierarchyTree({
   member, raw, members, rawMembers, grants, successions, onSelect,
 }: Props) {
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
-
   const getRaw = (ac: string): DBMember => rawMembers.find(r => r.acNo === ac) ?? raw;
 
   const getSpouse = (m: Member): Member | null => {
@@ -28,7 +27,6 @@ export default function FamilyHierarchyTree({
     return members.find(x => x.pid === m.id && x.rel === 'spouse') ?? null;
   };
 
-  // Only bio/club CHILDREN (A4D & Associates shown beside, not below)
   const getBioChildren = (m: Member): Member[] => {
     const ids = new Set([
       ...members.filter(x => x.fatherId === m.id || x.motherId === m.id).map(x => x.id),
@@ -47,53 +45,48 @@ export default function FamilyHierarchyTree({
     assocIn:    grants.find(g => g.granteeAc === m.id && g.grantType === 'Associate') ?? null,
   });
 
-  // ── Tree ───────────────────────────────────────────────────────────────────
-
-  const rootData     = getGroupData(member);
-  const bioChildren  = getBioChildren(member);
+  const rootData    = getGroupData(member);
+  const bioChildren = getBioChildren(member);
 
   return (
-    <div className="flex flex-col items-center gap-0 min-w-max pb-10">
+    <div className={styles.root}>
 
-      {/* ══ Parents ════════════════════════════════════════════════════════ */}
       <GenLabel label="Parents" />
       <MemberGroup
         member={member} raw={raw} data={rootData}
         members={members} getRaw={getRaw} onSelect={onSelect} size="lg"
       />
 
-      {/* ══ Children ═══════════════════════════════════════════════════════ */}
       {bioChildren.length > 0 && (
         <>
           <VLine h={8} />
           <GenLabel label="Children" />
-          {bioChildren.length > 1 && <div className="self-stretch border-t border-gray-200 dark:border-gray-700" />}
+          {bioChildren.length > 1 && <div className={styles.hSeparator} />}
 
-          <div className="flex items-start gap-6">
+          <div className={styles.childrenRow}>
             {bioChildren.map(child => {
-              const childData  = getGroupData(child);
+              const childData     = getGroupData(child);
               const grandChildren = getBioChildren(child);
 
               return (
-                <div key={child.id} className="flex flex-col items-center gap-0">
+                <div key={child.id} className={styles.childCol}>
                   <VLine h={4} />
                   <MemberGroup
                     member={child} raw={getRaw(child.id)} data={childData}
                     members={members} getRaw={getRaw} onSelect={onSelect} size="md"
                   />
 
-                  {/* ══ Grandchildren ════════════════════════════════════ */}
                   {grandChildren.length > 0 && (
                     <>
                       <VLine h={6} />
                       <GenLabel label="Grandchildren" small />
-                      {grandChildren.length > 1 && <div className="self-stretch border-t border-gray-200 dark:border-gray-700" />}
+                      {grandChildren.length > 1 && <div className={styles.hSeparator} />}
 
-                      <div className="flex items-start gap-4">
+                      <div className={styles.grandChildrenRow}>
                         {grandChildren.map(gc => {
                           const gcData = getGroupData(gc);
                           return (
-                            <div key={gc.id} className="flex flex-col items-center gap-0">
+                            <div key={gc.id} className={styles.childCol}>
                               <VLine h={4} />
                               <MemberGroup
                                 member={gc} raw={getRaw(gc.id)} data={gcData}
@@ -115,7 +108,7 @@ export default function FamilyHierarchyTree({
   );
 }
 
-// ─── MemberGroup: member + spouse + A4D (side) + Associate (side) + Succession ──
+// ─── MemberGroup ──────────────────────────────────────────────────────────────
 
 function MemberGroup({
   member, raw, data, members, getRaw, onSelect, size,
@@ -132,19 +125,20 @@ function MemberGroup({
   onSelect: (id: string) => void;
   size: 'lg' | 'md' | 'sm';
 }) {
-  const { spouse, a4dGiven, assocGiven, succOut, succIn, a4dIn, assocIn } = data;
-  const hasExtra = a4dGiven.length > 0 || assocGiven.length > 0 || succOut.length > 0;
+  const { spouse, a4dGiven, assocGiven, succOut, a4dIn, assocIn } = data;
+
+  const coreSectionClass = `${styles.coreSection} ${size === 'lg' ? styles.coreSectionLg : styles.coreSectionMd}`;
+  const a4dSectionClass = `${styles.a4dSection} ${size === 'lg' ? styles.a4dSectionLg : styles.a4dSectionMd}`;
+  const assocSectionClass = `${styles.assocSection} ${size === 'lg' ? styles.assocSectionLg : styles.assocSectionMd}`;
+  const succSectionClass = `${styles.succSection} ${size === 'lg' ? styles.succSectionLg : styles.succSectionMd}`;
 
   return (
-    <div className={`flex items-start gap-0 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden ${
-      size === 'lg' ? 'shadow-md' : ''
-    }`}>
+    <div className={`${styles.memberGroup} ${size === 'lg' ? styles.memberGroupLarge : ''}`}>
 
-      {/* ── Core: member + spouse ── */}
-      <div className={`flex items-start gap-2 ${size === 'lg' ? 'p-3' : 'p-2'}`}>
+      <div className={coreSectionClass}>
         <CoreCard
           member={member} raw={raw} size={size}
-          a4dIn={a4dIn} assocIn={assocIn} succIn={succIn}
+          a4dIn={a4dIn} assocIn={assocIn} succIn={data.succIn}
           members={members} onSelect={onSelect}
         />
         {spouse && (
@@ -152,20 +146,18 @@ function MemberGroup({
             <SpouseConnector size={size} />
             <CoreCard
               member={spouse} raw={getRaw(spouse.id)} size={size}
-              a4dIn={data.a4dIn ? null : null}
-              assocIn={null} succIn={[]}
+              a4dIn={null} assocIn={null} succIn={[]}
               members={members} onSelect={onSelect}
             />
           </>
         )}
       </div>
 
-      {/* ── A4D section ── */}
       {a4dGiven.length > 0 && (
-        <div className={`flex items-start gap-2 border-l-2 border-purple-100 dark:border-purple-900 ${size === 'lg' ? 'p-3' : 'p-2'}`}>
-          <div className="flex flex-col gap-1.5">
-            <div className="text-[7px] font-bold text-purple-400 dark:text-purple-500 uppercase tracking-widest">A4D</div>
-            <div className="flex gap-2">
+        <div className={a4dSectionClass}>
+          <div className={styles.a4dInner}>
+            <div className={styles.a4dLabel}>A4D</div>
+            <div className={styles.a4dCards}>
               {a4dGiven.map(g => {
                 const grantee = members.find(m => m.id === g.granteeAc);
                 return (
@@ -175,8 +167,8 @@ function MemberGroup({
                     raw={grantee ? getRaw(grantee.id) : undefined}
                     label={`Slot ${g.slotNo}`}
                     cancelled={g.status !== 'Active'}
-                    colorClass="border-purple-200 dark:border-purple-800"
-                    labelClass="text-purple-500 dark:text-purple-400"
+                    borderColor="#e9d5ff"
+                    labelColor="#a855f7"
                     onSelect={grantee ? onSelect : undefined}
                     size={size}
                   />
@@ -187,12 +179,11 @@ function MemberGroup({
         </div>
       )}
 
-      {/* ── Associate section ── */}
       {assocGiven.length > 0 && (
-        <div className={`flex items-start gap-2 border-l-2 border-orange-100 dark:border-orange-900 ${size === 'lg' ? 'p-3' : 'p-2'}`}>
-          <div className="flex flex-col gap-1.5">
-            <div className="text-[7px] font-bold text-orange-400 dark:text-orange-500 uppercase tracking-widest">Associate</div>
-            <div className="flex gap-2">
+        <div className={assocSectionClass}>
+          <div className={styles.assocInner}>
+            <div className={styles.assocLabel}>Associate</div>
+            <div className={styles.assocCards}>
               {assocGiven.map(g => {
                 const grantee = members.find(m => m.id === g.granteeAc);
                 return (
@@ -202,8 +193,8 @@ function MemberGroup({
                     raw={grantee ? getRaw(grantee.id) : undefined}
                     label="Assoc"
                     cancelled={g.status !== 'Active'}
-                    colorClass="border-orange-200 dark:border-orange-800"
-                    labelClass="text-orange-500 dark:text-orange-400"
+                    borderColor="#fed7aa"
+                    labelColor="#f97316"
                     onSelect={grantee ? onSelect : undefined}
                     size={size}
                   />
@@ -214,22 +205,21 @@ function MemberGroup({
         </div>
       )}
 
-      {/* ── Succession out ── */}
       {succOut.map(s => {
         const to = members.find(m => m.id === s.toAc);
         return (
-          <div key={s.id} className={`flex items-center gap-1.5 border-l-2 border-red-100 dark:border-red-900 ${size === 'lg' ? 'p-3' : 'p-2'} self-center`}>
-            <ArrowRight size={10} className="text-red-300 dark:text-red-700 shrink-0" />
-            <div className="flex flex-col gap-1">
-              <div className="text-[7px] font-bold text-red-400 uppercase tracking-widest">{succShort(s.eventType)}</div>
+          <div key={s.id} className={succSectionClass}>
+            <ArrowRight size={10} className={styles.succArrow} />
+            <div className={styles.succInner}>
+              <div className={styles.succLabel}>{succShort(s.eventType)}</div>
               {to && (
                 <SideCard
                   member={to}
                   raw={getRaw(to.id)}
                   label="Successor"
                   cancelled={false}
-                  colorClass="border-red-200 dark:border-red-800"
-                  labelClass="text-red-400"
+                  borderColor="#fecaca"
+                  labelColor="#f87171"
                   onSelect={onSelect}
                   size={size}
                 />
@@ -242,7 +232,7 @@ function MemberGroup({
   );
 }
 
-// ─── Core member card (main card in each group) ────────────────────────────────
+// ─── CoreCard ─────────────────────────────────────────────────────────────────
 
 function CoreCard({
   member, raw, size, a4dIn, assocIn, succIn, members, onSelect,
@@ -254,48 +244,51 @@ function CoreCard({
 }) {
   const cfg = TYPE_CONFIG[member.type] ?? TYPE_CONFIG.Permanent;
 
+  const cardClass = `${styles.coreCard} ${
+    size === 'lg' ? styles.coreCardLg : size === 'md' ? styles.coreCardMd : styles.coreCardSm
+  }`;
+  const avatarClass = `${styles.coreAvatar} ${
+    size === 'lg' ? styles.coreAvatarLg : size === 'md' ? styles.coreAvatarMd : styles.coreAvatarSm
+  }`;
+  const nameClass = `${styles.coreName} ${
+    size === 'lg' ? styles.coreNameLg : size === 'md' ? styles.coreNameMd : styles.coreNameSm
+  }`;
+  const idClass = `${styles.coreId} ${size === 'sm' ? styles.coreIdSm : styles.coreIdNormal}`;
+  const badgeSizeClass = size === 'sm' ? styles.coreBadgeSm : styles.coreBadgeNormal;
+
   const card = (
-    <div className={`flex flex-col items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity ${
-      size === 'lg' ? 'min-w-[120px]' : size === 'md' ? 'min-w-[100px]' : 'min-w-[80px]'
-    }`}>
-      <div
-        className={`rounded-full flex items-center justify-center font-bold text-white ${
-          size === 'lg' ? 'w-12 h-12 text-[14px]' : size === 'md' ? 'w-10 h-10 text-[11px]' : 'w-8 h-8 text-[9px]'
-        }`}
-        style={{ background: cfg.color }}
-      >
+    <div className={cardClass}>
+      <div className={avatarClass} style={{ background: cfg.color }}>
         {getInitials(member.name)}
       </div>
 
-      <div className={`font-semibold text-gray-800 dark:text-gray-100 text-center leading-tight ${
-        size === 'lg' ? 'text-[12px] max-w-[116px]' : size === 'md' ? 'text-[10px] max-w-[96px]' : 'text-[9px] max-w-[76px]'
-      }`}>{member.name}</div>
+      <div className={nameClass}>{member.name}</div>
+      <div className={idClass}>{member.id}</div>
 
-      <div className={`font-mono text-gray-400 dark:text-gray-500 ${size === 'sm' ? 'text-[7px]' : 'text-[8px]'}`}>
-        {member.id}
-      </div>
-
-      <div className="flex items-center gap-0.5 flex-wrap justify-center">
-        <span className={`font-medium px-1.5 py-px rounded-full ${size === 'sm' ? 'text-[7px]' : 'text-[8px]'}`}
-          style={{ background: cfg.bg, color: cfg.dark }}>{member.type}</span>
+      <div className={styles.coreBadges}>
+        <span className={`${styles.coreTypeBadge} ${badgeSizeClass}`} style={{ background: cfg.bg, color: cfg.dark }}>
+          {member.type}
+        </span>
         {raw?.status !== 'Active' && (
-          <span className={`px-1 py-px rounded-full ${size === 'sm' ? 'text-[7px]' : 'text-[8px]'} ${
-            raw?.status === 'Deceased' ? 'text-gray-500 italic' :
-            raw?.status === 'Cancelled' ? 'text-red-400' : 'text-orange-400'
+          <span className={`${styles.coreStatusBadge} ${
+            raw?.status === 'Deceased'
+              ? (size === 'sm' ? styles.coreStatusDeceasedSm : styles.coreStatusDeceased)
+              : raw?.status === 'Cancelled'
+              ? (size === 'sm' ? styles.coreStatusCancelledSm : styles.coreStatusCancelled)
+              : (size === 'sm' ? styles.coreStatusOtherSm : styles.coreStatusOther)
           }`}>{raw?.status}</span>
         )}
       </div>
 
-      {/* Received A4D / Assoc / Succession badges */}
       {(a4dIn || assocIn || succIn.length > 0) && (
-        <div className="flex flex-col gap-0.5 items-center w-full border-t border-gray-100 dark:border-gray-800 pt-1 mt-0.5">
+        <div className={styles.receivedSection}>
           {a4dIn && (
-            <div className={`${size === 'sm' ? 'text-[7px]' : 'text-[8px]'} text-purple-500 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-1.5 py-px rounded-full`}>
+            <div className={`${styles.receivedBadge} ${size === 'sm' ? styles.receivedA4dSm : styles.receivedA4d}`}>
               A4D Slot {a4dIn.slotNo}{a4dIn.status !== 'Active' ? ' ✕' : ''}
             </div>
           )}
           {assocIn && (
-            <div className={`${size === 'sm' ? 'text-[7px]' : 'text-[8px]'} text-orange-500 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-1.5 py-px rounded-full`}>
+            <div className={`${styles.receivedBadge} ${size === 'sm' ? styles.receivedAssocSm : styles.receivedAssoc}`}>
               Assoc
             </div>
           )}
@@ -304,7 +297,7 @@ function CoreCard({
             return (
               <button key={i}
                 onClick={e => { e.stopPropagation(); from && onSelect(from.id); }}
-                className={`${size === 'sm' ? 'text-[7px]' : 'text-[8px]'} text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-1.5 py-px rounded-full hover:underline`}
+                className={`${styles.receivedSuccBtn} ${size === 'sm' ? styles.receivedSuccSm : styles.receivedSuccNormal}`}
               >
                 ← {succShort(s.eventType)}
               </button>
@@ -318,39 +311,41 @@ function CoreCard({
   return <button onClick={() => onSelect(member.id)}>{card}</button>;
 }
 
-// ─── Small side card (A4D / Associate / Successor) ────────────────────────────
+// ─── SideCard ─────────────────────────────────────────────────────────────────
 
 function SideCard({
-  member, raw, label, cancelled, colorClass, labelClass, onSelect, size,
+  member, raw, label, cancelled, borderColor, labelColor, onSelect, size,
 }: {
   member: Member | null; raw?: DBMember;
   label: string; cancelled?: boolean;
-  colorClass: string; labelClass: string;
+  borderColor: string; labelColor: string;
   onSelect?: (id: string) => void; size: 'lg' | 'md' | 'sm';
 }) {
   const cfg = member ? (TYPE_CONFIG[member.type] ?? TYPE_CONFIG.Permanent) : null;
-  const w = size === 'lg' ? 'min-w-[80px]' : 'min-w-[68px]';
+  const sizeClass = size === 'lg' ? styles.sideCardLg : styles.sideCardSm;
 
   const card = (
-    <div className={`flex flex-col items-center gap-0.5 rounded-xl border ${colorClass} px-2 py-1.5 ${w} ${cancelled ? 'opacity-50' : ''} ${onSelect ? 'cursor-pointer hover:opacity-75 transition-opacity' : ''}`}>
-      <div className={`text-[7px] font-bold uppercase tracking-wide ${labelClass}`}>{label}</div>
+    <div
+      className={`${styles.sideCard} ${sizeClass} ${cancelled ? styles.sideCardCancelled : ''} ${onSelect ? styles.sideCardClickable : ''}`}
+      style={{ borderColor }}
+    >
+      <div className={styles.sideCardLabel} style={{ color: labelColor }}>{label}</div>
       {member && cfg ? (
         <>
-          <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-[8px] font-bold text-white"
-            style={{ background: cfg.color }}
-          >
+          <div className={styles.sideCardAvatar} style={{ background: cfg.color }}>
             {getInitials(member.name)}
           </div>
-          <div className="text-[8px] font-medium text-gray-800 dark:text-gray-100 text-center leading-tight max-w-[72px] truncate">{member.name.split(' ')[0]}</div>
-          <div className="text-[7px] font-mono text-gray-400 dark:text-gray-500">{member.id}</div>
+          <div className={styles.sideCardName}>{member.name.split(' ')[0]}</div>
+          <div className={styles.sideCardId}>{member.id}</div>
           {raw?.status !== 'Active' && (
-            <div className={`text-[7px] ${raw?.status === 'Deceased' ? 'text-gray-400 italic' : 'text-red-400'}`}>{raw?.status}</div>
+            <div className={`${styles.sideCardStatus} ${raw?.status === 'Deceased' ? styles.sideCardStatusDeceased : styles.sideCardStatusRed}`}>
+              {raw?.status}
+            </div>
           )}
-          {cancelled && <div className="text-[7px] text-red-400">Cancelled</div>}
+          {cancelled && <div className={styles.sideCardCancelledLabel}>Cancelled</div>}
         </>
       ) : (
-        <div className="text-[8px] text-gray-400">—</div>
+        <div className={styles.sideCardEmpty}>—</div>
       )}
     </div>
   );
@@ -362,30 +357,30 @@ function SideCard({
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function succShort(t: string) {
-  if (t === 'Death')            return 'Death';
+  if (t === 'Death')             return 'Death';
   if (t === 'VoluntaryTransfer') return 'Transfer';
-  if (t === 'SeniorUpgrade')    return 'Upgrade';
-  if (t === 'FamilyTransfer')   return 'FamilyTx';
+  if (t === 'SeniorUpgrade')     return 'Upgrade';
+  if (t === 'FamilyTransfer')    return 'FamilyTx';
   return t;
 }
 
 function GenLabel({ label, small }: { label: string; small?: boolean }) {
   return (
-    <div className={`uppercase tracking-widest font-semibold text-gray-400 dark:text-gray-500 mb-2 mt-1 ${small ? 'text-[7px]' : 'text-[9px]'}`}>
+    <div className={`${styles.genLabel} ${small ? styles.genLabelSmall : styles.genLabelNormal}`}>
       {label}
     </div>
   );
 }
 
 function VLine({ h }: { h: number }) {
-  return <div className="w-px bg-gray-200 dark:bg-gray-700" style={{ height: `${h * 4}px` }} />;
+  return <div className={styles.vline} style={{ height: `${h * 4}px` }} />;
 }
 
 function SpouseConnector({ size }: { size: 'lg' | 'md' | 'sm' }) {
   return (
-    <div className="flex flex-col items-center self-start gap-0.5" style={{ marginTop: size === 'lg' ? 28 : 20 }}>
-      <div className="text-[7px] text-pink-400 font-medium">Spouse</div>
-      <div className={`h-px bg-pink-200 dark:bg-pink-800 ${size === 'sm' ? 'w-4' : 'w-6'}`} />
+    <div className={styles.spouseConnector} style={{ marginTop: size === 'lg' ? 28 : 20 }}>
+      <div className={styles.spouseLabel}>Spouse</div>
+      <div className={size === 'sm' ? styles.spouseLineSm : styles.spouseLineLg} />
     </div>
   );
 }

@@ -1,0 +1,189 @@
+.root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f9fafb;
+  font-family: sans-serif;
+}
+
+/* Header */
+.header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #f3f4f6;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .header {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+  }
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (min-width: 768px) {
+  .titleRow {
+    display: block;
+  }
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+@media (min-width: 768px) {
+  .title {
+    font-size: 17px;
+  }
+}
+
+.subtitle {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+@media (min-width: 768px) {
+  .subtitle {
+    font-size: 11px;
+  }
+}
+
+/* Mobile actions (visible only below md) */
+.mobileActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .mobileActions {
+    display: none;
+  }
+}
+
+/* Desktop actions (hidden below md) */
+.desktopActions {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .desktopActions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+/* Tab group (view switcher) */
+.tabGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+}
+
+.tabBtnSm {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 11px;
+  transition: background-color 150ms, color 150ms;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+}
+
+.tabBtnSmActive {
+  background-color: #ffffff;
+  color: #1f2937;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.tabBtnLg {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 12px;
+  transition: background-color 150ms, color 150ms;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+}
+
+.tabBtnLgActive {
+  background-color: #ffffff;
+  color: #1f2937;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+/* New member button */
+.newBtnMobile {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  background-color: #3b82f6;
+  color: #ffffff;
+  border-radius: 0.5rem;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background-color 150ms;
+}
+
+.newBtnMobile:hover {
+  background-color: #2563eb;
+}
+
+.newBtnDesktop {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: #ffffff;
+  border-radius: 0.5rem;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background-color 150ms;
+}
+
+.newBtnDesktop:hover {
+  background-color: #2563eb;
+}
+
+/* Main layout */
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.treeArea {
+  flex: 1;
+  overflow: auto;
+}

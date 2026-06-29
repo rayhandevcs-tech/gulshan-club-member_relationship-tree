@@ -8,7 +8,8 @@ import {
 } from '@/lib/memberUtils';
 import MemberNode from './MemberNode';
 import { FocusedDiagram, WholeMapDiagram, BioFamilyDiagram } from './RelationshipDiagram';
-import { Search, Network, GitBranch, Users } from 'lucide-react';
+import { Search, GitBranch, Users } from 'lucide-react';
+import s from './MemberTree.module.css';
 
 function AssocGroup({ parentId }: { parentId: string }) {
   const { members, navigateTo } = useMemberStore();
@@ -17,12 +18,12 @@ function AssocGroup({ parentId }: { parentId: string }) {
   const all = [...assocs, ...noms];
   if (!all.length) return null;
   return (
-    <div className="flex flex-col items-center">
-      <div className="w-[1.5px] h-3 bg-gray-300 dark:bg-gray-600" />
-      <div className="text-[9px] font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+    <div className={s.assocGroup}>
+      <div className={s.assocLine} />
+      <div className={s.assocLabel}>
         {noms.length ? `Nominee (${all.length})` : `Associate (${all.length})`}
       </div>
-      <div className="flex gap-2 flex-wrap justify-center">
+      <div className={s.assocCards}>
         {all.map(a => (
           <div key={a.id} onClick={() => navigateTo(a.id)}>
             <MemberNode member={a} small dashed />
@@ -45,14 +46,14 @@ function FamilySubtree({ member }: { member: Member }) {
   const sponsorIds = [member.id, ...(spouse ? [spouse.id] : [])];
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="flex items-start gap-1">
+    <div className={s.subtree}>
+      <div className={s.subtreeTop}>
         <div onClick={() => navigateTo(member.id)}>
           <MemberNode member={member} />
         </div>
         {spouse && (
           <>
-            <span className="text-pink-400 text-[15px] pt-5 px-1">♥</span>
+            <span className={s.heartIcon}>♥</span>
             <div onClick={() => navigateTo(spouse.id)}>
               <MemberNode member={spouse} showRel />
             </div>
@@ -63,16 +64,16 @@ function FamilySubtree({ member }: { member: Member }) {
       {spouse && <AssocGroup parentId={spouse.id} />}
       {allKids.length > 0 && (
         <>
-          <div className="w-[1.5px] h-5 bg-gray-300 dark:bg-gray-600" />
+          <div className={s.subtreeVline} />
           {allKids.length > 1 && (
-            <div className="h-[1.5px] bg-gray-300 dark:bg-gray-600" style={{ width: Math.min(allKids.length * 108, 460) }} />
+            <div className={s.subtreeHline} style={{ width: Math.min(allKids.length * 108, 460) }} />
           )}
-          <div className="flex gap-4 items-start">
+          <div className={s.subtreeChildren}>
             {allKids.map(kid => (
-              <div key={kid.id} className="flex flex-col items-center">
-                <div className="w-[1.5px] h-5 bg-gray-300 dark:bg-gray-600" />
+              <div key={kid.id} className={s.kidCol}>
+                <div className={s.subtreeVline} />
                 {kid.rel === 'child' ? (
-                  <div className="border border-gray-100 dark:border-gray-700 rounded-xl p-4 bg-gray-50/60 dark:bg-gray-800/40">
+                  <div className={s.kidBox}>
                     <FamilySubtree member={kid} />
                   </div>
                 ) : (
@@ -83,9 +84,7 @@ function FamilySubtree({ member }: { member: Member }) {
                     {(() => {
                       const caption = getQuotaSourceCaption(kid, sponsorIds, members);
                       return caption ? (
-                        <div className="text-[8px] text-gray-400 dark:text-gray-500 text-center max-w-24 leading-tight -mt-0.5 mb-0.5 italic">
-                          {caption}
-                        </div>
+                        <div className={s.quotaCaption}>{caption}</div>
                       ) : null;
                     })()}
                     <AssocGroup parentId={kid.id} />
@@ -102,10 +101,10 @@ function FamilySubtree({ member }: { member: Member }) {
 
 function EmptyPrompt() {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600 gap-3 px-6 text-center">
-      <Search size={34} className="text-gray-300 dark:text-gray-600" />
-      <div className="text-[15px] font-medium text-gray-500 dark:text-gray-400">Search for a member</div>
-      <div className="text-[12px] max-w-75 leading-relaxed">
+    <div className={s.emptyPrompt}>
+      <Search size={34} className={s.emptyIcon} />
+      <div className={s.emptyTitle}>Search for a member</div>
+      <div className={s.emptyHint}>
         Type a name or A/C number..
       </div>
     </div>
@@ -146,25 +145,22 @@ export default function MemberTree() {
           )
         : [];
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 p-4 md:p-6">
+      <div className={s.grid}>
         {visible.map(m => {
           const cfg = TYPE_CONFIG[m.type];
           return (
             <div
               key={m.id}
               onClick={() => useMemberStore.getState().navigateTo(m.id)}
-              className="border border-gray-100 dark:border-gray-700 rounded-xl p-4 cursor-pointer hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-sm transition-all flex flex-col items-center gap-1.5 bg-white dark:bg-gray-900"
+              className={s.gridCard}
             >
-              <div className="w-12 h-12 rounded-full flex items-center justify-center text-[13px] font-semibold relative shadow-sm"
-                style={{ background: cfg.bg, color: cfg.dark }}>
+              <div className={s.gridAvatar} style={{ background: cfg.bg, color: cfg.dark }}>
                 {m.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full text-[7px] flex items-center justify-center font-bold text-white border-2 border-white"
-                  style={{ background: cfg.color }}>{cfg.short}</div>
+                <div className={s.gridAvatarBadge} style={{ background: cfg.color }}>{cfg.short}</div>
               </div>
-              <div className="text-[11px] font-medium text-center text-gray-800 dark:text-gray-100 leading-tight">{m.name}</div>
-              <div className="text-[10px] text-gray-400 dark:text-gray-500">{m.id}</div>
-              <div className="text-[9px] px-2 py-1 rounded-full font-medium"
-                style={{ background: cfg.bg, color: cfg.dark }}>{m.type}</div>
+              <div className={s.gridName}>{m.name}</div>
+              <div className={s.gridId}>{m.id}</div>
+              <div className={s.gridTypeBadge} style={{ background: cfg.bg, color: cfg.dark }}>{m.type}</div>
             </div>
           );
         })}
@@ -174,17 +170,15 @@ export default function MemberTree() {
 
   if (filterType) {
     if (!categoryRoots.length) {
-      return <div className="flex items-center justify-center h-40 text-gray-400 text-sm">কোনো সদস্য পাওয়া যায়নি</div>;
+      return <div className={s.noResult}>কোনো সদস্য পাওয়া যায়নি</div>;
     }
     return (
-      <div className="flex flex-wrap gap-4 md:gap-6 p-4 md:p-8 items-start justify-center">
+      <div className={s.filterWrap}>
         {categoryRoots.map(r => {
           const cfg = TYPE_CONFIG[r.type];
           return (
-            <div key={r.id} className="inline-flex flex-col items-center border rounded-2xl p-4 md:p-6 bg-white dark:bg-gray-900 shadow-sm"
-              style={{ borderColor: cfg.color + '33' }}>
-              <div className="text-[10px] font-medium px-2.5 py-1 rounded-full mb-5"
-                style={{ background: cfg.bg, color: cfg.dark }}>
+            <div key={r.id} className={s.filterCard} style={{ borderColor: cfg.color + '33' }}>
+              <div className={s.filterCardBadge} style={{ background: cfg.bg, color: cfg.dark }}>
                 {r.type} · {r.id}
               </div>
               <FamilySubtree member={r} />
@@ -199,29 +193,23 @@ export default function MemberTree() {
   const focusId = focusViewId ?? activeRoot.id;
 
   return (
-    <div className="flex flex-col items-center w-full">
-      <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 mt-4 mb-2">
+    <div className={s.diagramWrap}>
+      <div className={s.tabs}>
         <button
           onClick={() => setDiagramMode('focused')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] transition-colors ${
-            diagramMode === 'focused' ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm' : 'text-gray-400 dark:text-gray-500'
-          }`}
+          className={`${s.tab} ${diagramMode === 'focused' ? s.tabActive : ''}`}
         >
           <GitBranch size={12} /> Family Relationship
         </button>
-
         <button
           onClick={() => setDiagramMode('bio')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] transition-colors ${
-            diagramMode === 'bio' ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm' : 'text-gray-400 dark:text-gray-500'
-          }`}
+          className={`${s.tab} ${diagramMode === 'bio' ? s.tabActive : ''}`}
         >
           <Users size={12} /> Membership Relationship
         </button>
-
       </div>
 
-      <div className={`w-full overflow-auto p-3 sm:p-6 flex items-start ${diagramMode === 'bio' ? 'justify-start sm:justify-center' : 'justify-center'}`}>
+      <div className={`${s.diagramArea} ${diagramMode === 'bio' ? s.diagramAreaStart : ''}`}>
         {diagramMode === 'focused' && (
           <FocusedDiagram focusId={focusId} members={members} onPick={navigateTo} />
         )}
@@ -229,7 +217,7 @@ export default function MemberTree() {
           <WholeMapDiagram rootId={activeRoot.id} members={members} onPick={navigateTo} />
         )}
         {diagramMode === 'bio' && (
-          <div className="min-w-max">
+          <div className={s.bioWrap}>
             <BioFamilyDiagram rootId={activeRoot.id} members={members} onPick={navigateTo} />
           </div>
         )}

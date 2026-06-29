@@ -2,6 +2,7 @@
 
 import { getMember, getInitials, TYPE_CONFIG, REL_LABELS } from '@/lib/memberUtils';
 import { useMemberStore } from '@/store/memberStore';
+import styles from './FamilyRelationshipView.module.css';
 
 interface Props {
   memberId: string;
@@ -40,33 +41,24 @@ export default function FamilyRelationshipView({ memberId }: Props) {
   }) => (
     <div
       onClick={onClick}
-      className={`min-w-[120px] md:min-w-[150px] rounded-xl border p-3 text-center shadow-sm ${
-        onClick ? 'cursor-pointer hover:shadow-md' : ''
-      }`}
+      className={`${styles.box} ${onClick ? styles.boxClickable : ''}`}
       style={{ borderColor: color, background: bg }}
     >
-      <div className="text-[11px] font-medium mb-2" style={{ color }}>
-        {title}
-      </div>
-      <div
-        className="w-10 h-10 md:w-12 md:h-12 rounded-full mx-auto mb-2 flex items-center justify-center text-sm font-semibold"
-        style={{ background: '#fff', color }}
-      >
+      <div className={styles.boxTitle} style={{ color }}>{title}</div>
+      <div className={styles.boxAvatar} style={{ color }}>
         {getInitials(name)}
       </div>
-      <div className="text-[11px] md:text-[12px] font-semibold text-gray-800 leading-snug">
-        {name}
-      </div>
-      {id && <div className="text-[10px] text-gray-500 mt-1">{id}</div>}
+      <div className={styles.boxName}>{name}</div>
+      {id && <div className={styles.boxId}>{id}</div>}
     </div>
   );
 
   return (
-    <div className="min-h-full p-4 md:p-8 overflow-auto">
-      <div className="flex flex-col items-center gap-6 md:gap-8">
+    <div className={styles.page}>
+      <div className={styles.content}>
 
         {(father || mother) && (
-          <div className="flex gap-4 md:gap-24 flex-wrap justify-center">
+          <div className={styles.row}>
             {father && (
               <Box title="Father" name={father} color="#84CC16" bg="#F7FEE7" />
             )}
@@ -76,7 +68,7 @@ export default function FamilyRelationshipView({ memberId }: Props) {
           </div>
         )}
 
-        <div className="flex items-center gap-6 md:gap-16 flex-wrap justify-center">
+        <div className={styles.rowCenter}>
           <Box
             title={`Member · ${member.type}`}
             name={member.name}
@@ -98,11 +90,9 @@ export default function FamilyRelationshipView({ memberId }: Props) {
         </div>
 
         {children.length > 0 && (
-          <div className="flex flex-col items-center gap-4">
-            <div className="text-[11px] uppercase tracking-wide text-gray-400">
-              A4D / Children
-            </div>
-            <div className="flex gap-4 md:gap-10 flex-wrap justify-center">
+          <div className={styles.section}>
+            <div className={styles.sectionLabel}>A4D / Children</div>
+            <div className={styles.row}>
               {children.map(child => {
                 const cc = TYPE_CONFIG[child.type];
                 return (
@@ -122,11 +112,9 @@ export default function FamilyRelationshipView({ memberId }: Props) {
         )}
 
         {associates.length > 0 && (
-          <div className="flex flex-col items-center gap-4">
-            <div className="text-[11px] uppercase tracking-wide text-gray-400">
-              Associates
-            </div>
-            <div className="flex gap-3 md:gap-6 flex-wrap justify-center">
+          <div className={styles.section}>
+            <div className={styles.sectionLabel}>Associates</div>
+            <div className={styles.row}>
               {associates.map(a => {
                 const ac = TYPE_CONFIG[a.type];
                 return (
@@ -146,11 +134,9 @@ export default function FamilyRelationshipView({ memberId }: Props) {
         )}
 
         {nominees.length > 0 && (
-          <div className="flex flex-col items-center gap-4">
-            <div className="text-[11px] uppercase tracking-wide text-gray-400">
-              Nominees
-            </div>
-            <div className="flex gap-3 md:gap-6 flex-wrap justify-center">
+          <div className={styles.section}>
+            <div className={styles.sectionLabel}>Nominees</div>
+            <div className={styles.row}>
               {nominees.map(n => {
                 const nc = TYPE_CONFIG[n.type];
                 return (
