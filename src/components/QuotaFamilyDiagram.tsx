@@ -29,17 +29,29 @@ function bioLabel(grantee: Member, sponsorIds: Set<string>, members: Member[]): 
   return null;
 }
 
-function hasOwnQuota(id: string, members: Member[]): boolean {
-  return members.some(m => m.pid === id && m.rel === 'a4d');
+// Life/Senior/Donor spouses appear BESIDE — independent membership.
+// Permanent spouses go in the A4D slot UNLESS they are also the account successor (then beside + transfer badge).
+const CORE_TYPES = new Set(['Life', 'Life Senior', 'Senior', 'Donor']);
+function showsBeside(spouseId: string, sponsorId: string, members: Member[]): boolean {
+  const spouse = members.find(x => x.id === spouseId);
+  if (!spouse) return false;
+  if (CORE_TYPES.has(spouse.type)) return true;
+  const sponsor = members.find(x => x.id === sponsorId);
+  return sponsor?.succession === spouseId;
 }
 
-function memberHasData(id: string, members: Member[], forSpouse = false): boolean {
+function memberHasData(id: string, members: Member[], forSpouse = false, excludeIds?: Set<string>): boolean {
   if (forSpouse) {
-    return members.some(x => x.pid === id && (x.rel === 'a4d' || x.rel === 'associate' || x.rel === 'nominee'));
+    return members.some(x =>
+      x.pid === id &&
+      (x.rel === 'a4d' || x.rel === 'associate' || x.rel === 'nominee') &&
+      (!excludeIds || !excludeIds.has(x.id))
+    );
   }
   return members.some(x =>
     x.pid === id &&
-    (x.rel === 'a4d' || (x.rel === 'spouse' && !hasOwnQuota(x.id, members)) || x.rel === 'associate' || x.rel === 'nominee')
+    (x.rel === 'a4d' || (x.rel === 'spouse' && !showsBeside(x.id, id, members)) || x.rel === 'associate' || x.rel === 'nominee') &&
+    (!excludeIds || !excludeIds.has(x.id))
   );
 }
 
@@ -54,7 +66,6 @@ function SlotCard({ member: m, members, sponsorIds, small, onPick }: {
 }) {
   const { border, avatarBg, cardBg } = cardCol(m);
   const name = label(m);
-  const cfg = TYPE_CONFIG[m.type] ?? TYPE_CONFIG.Permanent;
   const bl = bioLabel(m, sponsorIds, members);
   return (
     <button
@@ -77,11 +88,6 @@ function SlotCard({ member: m, members, sponsorIds, small, onPick }: {
       {bl && !small && (
         <div className={styles.slotBioLabel}>{bl}</div>
       )}
-      {!small && (
-        <div>
-          <span className={styles.slotTypeBadge} style={{ background: cfg.bg, color: cfg.dark }}>{m.type}</span>
-        </div>
-      )}
     </button>
   );
 }
@@ -91,7 +97,6 @@ function SlotCard({ member: m, members, sponsorIds, small, onPick }: {
 function CoreCard({ member: m, onPick }: { member: Member; onPick: () => void }) {
   const { border, avatarBg, cardBg } = cardCol(m);
   const name = label(m);
-  const cfg = TYPE_CONFIG[m.type] ?? TYPE_CONFIG.Permanent;
   return (
     <button
       className={styles.coreCard}
@@ -103,25 +108,50 @@ function CoreCard({ member: m, onPick }: { member: Member; onPick: () => void })
       </div>
       <div className={styles.coreName}>{name}</div>
       <div className={styles.coreId}>{m.id}</div>
-      <span className={styles.coreTypeBadge} style={{ background: cfg.bg, color: cfg.dark }}>{m.type}</span>
       {dead(m) && <span className={styles.deceasedBadge}>Deceased</span>}
+    </button>
+  );
+}
+
+// ── TransferCard ─────────────────────────────────────────────────────────────
+
+function TransferCard({ member: m, onPick }: { member: Member; onPick: () => void }) {
+  const { border, avatarBg } = cardCol(m);
+  const name = label(m);
+  return (
+    <button
+      className={styles.transferCard}
+      style={{ borderColor: border }}
+      onClick={onPick}
+    >
+      <div className={styles.transferAvatar} style={{ background: avatarBg }}>
+        {getInitials(name)}
+      </div>
+      <div className={styles.transferName}>{name}</div>
+      <div className={styles.transferId}>{m.id}</div>
     </button>
   );
 }
 
 // ── QuotaSection ──────────────────────────────────────────────────────────────
 
-function QuotaSection({ member: m, coupleIds, members, onPick }: {
+function QuotaSection({ member: m, coupleIds, members, onPick, bioChildIds }: {
   member: Member;
   coupleIds: Set<string>;
   members: Member[];
   onPick: (id: string) => void;
+  bioChildIds?: Set<string>;
 }) {
   const a4dFilled = members.filter(x =>
     x.pid === m.id &&
-    (x.rel === 'a4d' || (x.rel === 'spouse' && !hasOwnQuota(x.id, members)))
+    (x.rel === 'a4d' || (x.rel === 'spouse' && !showsBeside(x.id, m.id, members))) &&
+    (!bioChildIds || !bioChildIds.has(x.id))
   );
-  const assocFilled = members.filter(x => x.pid === m.id && (x.rel === 'associate' || x.rel === 'nominee'));
+  const assocFilled = members.filter(x =>
+    x.pid === m.id &&
+    (x.rel === 'associate' || x.rel === 'nominee') &&
+    (!bioChildIds || !bioChildIds.has(x.id))
+  );
 
   if (a4dFilled.length === 0 && assocFilled.length === 0) return null;
 
@@ -131,7 +161,8 @@ function QuotaSection({ member: m, coupleIds, members, onPick }: {
       {a4dFilled.length > 0 && (
         <div className={styles.a4dCol}>
           <div className={styles.sectionLabel} style={{ background: '#9333ea18', color: '#7c3aed' }}>A4D</div>
-          <div className={styles.slotsRow} style={{ paddingTop: a4dFilled.length > 1 ? 10 : 0 }}>
+          <div style={{ width: 1.5, height: 6, background: '#9CA3AF' }} />
+          <div className={styles.slotsRow}>
             {a4dFilled.length > 1 && (
               <div
                 className={styles.hbar}
@@ -139,31 +170,55 @@ function QuotaSection({ member: m, coupleIds, members, onPick }: {
               />
             )}
             {a4dFilled.map(slot => {
-              const granteeAssocs = members.filter(x => x.pid === slot.id && (x.rel === 'associate' || x.rel === 'nominee'));
+              const slotA4D = members.filter(x => x.pid === slot.id && x.rel === 'a4d');
+              const slotAssocs = members.filter(x => x.pid === slot.id && (x.rel === 'associate' || x.rel === 'nominee'));
+              const hasSubItems = slotA4D.length > 0 || slotAssocs.length > 0;
               return (
                 <div key={slot.id} className={styles.slotItemCol}>
+                  <div style={{ width: 1.5, height: 10, background: '#9CA3AF' }} />
                   <SlotCard
                     member={slot}
                     members={members}
                     sponsorIds={coupleIds}
                     onPick={() => onPick(slot.id)}
                   />
-                  {granteeAssocs.length > 0 && (
+                  {hasSubItems && (
                     <div className={styles.subAssocSection}>
                       <div className={styles.vline} style={{ width: 1.5, height: 12 }} />
-                      <div className={styles.subAssocLabel}>Assoc</div>
-                      <div className={styles.subAssocRow}>
-                        {granteeAssocs.map(ga => (
-                          <SlotCard
-                            key={ga.id}
-                            member={ga}
-                            members={members}
-                            sponsorIds={new Set([slot.id])}
-                            small
-                            onPick={() => onPick(ga.id)}
-                          />
-                        ))}
-                      </div>
+                      {slotA4D.length > 0 && (
+                        <>
+                          <div className={styles.subAssocLabel}>A4D</div>
+                          <div className={styles.subAssocRow}>
+                            {slotA4D.map(ga => (
+                              <SlotCard
+                                key={ga.id}
+                                member={ga}
+                                members={members}
+                                sponsorIds={new Set([slot.id])}
+                                small
+                                onPick={() => onPick(ga.id)}
+                              />
+                            ))}
+                          </div>
+                        </>
+                      )}
+                      {slotAssocs.length > 0 && (
+                        <>
+                          <div className={styles.subAssocLabel}>Assoc</div>
+                          <div className={styles.subAssocRow}>
+                            {slotAssocs.map(ga => (
+                              <SlotCard
+                                key={ga.id}
+                                member={ga}
+                                members={members}
+                                sponsorIds={new Set([slot.id])}
+                                small
+                                onPick={() => onPick(ga.id)}
+                              />
+                            ))}
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -176,15 +231,24 @@ function QuotaSection({ member: m, coupleIds, members, onPick }: {
       {assocFilled.length > 0 && (
         <div className={styles.assocCol}>
           <div className={styles.sectionLabel} style={{ background: '#ea580c18', color: '#c2410c' }}>Assoc</div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {assocFilled.map(slot => (
-              <SlotCard
-                key={slot.id}
-                member={slot}
-                members={members}
-                sponsorIds={coupleIds}
-                onPick={() => onPick(slot.id)}
+          <div style={{ width: 1.5, height: 6, background: '#9CA3AF' }} />
+          <div className={styles.slotsRow}>
+            {assocFilled.length > 1 && (
+              <div
+                className={styles.hbar}
+                style={{ position: 'absolute', top: 0, left: '24%', right: '24%' }}
               />
+            )}
+            {assocFilled.map(slot => (
+              <div key={slot.id} className={styles.slotItemCol}>
+                <div style={{ width: 1.5, height: 10, background: '#9CA3AF' }} />
+                <SlotCard
+                  member={slot}
+                  members={members}
+                  sponsorIds={coupleIds}
+                  onPick={() => onPick(slot.id)}
+                />
+              </div>
             ))}
           </div>
         </div>
@@ -195,116 +259,142 @@ function QuotaSection({ member: m, coupleIds, members, onPick }: {
 
 // ── QuotaTree (recursive) ─────────────────────────────────────────────────────
 
-function QuotaTree({ member: m, members, onPick }: {
+function QuotaTree({ member: m, members, onPick, bioMode }: {
   member: Member;
   members: Member[];
   onPick: (id: string) => void;
+  bioMode?: boolean;
 }) {
   const spouseRaw = members.find(x => x.pid === m.id && x.rel === 'spouse') ?? null;
-  const spouseBeside = spouseRaw && hasOwnQuota(spouseRaw.id, members) ? spouseRaw : null;
+  const spouseBeside = spouseRaw && showsBeside(spouseRaw.id, m.id, members) ? spouseRaw : null;
   const coupleIds = new Set([m.id, ...(spouseBeside ? [spouseBeside.id] : [])]);
-  const showDual = !!spouseBeside;
 
   const succNote = m.succession;
   const isTransferToSpouse = succNote && spouseBeside && succNote === spouseBeside.id;
+  const succMember = (succNote && !isTransferToSpouse) ? (members.find(x => x.id === succNote) ?? null) : null;
 
-  const bioChildren = members.filter(x =>
-    x.rel === 'child' && (x.pid === m.id || (spouseBeside && x.pid === spouseBeside.id))
+  // bioMode (Family Relationship): bio children via fatherId/motherId — A4D/Assoc excluded for bio children.
+  // non-bioMode (Member Relationship): rel=child members in Children section + A4D/Assoc quota below each.
+  const bioChildren = bioMode
+    ? members.filter(x => {
+        if (coupleIds.has(x.id)) return false;
+        const isBio =
+          (x.fatherId != null && coupleIds.has(x.fatherId)) ||
+          (x.motherId != null && coupleIds.has(x.motherId));
+        const isChild = x.rel === 'child' && coupleIds.has(x.pid ?? '');
+        return isBio || isChild;
+      })
+    : members.filter(x =>
+        x.rel === 'child' && (x.pid === m.id || (spouseBeside && x.pid === spouseBeside.id))
+      );
+
+  const bioChildIds = new Set(bioChildren.map(c => c.id));
+
+  const hasM = memberHasData(m.id, members, false, bioChildIds);
+  const hasS = spouseBeside ? memberHasData(spouseBeside.id, members, true, bioChildIds) : false;
+  const showBadge = !!spouseBeside && hasM && hasS;
+  const LINE = '#9CA3AF';
+
+  const memberCol = (mem: Member, hasQuota: boolean) => (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <CoreCard member={mem} onPick={() => onPick(mem.id)} />
+      {hasQuota && (
+        <>
+          <div style={{ width: 1.5, height: 20, background: LINE, marginTop: 6 }} />
+          {showBadge && (
+            <div
+              className={styles.memberIdBadge}
+              style={{
+                color: (TYPE_CONFIG[mem.type] ?? TYPE_CONFIG.Permanent).color,
+                background: (TYPE_CONFIG[mem.type] ?? TYPE_CONFIG.Permanent).bg,
+              }}
+            >
+              {mem.id}
+            </div>
+          )}
+          <QuotaSection member={mem} coupleIds={coupleIds} members={members} onPick={onPick} bioChildIds={bioChildIds} />
+        </>
+      )}
+    </div>
   );
-
-  const hasM = memberHasData(m.id, members);
-  const hasS = spouseBeside ? memberHasData(spouseBeside.id, members, true) : false;
-  const hasAnyQuota = hasM || hasS;
 
   return (
     <div className={styles.treeCol}>
 
-      {/* Couple row */}
-      <div className={styles.coupleRow}>
+      {/* Couple row — transfer target (left), member, optional beside-spouse */}
+      <div style={{ display: 'flex', alignItems: 'flex-start' }}>
 
-        {succNote && !isTransferToSpouse && (
-          <div className={styles.successionBox}>
+        {/* Membership transfer card — shown to the LEFT of the member, with its own quota */}
+        {succMember != null && !isTransferToSpouse && (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <TransferCard member={succMember} onPick={() => onPick(succMember!.id)} />
+              {memberHasData(succMember.id, members) && (
+                <>
+                  <div style={{ width: 1.5, height: 20, background: LINE, marginTop: 6 }} />
+                  <QuotaSection
+                    member={succMember}
+                    coupleIds={new Set([succMember.id])}
+                    members={members}
+                    onPick={onPick}
+                  />
+                </>
+              )}
+            </div>
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              alignSelf: 'flex-start', paddingTop: 54,
+              paddingLeft: 8, paddingRight: 8, flexShrink: 0,
+            }}>
+              <div className={styles.transferBadge}>← A/C transferred</div>
+              <div style={{ width: 32, height: 1.5, background: '#F59E0B' }} />
+            </div>
+          </>
+        )}
+        {succNote && !succMember && !isTransferToSpouse && (
+          <div style={{
+            alignSelf: 'flex-start', paddingTop: 60,
+            paddingRight: 6, display: 'flex', alignItems: 'center', gap: 4,
+          }}>
             <div className={styles.successionCard}>{succNote}</div>
-            <div className={styles.successionArrow}>→</div>
+            <div style={{ width: 20, height: 1.5, background: '#F59E0B' }} />
           </div>
         )}
 
-        <CoreCard member={m} onPick={() => onPick(m.id)} />
+        {memberCol(m, hasM)}
 
         {spouseBeside && (
           <>
-            <div className={styles.spouseConnector}>
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              alignSelf: 'flex-start', paddingTop: 54,
+              paddingLeft: 8, paddingRight: 8, flexShrink: 0,
+            }}>
               {isTransferToSpouse && (
                 <div className={styles.transferBadge}>A/C transferred →</div>
               )}
               <span className={styles.spouseLabel}>Spouse</span>
-              <div className={styles.spouseLine} />
+              <div style={{ width: 28, height: 1.5, background: LINE }} />
             </div>
-            <CoreCard member={spouseBeside} onPick={() => onPick(spouseBeside.id)} />
+            {memberCol(spouseBeside, hasS)}
           </>
         )}
       </div>
 
-      {/* Connector + Quota sections */}
-      {hasAnyQuota && (
-        <>
-          <div className={styles.vline} style={{ width: 1.5, height: 20, marginTop: 8 }} />
-
-          <div className={styles.quotaRow}>
-            {showDual && hasM && hasS && (
-              <div
-                className={styles.hbar}
-                style={{ position: 'absolute', top: -1, left: '22%', right: '22%' }}
-              />
-            )}
-
-            {hasM && (
-              <div className={styles.quotaCol}>
-                {showDual && (
-                  <div
-                    className={styles.memberIdBadge}
-                    style={{
-                      color: (TYPE_CONFIG[m.type] ?? TYPE_CONFIG.Permanent).color,
-                      background: (TYPE_CONFIG[m.type] ?? TYPE_CONFIG.Permanent).bg,
-                    }}
-                  >
-                    {m.id}
-                  </div>
-                )}
-                <QuotaSection member={m} coupleIds={coupleIds} members={members} onPick={onPick} />
-              </div>
-            )}
-
-            {spouseBeside && hasS && (
-              <div className={styles.quotaCol}>
-                <div
-                  className={styles.memberIdBadge}
-                  style={{
-                    color: (TYPE_CONFIG[spouseBeside.type] ?? TYPE_CONFIG.Permanent).color,
-                    background: (TYPE_CONFIG[spouseBeside.type] ?? TYPE_CONFIG.Permanent).bg,
-                  }}
-                >
-                  {spouseBeside.id}
-                </div>
-                <QuotaSection member={spouseBeside} coupleIds={coupleIds} members={members} onPick={onPick} />
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
       {/* Bio children */}
       {bioChildren.length > 0 && (
         <div className={styles.childrenSection}>
-          <div className={styles.vline} style={{ width: 1.5, height: 24, marginTop: 20 }} />
+          <div style={{ width: 1.5, height: 28, background: LINE, marginTop: 16 }} />
           <span className={styles.childrenLabel}>Children</span>
-          <div className={styles.vline} style={{ width: 1.5, height: 16 }} />
-
+          <div style={{ width: 1.5, height: 14, background: LINE }} />
           <div className={styles.childrenRow}>
             {bioChildren.map((child, idx) => {
               const isFirst = idx === 0;
               const isLast = idx === bioChildren.length - 1;
               const multi = bioChildren.length > 1;
+              const relLabel = bioMode
+                ? (child.gender === 'M' ? 'Son' : child.gender === 'F' ? 'Daughter' : 'Child')
+                : null;
               return (
                 <div key={child.id} className={styles.childWrapper}>
                   {multi && (
@@ -318,8 +408,9 @@ function QuotaTree({ member: m, members, onPick }: {
                   )}
                   <div className={styles.childStem} />
                   <div className={styles.childCard}>
-                    <QuotaTree member={child} members={members} onPick={onPick} />
+                    <QuotaTree member={child} members={members} onPick={onPick} bioMode={bioMode} />
                   </div>
+                  {relLabel && <div className={styles.bioChildLabel}>{relLabel}</div>}
                 </div>
               );
             })}
@@ -346,16 +437,17 @@ function findRoot(startId: string, members: Member[]): string {
 
 // ── Export ────────────────────────────────────────────────────────────────────
 
-export function QuotaFamilyDiagram({ rootId, members, onPick }: {
+export function QuotaFamilyDiagram({ rootId, members, onPick, bioMode }: {
   rootId: string;
   members: Member[];
   onPick: (id: string) => void;
+  bioMode?: boolean;
 }) {
   const rootMember = members.find(m => m.id === findRoot(rootId, members));
   if (!rootMember) return null;
   return (
     <div className={styles.root}>
-      <QuotaTree member={rootMember} members={members} onPick={onPick} />
+      <QuotaTree member={rootMember} members={members} onPick={onPick} bioMode={bioMode} />
     </div>
   );
 }

@@ -1,16 +1,14 @@
 'use client';
 
 import {
-  buildFocusedRelationship,
   buildRelationshipDiagram,
   DIAGRAM_BOX_W,
   DIAGRAM_BOX_H,
   TYPE_CONFIG,
+  getInitials,
 } from '@/lib/memberUtils';
 import { Member } from '@/lib/types';
-import MemberNode from './MemberNode';
 import { QuotaFamilyDiagram } from './QuotaFamilyDiagram';
-import styles from './RelationshipDiagram.module.css';
 
 interface Props {
   focusId: string;
@@ -19,83 +17,138 @@ interface Props {
 }
 
 export function FocusedDiagram({ focusId, members, onPick }: Props) {
-  const view = buildFocusedRelationship(members, focusId);
-  if (!view) return null;
+  const owner = members.find(m => m.id === focusId);
+  if (!owner) return null;
 
-  const { owner, ownerCaption, connections, associateCount, nomineeCount } = view;
-  const lateralSpouse = connections.find(c => c.isSpouse && c.member.type !== 'A4D');
-  const lowerConns = connections.filter(c => c !== lateralSpouse);
+  // Spouse: if owner is registered as a spouse, find their partner;
+  // otherwise find who registered as spouse under owner
+  const spouse = owner.rel === 'spouse' && owner.pid
+    ? (members.find(m => m.id === owner.pid) ?? null)
+    : (members.find(m => m.pid === focusId && m.rel === 'spouse') ?? null);
+
+  // Bio children via fatherId/motherId; structural rel=child as fallback
+  const parentIds = new Set([owner.id, ...(spouse ? [spouse.id] : [])]);
+  const seenIds = new Set<string>([owner.id, ...(spouse ? [spouse.id] : [])]);
+  const bioChildren = members.filter(m => {
+    if (seenIds.has(m.id)) return false;
+    const linked = (m.fatherId && parentIds.has(m.fatherId)) ||
+                   (m.motherId && parentIds.has(m.motherId));
+    const structural = m.rel === 'child' && parentIds.has(m.pid ?? '') &&
+                       !m.fatherId && !m.motherId;
+    if (linked || structural) { seenIds.add(m.id); return true; }
+    return false;
+  });
+
+  // Dimensions (larger cards)
+  const CW = 148; const CH = 100;
+  const AV_R = 22; const AV_CY = 34;
+  const HG = 20; const VG = 76; const SG = 56;
+  const PX = 32; const PY = 28; const LH = 22;
+
+  // Role colours
+  const OWNER_C  = '#0F766E'; const OWNER_BG  = '#F0FDFA';
+  const SPOUSE_C = '#BE185D'; const SPOUSE_BG = '#FDF2F8';
+  const CHILD_C  = '#6D28D9'; const CHILD_BG  = '#F5F3FF';
+  const LINE = '#CBD5E1';
+
+  const childLabel = (m: Member) =>
+    m.gender === 'M' ? 'Son' : m.gender === 'F' ? 'Daughter' : 'Child';
+
+  const drawCard = (m: Member, x: number, y: number, color: string, bg: string, caption?: string) => (
+    <g key={m.id} style={{ cursor: 'pointer' }} onClick={() => onPick(m.id)}>
+      <rect x={x} y={y} width={CW} height={CH} rx={12}
+        fill={bg} stroke={color} strokeWidth={1.5} />
+      <circle cx={x + CW / 2} cy={y + AV_CY} r={AV_R} fill={color} />
+      <text x={x + CW / 2} y={y + AV_CY + 7} textAnchor="middle"
+        fontSize="13" fontWeight="700" fill="#fff">
+        {getInitials(m.name)}
+      </text>
+      <text x={x + CW / 2} y={y + AV_CY + AV_R + 18} textAnchor="middle"
+        fontSize="12" fontWeight="600" fill="#111827">
+        {m.name.length > 18 ? m.name.slice(0, 17) + '…' : m.name}
+      </text>
+      <text x={x + CW / 2} y={y + AV_CY + AV_R + 32} textAnchor="middle"
+        fontSize="10" fill="#9CA3AF">
+        {m.id}
+      </text>
+      {caption && (
+        <text x={x + CW / 2} y={y + CH + 16} textAnchor="middle"
+          fontSize="9" fontWeight="500" fill={color}>
+          {caption}
+        </text>
+      )}
+    </g>
+  );
+
+  // Layout
+  const topW   = spouse ? 2 * CW + SG : CW;
+  const botW   = bioChildren.length > 0
+    ? bioChildren.length * CW + (bioChildren.length - 1) * HG : 0;
+  const svgW   = Math.max(topW, botW) + 2 * PX;
+  const mid    = svgW / 2;
+
+  const ownerX       = spouse ? mid - CW - SG / 2 : mid - CW / 2;
+  const spouseX      = mid + SG / 2;
+  const mainCX       = spouse ? mid : ownerX + CW / 2;
+  const childX0      = (svgW - botW) / 2;
+  const row1Y        = PY;
+  const row2Y        = row1Y + CH + VG;
+  const spouseLineY  = row1Y + CH / 2;
+  const spouseLabelX = ownerX + CW + SG / 2;
+  const svgH = bioChildren.length > 0
+    ? row2Y + CH + 24 + PY
+    : row1Y + CH + PY;
 
   return (
-    <div className={styles.focusedWrap}>
+    <div style={{ width: '100%', overflowX: 'auto' }}>
+      <svg width={svgW} height={svgH}
+        style={{ display: 'block', margin: '0 auto', minWidth: svgW }}>
 
-      <div className={styles.topRow}>
-        {lateralSpouse && (
-          <div className={styles.invisible}>
-            <div className={styles.spouseConnectorMirror}>
-              <div style={{ fontSize: 8, whiteSpace: 'nowrap', marginBottom: 2 }}>x</div>
-              <div style={{ width: 32, height: 1.5 }} />
-            </div>
-            <div style={{ border: '1px solid transparent', borderRadius: '1rem' }}>
-              <MemberNode member={lateralSpouse.member} />
-            </div>
-          </div>
+        {/* Spouse connector */}
+        {spouse && (
+          <g>
+            <line x1={ownerX + CW} y1={spouseLineY} x2={spouseX} y2={spouseLineY}
+              stroke={LINE} strokeWidth={1.5} />
+            <rect x={spouseLabelX - 24} y={spouseLineY - 9} width={48} height={17} rx={5}
+              fill="#F9FAFB" stroke={LINE} strokeWidth={1} />
+            <text x={spouseLabelX} y={spouseLineY + 5} textAnchor="middle"
+              fontSize="8" fill="#94A3B8" letterSpacing="0.6">
+              SPOUSE
+            </text>
+          </g>
         )}
 
-        <div className={styles.ownerCard} onClick={() => onPick(owner.id)}>
-          <MemberNode member={owner} />
-        </div>
-
-        {lateralSpouse && (
-          <div className={styles.spouseConnector}>
-            <div className={styles.spouseConnectorInner}>
-              <div className={styles.spouseLabel}>[Spouse]</div>
-              <div className={styles.spouseLine} />
-            </div>
-            <div className={styles.ownerCard} onClick={() => onPick(lateralSpouse.member.id)}>
-              <MemberNode member={lateralSpouse.member} />
-              {lateralSpouse.refNote && (
-                <div style={{ fontSize: 9, color: '#9ca3af', padding: '0 0.75rem 0.5rem' }}>
-                  ({lateralSpouse.refNote})
-                </div>
-              )}
-            </div>
-          </div>
+        {/* Lines to children */}
+        {bioChildren.length > 0 && (
+          <g>
+            <line x1={mainCX} y1={row1Y + CH} x2={mainCX} y2={row2Y - LH}
+              stroke={LINE} strokeWidth={1.5} />
+            {bioChildren.length > 1 && (
+              <line
+                x1={childX0 + CW / 2} y1={row2Y - LH}
+                x2={childX0 + botW - CW / 2} y2={row2Y - LH}
+                stroke={LINE} strokeWidth={1.5}
+              />
+            )}
+            {bioChildren.map((c, i) => {
+              const cx = childX0 + i * (CW + HG) + CW / 2;
+              return (
+                <line key={`stem-${c.id}`}
+                  x1={cx} y1={row2Y - LH} x2={cx} y2={row2Y}
+                  stroke={LINE} strokeWidth={1.5}
+                />
+              );
+            })}
+          </g>
         )}
-      </div>
 
-      {ownerCaption && (
-        <div className={styles.ownerCaption}>{ownerCaption}</div>
-      )}
+        {drawCard(owner, ownerX, row1Y, OWNER_C, OWNER_BG)}
+        {spouse && drawCard(spouse, spouseX, row1Y, SPOUSE_C, SPOUSE_BG)}
+        {bioChildren.map((c, i) =>
+          drawCard(c, childX0 + i * (CW + HG), row2Y, CHILD_C, CHILD_BG, childLabel(c))
+        )}
 
-      {(associateCount > 0 || nomineeCount > 0) && (
-        <div className={styles.assocCount}>
-          {associateCount > 0 ? `${associateCount} Associate(s)` : ''}
-          {associateCount > 0 && nomineeCount > 0 ? ' · ' : ''}
-          {nomineeCount > 0 ? `${nomineeCount} Nominee(s)` : ''}
-        </div>
-      )}
-
-      {lowerConns.length > 0 && (
-        <>
-          <div className={styles.vline} style={{ width: 1.5, height: 40 }} />
-          {lowerConns.length > 1 && (
-            <div className={styles.hline} style={{ height: 1.5, width: Math.min(lowerConns.length * 170, 600) }} />
-          )}
-          <div className={styles.childrenRow}>
-            {lowerConns.map(c => (
-              <div key={c.member.id} className={styles.childCol} onClick={() => onPick(c.member.id)}>
-                <div className={styles.vline} style={{ width: 1.5, height: 28 }} />
-                <div className={styles.childCard}>
-                  <MemberNode member={c.member} />
-                </div>
-                {c.refNote && <div className={styles.refNote}>({c.refNote})</div>}
-                {c.caption && <div className={styles.caption}>{c.caption}</div>}
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+      </svg>
     </div>
   );
 }
@@ -201,6 +254,12 @@ interface BioProps {
   onPick: (id: string) => void;
 }
 
+// Member Relationship tab: quota/sponsorship tree only — no bio children
 export function BioFamilyDiagram({ rootId, members, onPick }: BioProps) {
   return <QuotaFamilyDiagram rootId={rootId} members={members} onPick={onPick} />;
+}
+
+// Family Relationship tab: biological family tree with recursive children
+export function FamilyTreeDiagram({ rootId, members, onPick }: BioProps) {
+  return <QuotaFamilyDiagram rootId={rootId} members={members} onPick={onPick} bioMode />;
 }

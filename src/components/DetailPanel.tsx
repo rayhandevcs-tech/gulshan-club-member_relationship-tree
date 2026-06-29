@@ -171,11 +171,8 @@ export default function DetailPanel() {
     : (members.find(c => c.pid === m.id && c.rel === 'spouse') ?? null);
   const showPrimary = !!parent && (m.rel === 'a4d' || m.rel === 'associate' || m.rel === 'nominee');
   const bioChildren = members.filter(c => c.fatherId === m.id || c.motherId === m.id);
-  const isDependentType = (type: string) => type === 'A4D' || type === 'Associate' || type === 'Permanent';
-  const dependents = children.filter(c =>
-    c.rel !== 'child' && c.rel !== null &&
-    (c.rel !== 'spouse' || isDependentType(c.type))
-  );
+  const a4dMembers = children.filter(c => c.rel === 'a4d');
+  const associateMembers = children.filter(c => c.rel === 'associate' || c.rel === 'nominee');
 
   const previewMember = previewId ? getMember(members, previewId) : null;
 
@@ -229,7 +226,7 @@ export default function DetailPanel() {
             </div>
           ))}
 
-        {(showPrimary || spouseMember || fatherDisplay || motherDisplay || bioChildren.length > 0 || dependents.length > 0) && (
+        {(showPrimary || spouseMember || fatherDisplay || motherDisplay || bioChildren.length > 0 || a4dMembers.length > 0 || associateMembers.length > 0) && (
           <div className={s.panelRelSection}>
 
             {(fatherDisplay || motherDisplay) && (
@@ -244,6 +241,7 @@ export default function DetailPanel() {
                   >
                     <span className={s.panelParentLabelCell}>Father</span>
                     <span className={s.panelParentValue}>{fatherDisplay}</span>
+                    {fatherMember && <span className={s.panelParentAcNo}>{fatherMember.id}</span>}
                     {fatherMember && <ChevronRight size={12} className={s.panelChevronSm} />}
                   </div>
                 )}
@@ -254,6 +252,7 @@ export default function DetailPanel() {
                   >
                     <span className={s.panelParentLabelCell}>Mother</span>
                     <span className={s.panelParentValue}>{motherDisplay}</span>
+                    {motherMember && <span className={s.panelParentAcNo}>{motherMember.id}</span>}
                     {motherMember && <ChevronRight size={12} className={s.panelChevronSm} />}
                   </div>
                 )}
@@ -283,10 +282,19 @@ export default function DetailPanel() {
               </>
             )}
 
-            {dependents.length > 0 && (
+            {a4dMembers.length > 0 && (
               <>
-                <div className={s.panelSectionLabel}>A4D Members ({dependents.length})</div>
-                {dependents.map(ch => (
+                <div className={s.panelSectionLabel}>A4D Members ({a4dMembers.length})</div>
+                {a4dMembers.map(ch => (
+                  <MemberRow key={ch.id} member={ch} onPreview={setPreviewId} />
+                ))}
+              </>
+            )}
+
+            {associateMembers.length > 0 && (
+              <>
+                <div className={s.panelSectionLabel}>Associate Members ({associateMembers.length})</div>
+                {associateMembers.map(ch => (
                   <MemberRow key={ch.id} member={ch} onPreview={setPreviewId} />
                 ))}
               </>

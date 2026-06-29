@@ -2,17 +2,7 @@
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  border: 1px solid #f3f4f6;
-  border-radius: 1rem;
   padding: 1.25rem;
-  background-color: #ffffff;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-}
-
-@media (min-width: 640px) {
-  .root {
-    padding: 2rem;
-  }
 }
 
 /* QuotaTree */
@@ -352,6 +342,65 @@
   border-radius: 9999px;
 }
 
+/* Bio child relationship label */
+.bioChildLabel {
+  font-size: 9px;
+  font-weight: 500;
+  color: #6b7280;
+  background-color: #f3f4f6;
+  border-radius: 9999px;
+  padding: 0.125rem 0.625rem;
+  margin-top: 0.375rem;
+  white-space: nowrap;
+}
+
+/* Transfer card */
+.transferCard {
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 1rem;
+  padding: 0.75rem 0.875rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  background-color: #fffbeb;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  opacity: 0.9;
+}
+
+.transferCard:hover {
+  opacity: 1;
+}
+
+.transferAvatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.transferName {
+  font-size: 10px;
+  font-weight: 600;
+  color: #1f2937;
+  text-align: center;
+  max-width: 6rem;
+  line-height: 1.25;
+}
+
+.transferId {
+  font-size: 9px;
+  color: #9ca3af;
+  font-family: monospace;
+}
+
 /* Bio children section */
 .childrenSection {
   display: flex;
@@ -421,15 +470,5 @@
 }
 
 .childCard {
-  border: 1px solid #f3f4f6;
-  border-radius: 1rem;
-  padding: 1rem;
-  background-color: #ffffff;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-}
-
-@media (min-width: 640px) {
-  .childCard {
-    padding: 1.25rem;
-  }
+  padding: 0.5rem;
 }

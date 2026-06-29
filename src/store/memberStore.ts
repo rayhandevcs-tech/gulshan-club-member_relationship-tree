@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Member } from '@/lib/types';
 import { demoMembers } from '@/lib/demoData';
+//import { allTestCases } from '@/lib/demoData';  
 
 interface MemberStore {
   members: Member[];
@@ -8,10 +9,6 @@ interface MemberStore {
   filterType: string | null;
   searchQuery: string;
   activeRootId: string | null;
-  // Which person the relationship diagram is currently centered on.
-  // Deliberately separate from selectedId: clicking an A4D leaf should
-  // update the sidebar without yanking the diagram away to their
-  // (usually empty) view.
   focusViewId: string | null;
   view: 'tree' | 'grid';
   addMember: (m: Member) => void;
@@ -27,7 +24,8 @@ interface MemberStore {
 }
 
 export const useMemberStore = create<MemberStore>((set, get) => ({
-  members: demoMembers,
+ members: demoMembers,
+  //members: allTestCases,  
   selectedId: null,
   filterType: null,
   searchQuery: '',
@@ -52,17 +50,9 @@ export const useMemberStore = create<MemberStore>((set, get) => ({
   },
 
   setSelected: (id) => set({ selectedId: id }),
-  // Typing a fresh query should clear whatever single family was being
-  // shown, until the person picks a specific result from the dropdown.
   setSearch: (q) => set({ searchQuery: q, activeRootId: null }),
   setActiveRoot: (id) => set({ activeRootId: id }),
   setFocusView: (id) => set({ focusViewId: id }),
-  // The one navigation entry point used everywhere a person is clicked
-  // to "go look at them": always updates the sidebar, and re-anchors the
-  // relationship diagram for root members, 'child' members, and spouses.
-  // Spouses each own their own A4D quota so they get their own focused
-  // view when clicked. A4D, associate, and nominee members are leaf
-  // dependents — clicking them just opens their sidebar.
   navigateTo: (id) => {
     const member = get().members.find(m => m.id === id);
     const isAnchor = member && (member.rel === null || member.rel === 'child' || member.rel === 'spouse');
@@ -71,8 +61,6 @@ export const useMemberStore = create<MemberStore>((set, get) => ({
       focusViewId: isAnchor ? id : s.focusViewId,
     }));
   },
-  // Browsing by category pill is a different mode from "view one family",
-  // so switch cleanly instead of mixing both filters together.
   setFilterType: (t) => set({ filterType: t, searchQuery: '', activeRootId: null }),
   setView: (v) => set({ view: v }),
 }));

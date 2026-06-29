@@ -299,13 +299,13 @@
   width: 100%;
   overflow: auto;
   padding: 0.75rem;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  display: block;
 }
 
 .diagramAreaStart {
-  justify-content: flex-start;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
 }
 
 @media (min-width: 640px) {

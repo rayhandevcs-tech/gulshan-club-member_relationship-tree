@@ -113,7 +113,7 @@ function EmptyPrompt() {
 
 export default function MemberTree() {
   const { members, filterType, activeRootId, focusViewId, view, navigateTo } = useMemberStore();
-  const [diagramMode, setDiagramMode] = useState<'focused' | 'whole' | 'bio'>('focused');
+  const [diagramMode, setDiagramMode] = useState<'focused' | 'whole' | 'bio'>('bio');
 
   const categoryMatchIds = filterType
     ? new Set(members.filter(m => m.type === filterType).map(m => m.id))
@@ -196,22 +196,24 @@ export default function MemberTree() {
     <div className={s.diagramWrap}>
       <div className={s.tabs}>
         <button
-          onClick={() => setDiagramMode('focused')}
-          className={`${s.tab} ${diagramMode === 'focused' ? s.tabActive : ''}`}
-        >
-          <GitBranch size={12} /> Family Relationship
-        </button>
-        <button
           onClick={() => setDiagramMode('bio')}
           className={`${s.tab} ${diagramMode === 'bio' ? s.tabActive : ''}`}
         >
-          <Users size={12} /> Membership Relationship
+          <GitBranch size={12} /> Member Relationship
+        </button>
+        <button
+          onClick={() => setDiagramMode('focused')}
+          className={`${s.tab} ${diagramMode === 'focused' ? s.tabActive : ''}`}
+        >
+          <Users size={12} /> Family Relationship
         </button>
       </div>
 
       <div className={`${s.diagramArea} ${diagramMode === 'bio' ? s.diagramAreaStart : ''}`}>
         {diagramMode === 'focused' && (
-          <FocusedDiagram focusId={focusId} members={members} onPick={navigateTo} />
+          <div className={s.bioWrap}>
+            <FocusedDiagram focusId={focusId} members={members} onPick={navigateTo} />
+          </div>
         )}
         {diagramMode === 'whole' && (
           <WholeMapDiagram rootId={activeRoot.id} members={members} onPick={navigateTo} />
