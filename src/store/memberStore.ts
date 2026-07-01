@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Member } from '@/lib/types';
-import { demoMembers } from '@/lib/demoData';
-//import { allTestCases } from '@/lib/demoData';  
+//import { demoMembers } from '@/lib/demoData';
+import { allTestCases } from '@/lib/demoData';  
 
 interface MemberStore {
   members: Member[];
@@ -24,8 +24,8 @@ interface MemberStore {
 }
 
 export const useMemberStore = create<MemberStore>((set, get) => ({
- members: demoMembers,
-  //members: allTestCases,  
+ //members: demoMembers,
+  members: allTestCases,  
   selectedId: null,
   filterType: null,
   searchQuery: '',
