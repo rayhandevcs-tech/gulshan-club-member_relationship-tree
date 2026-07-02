@@ -29,6 +29,7 @@ export interface Member {
   phoneOff?: string;        // office phone
   pid: string | null;       // quota/structural parent — whose A4D slot this sits under in the tree
   rel: RelationType;        // relation to pid (spouse / a4d / associate / nominee)
+  photoUrl?: string;        // member photo — falls back to initials avatar when absent
 
   // True biological parentage — separate from pid
   fatherId?: string;

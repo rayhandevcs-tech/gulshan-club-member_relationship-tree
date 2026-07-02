@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
   Background,
@@ -19,14 +19,14 @@ import type { Member } from '@/lib/types';
 // ── Constants ──────────────────────────────────────────────────────────────────
 const CONN_COLOR = '#CBD5E1';
 const MEMBER_W   = 150;   // card render width
-const MEMBER_H   = 124;
+const MEMBER_H   = 140;   // extra room for a full (wrapped, up to 2-line) name
 const SUCC_W     = 126;
-const SUCC_H     = 108;
+const SUCC_H     = 120;
 const SLOT_W     = 160;
-const SLOT_H     = 96;
+const SLOT_H     = 108;
 const SLOT_SM_W  = 124;
-const SLOT_SM_H  = 80;
-const BESIDE_GAP = 26;    // gap between beside node cards (spouse / succession)
+const SLOT_SM_H  = 92;
+const BESIDE_GAP = 100;    // gap between beside node cards (spouse / succession)
 const ROOT_BESIDE_GAP = 800; // gap between the root couple specifically — wider so their above-placed slot clusters clear each other
 const TOP_SLOT_GAP = 64;  // min gap between the two root-couple's above-placed slot clusters
 
@@ -40,12 +40,16 @@ function cardColors(m: Member) {
   return { border: c.color, avatarBg: c.color, cardBg: '#FFFFFF' };
 }
 
-const CORE_TYPES = new Set(['Life', 'Life Senior', 'Senior', 'Donor']);
+// A4D/Associate are the only types that represent a slot *derived from*
+// someone else's quota. Anything else (Life, Donor, Permanent, Corporate,
+// Honorary, Foreign...) is an independently-held membership, so that spouse
+// renders beside their partner instead of as a dependent slot underneath.
+const DEPENDENT_TYPES = new Set(['A4D', 'Associate']);
 
 function isBesideSpouse(spouseId: string, memberId: string, members: Member[]): boolean {
   const sp = members.find(x => x.id === spouseId);
   if (!sp) return false;
-  if (CORE_TYPES.has(sp.type)) return true;
+  if (!DEPENDENT_TYPES.has(sp.type)) return true;
   return members.find(x => x.id === memberId)?.succession === spouseId;
 }
 
@@ -109,6 +113,7 @@ interface MemberNodeData {
 
 function MemberNodeComp({ data }: { data: MemberNodeData }) {
   const { member: m, isSuccessor, transferToSpouse, onPick } = data;
+  const [hovered, setHovered] = useState(false);
   const { border, avatarBg, cardBg } = cardColors(m);
   const name     = dispName(m);
   const w        = isSuccessor ? SUCC_W : MEMBER_W;
@@ -128,26 +133,35 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
 
       <button
         onClick={e => { e.stopPropagation(); onPick(m.id); }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         style={{
           border: `2px solid ${border}`, borderRadius: 16, background: bg,
           padding: isSuccessor ? '10px 12px' : '13px 16px',
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
           cursor: 'pointer', width: w,
-          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+          boxShadow: hovered ? '0 6px 16px rgba(0,0,0,0.16)' : '0 2px 6px rgba(0,0,0,0.08)',
+          transform: hovered ? 'translateY(-2px)' : 'none',
+          transition: 'box-shadow 150ms ease, transform 150ms ease, border-color 150ms ease',
           opacity: isSuccessor ? 0.9 : 1,
         }}
       >
         <div style={{
-          width: avatarSz, height: avatarSz, borderRadius: '50%', background: avatarBg,
+          width: avatarSz, height: avatarSz, borderRadius: '50%', backgroundColor: avatarBg,
+          backgroundImage: m.photoUrl ? `url(${m.photoUrl})` : undefined,
+          backgroundSize: 'cover', backgroundPosition: 'center',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: isSuccessor ? 12 : 14, fontWeight: 700, color: '#fff', flexShrink: 0,
         }}>
-          {getInitials(name)}
+          {!m.photoUrl && getInitials(name)}
         </div>
-        <div style={{ fontSize, fontWeight: 600, color: '#111827', textAlign: 'center', lineHeight: 1.3, maxWidth: w - 28 }}>
-          {name.length > 18 ? name.slice(0, 17) + '…' : name}
+        <div style={{ fontSize, fontWeight: 600, color: '#111827', textAlign: 'center', lineHeight: 1.3, width: w - 28, overflowWrap: 'break-word' }}>
+          {name}
         </div>
-        <div style={{ fontSize: isSuccessor ? 8 : 9.5, color: '#9CA3AF', fontFamily: 'monospace' }}>{m.id}</div>
+        <div style={{
+          fontSize: isSuccessor ? 8 : 9.5, fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.02em',
+          color: border, background: `${border}1a`, padding: '1px 7px', borderRadius: 999,
+        }}>{m.id}</div>
         {isDead(m) && (
           <span style={{ fontSize: 7.5, fontWeight: 600, color: '#92400e', background: '#fef3c7', padding: '1px 7px', borderRadius: 999 }}>
             Deceased
@@ -173,6 +187,7 @@ interface SlotNodeData {
 
 function SlotNodeComp({ data }: { data: SlotNodeData }) {
   const { member: m, role, small, reference, onPick } = data;
+  const [hovered, setHovered] = useState(false);
   const { border, avatarBg, cardBg } = cardColors(m);
   const name      = dispName(m);
   const roleColor = role === 'A4D' ? '#7c3aed' : '#c2410c';
@@ -192,27 +207,36 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
 
       <button
         onClick={e => { e.stopPropagation(); onPick(m.id); }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         style={{
           border: `2px solid ${border}`, borderRadius: 11, background: cardBg,
           padding: small ? '5px 7px' : '7px 10px',
           display: 'flex', flexDirection: 'column', gap: 4,
           cursor: 'pointer', width: w, textAlign: 'left',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+          boxShadow: hovered ? '0 4px 10px rgba(0,0,0,0.14)' : '0 1px 3px rgba(0,0,0,0.06)',
+          transform: hovered ? 'translateY(-1px)' : 'none',
+          transition: 'box-shadow 150ms ease, transform 150ms ease',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <div style={{
-            width: small ? 20 : 26, height: small ? 20 : 26, borderRadius: '50%', background: avatarBg,
+            width: small ? 20 : 26, height: small ? 20 : 26, borderRadius: '50%', backgroundColor: avatarBg,
+            backgroundImage: m.photoUrl ? `url(${m.photoUrl})` : undefined,
+            backgroundSize: 'cover', backgroundPosition: 'center',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: small ? 7 : 8, fontWeight: 700, color: '#fff', flexShrink: 0,
           }}>
-            {getInitials(name)}
+            {!m.photoUrl && getInitials(name)}
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: small ? 7.5 : 9, fontWeight: 600, color: '#111827', lineHeight: 1.3, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: small ? 7.5 : 9, fontWeight: 600, color: '#111827', lineHeight: 1.3, overflowWrap: 'break-word' }}>
               {name}
             </div>
-            <div style={{ fontSize: small ? 6.5 : 7.5, color: '#9CA3AF', fontFamily: 'monospace' }}>{m.id}</div>
+            <div style={{
+              display: 'inline-block', marginTop: 1, fontSize: small ? 6.5 : 7.5, fontWeight: 700, fontFamily: 'monospace',
+              color: border, background: `${border}1a`, padding: '0 5px', borderRadius: 999,
+            }}>{m.id}</div>
           </div>
         </div>
         {reference && (
@@ -260,10 +284,13 @@ function buildGraph(
   // placeAbove: true only for the root couple (LM-40/LS-40-style top positions) —
   // their A4D/Associate slots render above the member instead of below, per request.
   // Every other member's slots keep the normal below-member placement.
-  function addSlots(member: Member, bioChildIds: Set<string>, placeAbove: boolean) {
+  // besideSpouseId: the ONE spouse row (if any) already rendered beside this
+  // member — every other spouse row falls through to a slot here regardless
+  // of its own type, since only one partner fits in the beside seat.
+  function addSlots(member: Member, bioChildIds: Set<string>, placeAbove: boolean, besideSpouseId?: string) {
     const a4d = members.filter(x =>
       x.pid === member.id &&
-      (x.rel === 'a4d' || (x.rel === 'spouse' && !isBesideSpouse(x.id, member.id, members))) &&
+      (x.rel === 'a4d' || (x.rel === 'spouse' && x.id !== besideSpouseId)) &&
       !bioChildIds.has(x.id)
     );
     const assoc = members.filter(x =>
@@ -327,8 +354,13 @@ function buildGraph(
     if (seen.has(m.id)) return;
     seen.add(m.id);
 
-    const spouseRaw = members.find(x => x.pid === m.id && x.rel === 'spouse') ?? null;
-    const spouse    = spouseRaw && isBesideSpouse(spouseRaw.id, m.id, members) ? spouseRaw : null;
+    // A member can have more than one spouse record (e.g. one independently-
+    // membered, one holding an A4D slot off this member's quota). Prefer the
+    // independent one for the beside-card slot — any others fall through to
+    // addSlots' own '(rel === spouse && !isBesideSpouse)' filter and render
+    // as dependent slots below instead of being silently dropped.
+    const spouseRows = members.filter(x => x.pid === m.id && x.rel === 'spouse');
+    const spouse = spouseRows.find(x => isBesideSpouse(x.id, m.id, members)) ?? null;
     if (spouse) seen.add(spouse.id);
 
     const succNote           = m.succession;
@@ -397,7 +429,7 @@ function buildGraph(
       addSlots(succession, new Set(), false);
     }
 
-    addSlots(m, childIds, isRoot);
+    addSlots(m, childIds, isRoot, spouse?.id);
     if (spouse) addSlots(spouse, childIds, isRoot);
     children.forEach(child => traverse(child, m.id));
   }
@@ -668,6 +700,56 @@ function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edges: Edge
         }
       }
     }
+  }
+
+  // 6c. Below-slot recentering for ANY reserved anchor — the same drift
+  // problem 6a fixes for the root couple's above-placed slots also hits the
+  // far more common case: an ordinary (non-root) member whose own A4D/
+  // Associate slots sit BELOW them while a core-type spouse sits beside
+  // them. Dagre centers those slot children under the widened main-dagre
+  // column (anchor width + reserved spouse gap), not the anchor's actual
+  // visual card center, so re-center every reserved anchor's own
+  // below-placed slot subtree here too.
+  {
+    const belowSlotChildren = new Map<string, string[]>();
+    edges.forEach(e => {
+      const kind = (e.data as { kind?: string } | undefined)?.kind;
+      if (kind) return; // only plain (below-placed) slot edges — skip spouse/succession/slot-top
+      const tgtNode = nodes.find(n => n.id === e.target);
+      if (tgtNode?.type !== 'slot') return;
+      const arr = belowSlotChildren.get(e.source) ?? [];
+      arr.push(e.target);
+      belowSlotChildren.set(e.source, arr);
+    });
+    const belowSlotSubtree = (anchorId: string): string[] => {
+      const out: string[] = [];
+      const queue = [anchorId];
+      while (queue.length) {
+        const cur = queue.shift()!;
+        (belowSlotChildren.get(cur) ?? []).forEach(id => { out.push(id); queue.push(id); });
+      }
+      return out;
+    };
+
+    const reservedAnchorIds = new Set<string>();
+    besideInfo.forEach(({ anchorId }) => reservedAnchorIds.add(anchorId));
+    reservedAnchorIds.forEach(anchorId => {
+      const aPos  = posMap.get(anchorId);
+      const aNode = nodes.find(n => n.id === anchorId);
+      if (!aPos || !aNode) return;
+      const slotIds = belowSlotSubtree(anchorId);
+      if (!slotIds.length) return;
+      const lefts  = slotIds.map(id => posMap.get(id)?.x ?? 0);
+      const rights = slotIds.map(id => {
+        const n  = nodes.find(x => x.id === id);
+        const sm = n?.data?.small as boolean | undefined;
+        return (posMap.get(id)?.x ?? 0) + nodeW('slot', false, sm);
+      });
+      const clusterCenter = (Math.min(...lefts) + Math.max(...rights)) / 2;
+      const anchorCenter  = aPos.x + nodeW('member', aNode.data?.isSuccessor as boolean) / 2;
+      const shift = anchorCenter - clusterCenter;
+      slotIds.forEach(id => { const p = posMap.get(id); if (p) posMap.set(id, { x: p.x + shift, y: p.y }); });
+    });
   }
 
   // 6b. General slot-rank overlap sweep — a beside subtree (e.g. a

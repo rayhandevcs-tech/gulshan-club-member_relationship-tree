@@ -7,6 +7,7 @@ import {
   getInitials,
   TYPE_CONFIG,
   getA4DQuota,
+  getSiblings,
 } from '@/lib/memberUtils';
 import { Member } from '@/lib/types';
 import { X, ChevronRight, Users, ArrowRight } from 'lucide-react';
@@ -51,11 +52,11 @@ function MemberPreviewModal({
 
         <div className={s.previewModalBody}>
           <div className={s.previewAvatarWrap}>
-            <div className={s.previewAvatar} style={{ background: cfg.bg, color: cfg.dark }}>
-              {getInitials(member.name)}
+            <div className={s.previewAvatar} style={{ backgroundColor: cfg.bg, color: cfg.dark, backgroundImage: member.photoUrl ? `url(${member.photoUrl})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+              {!member.photoUrl && getInitials(member.name)}
             </div>
             <div className={s.previewName}>{member.name}</div>
-            <div className={s.previewId}>{member.id}</div>
+            <div className={s.previewId} style={{ background: cfg.bg, color: cfg.dark }}>{member.id}</div>
             <div className={s.previewTypeBadge} style={{ background: cfg.bg, color: cfg.dark }}>
               {member.type}
             </div>
@@ -133,12 +134,12 @@ function MemberRow({
   const cfg = TYPE_CONFIG[member.type] ?? TYPE_CONFIG.Permanent;
   return (
     <div className={s.memberRow} onClick={() => onPreview(member.id)}>
-      <div className={s.memberRowAvatar} style={{ background: cfg.bg, color: cfg.dark }}>
-        {getInitials(member.name)}
+      <div className={s.memberRowAvatar} style={{ backgroundColor: cfg.bg, color: cfg.dark, backgroundImage: member.photoUrl ? `url(${member.photoUrl})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+        {!member.photoUrl && getInitials(member.name)}
       </div>
       <div className={s.memberRowInfo}>
         <div className={s.memberRowName}>{member.name}</div>
-        <div className={s.memberRowId}>{member.id}</div>
+        <div className={s.memberRowId} style={{ background: cfg.bg, color: cfg.dark }}>{member.id}</div>
       </div>
       <ChevronRight size={14} className={s.memberRowChevron} />
     </div>
@@ -173,6 +174,7 @@ export default function DetailPanel() {
   const bioChildren = members.filter(c => c.fatherId === m.id || c.motherId === m.id);
   const a4dMembers = children.filter(c => c.rel === 'a4d');
   const associateMembers = children.filter(c => c.rel === 'associate' || c.rel === 'nominee');
+  const siblings = getSiblings(members, m);
 
   const previewMember = previewId ? getMember(members, previewId) : null;
 
@@ -192,12 +194,12 @@ export default function DetailPanel() {
           </button>
         </div>
 
-        <div className={s.panelAvatar} style={{ background: cfg.bg, color: cfg.dark }}>
-          {getInitials(m.name)}
+        <div className={s.panelAvatar} style={{ backgroundColor: cfg.bg, color: cfg.dark, backgroundImage: m.photoUrl ? `url(${m.photoUrl})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+          {!m.photoUrl && getInitials(m.name)}
         </div>
 
         <div className={s.panelName}>{m.name}</div>
-        <div className={s.panelId}>{m.id}</div>
+        <div className={s.panelId} style={{ background: cfg.bg, color: cfg.dark }}>{m.id}</div>
 
         {isSponsorType ? (
           <div className={s.panelQuota}>
@@ -226,7 +228,7 @@ export default function DetailPanel() {
             </div>
           ))}
 
-        {(showPrimary || spouseMember || fatherDisplay || motherDisplay || bioChildren.length > 0 || a4dMembers.length > 0 || associateMembers.length > 0) && (
+        {(showPrimary || spouseMember || fatherDisplay || motherDisplay || siblings.length > 0 || bioChildren.length > 0 || a4dMembers.length > 0 || associateMembers.length > 0) && (
           <div className={s.panelRelSection}>
 
             {(fatherDisplay || motherDisplay) && (
@@ -270,6 +272,15 @@ export default function DetailPanel() {
               <>
                 <div className={s.panelSectionLabel}>Spouse</div>
                 <MemberRow member={spouseMember} onPreview={setPreviewId} />
+              </>
+            )}
+
+            {siblings.length > 0 && (
+              <>
+                <div className={s.panelSectionLabel}>Siblings ({siblings.length})</div>
+                {siblings.map(sib => (
+                  <MemberRow key={sib.id} member={sib} onPreview={setPreviewId} />
+                ))}
               </>
             )}
 

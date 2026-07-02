@@ -26,6 +26,18 @@ export const getNominees = (members: Member[], id: string) =>
 export const getRoots = (members: Member[]) =>
   members.filter(m => !m.pid);
 
+// Same-generation blood relatives: shares both bio parents, or (when bio
+// parentage isn't recorded) is another 'child'-rel member off the same
+// structural parent — mirrors the sibling-edge rule already used by
+// buildRelationshipDiagram/buildBioFamilyTree.
+export const getSiblings = (members: Member[], m: Member) =>
+  members.filter(x => {
+    if (x.id === m.id) return false;
+    const sameBioParents = !!(m.fatherId && m.motherId && x.fatherId === m.fatherId && x.motherId === m.motherId);
+    const sameCoreParent = m.rel === 'child' && x.rel === 'child' && !!m.pid && x.pid === m.pid;
+    return sameBioParents || sameCoreParent;
+  });
+
 export const getMember = (members: Member[], id: string) =>
   members.find(m => m.id === id);
 
