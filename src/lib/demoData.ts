@@ -41,7 +41,6 @@ export const familyMembers: Member[] = [
     gender: 'M',
     since: '21/11/1990',
     pid: 'DM-8', rel: 'child',
-    succession: 'PO-10', // এই dataset-এ PO-10 নেই → silently কিছু render হয় না
     fatherId: 'DM-8', motherId: 'PS-295',
     note: '(Level-13), SPL Western Tower, 186, Tejgaon, Dhaka-1208',
   },
@@ -137,6 +136,27 @@ export const familyMembers: Member[] = [
     pid: 'DS-25', rel: 'spouse',
     note: 'House # 2, Road # 62, Gulshan-2, Dhaka-1212',
   },
+
+  //extra data
+  // {
+  //   id: 'DS-37',
+  //   name: 'Mrs. Syeda Shaireen Aziz',
+  //   via: 'core',
+  //   gender: 'F',
+  //   since: '02/04/2013',
+  //   pid: 'PA-74', rel: 'spouse',
+  //   note: 'House # NWD-8, Road # 62, Gulshan-2, Dhaka-1212',
+  // },
+
+  // {
+  //   id: 'DS-38',
+  //   name: 'Mrs. Syeda Shaireen Aziz',
+  //   via: 'core',
+  //   gender: 'F',
+  //   since: '02/04/2013',
+  //   pid: 'PA-83', rel: 'spouse',
+  //   note: 'House # NWD-8, Road # 62, Gulshan-2, Dhaka-1212',
+  // },
   // second spouse of DS-25, came via HIS 4(d) quota → slot under DS-25.
   // Her A/C is PS-… (Permanent) — with `via` explicit, placement no longer
   // depends on array order or on her type.
@@ -293,6 +313,52 @@ export const familyMembers: Member[] = [
     fatherId: 'DS-25', motherId: 'PF-25',
     note: 'House # 2, Road # 62, Gulshan-2, Dhaka-1212 | Pending A/C',
   },
+
+// extra data
+  // {
+  //   id: 'PA-273',
+  //   name: 'Mr. Asef Aziz',
+  //   via: 'a4d',
+  //   gender: 'M',
+  //   since: '23/06/2020',
+  //   pid: 'DS-37', rel: 'child',
+  //   fatherId: 'DR-7', motherId: 'DS-36',
+  //   note: 'House # 8, Road # 62, Gulshan-2, Dhaka-1212',
+  // },
+  // 4(d)-DS-36 → mother's own quota (she's a beside spouse) → slot under HER
+  // {
+  //   id: 'PA-355',
+  //   name: 'Mr. Adil Aziz',
+  //   via: 'a4d',
+  //   gender: 'M',
+  //   since: '18/09/2023',
+  //   pid: 'DS-37', rel: 'child',
+  //   fatherId: 'DR-7', motherId: 'DS-36',
+  //   note: 'House # 8, Road # 62, Gulshan-2, Dhaka-1212',
+  // },
+
+  //
+  // {
+  //   id: 'PA-274',
+  //   name: 'Mr. Asef Aziz',
+  //   via: 'a4d',
+  //   gender: 'M',
+  //   since: '23/06/2020',
+  //   pid: 'DS-38', rel: 'child',
+  //   fatherId: 'DR-7', motherId: 'DS-36',
+  //   note: 'House # 8, Road # 62, Gulshan-2, Dhaka-1212',
+  // },
+  // 4(d)-DS-36 → mother's own quota (she's a beside spouse) → slot under HER
+  // {
+  //   id: 'PA-356',
+  //   name: 'Mr. Adil Aziz',
+  //   via: 'a4d',
+  //   gender: 'M',
+  //   since: '18/09/2023',
+  //   pid: 'DS-38', rel: 'child',
+  //   fatherId: 'DR-7', motherId: 'DS-36',
+  //   note: 'House # 8, Road # 62, Gulshan-2, Dhaka-1212',
+  // },
 
 
 // // LM-11 and LS-8 Family members
@@ -470,7 +536,7 @@ export const familyMembers: Member[] = [
   {
     id: 'PO-10',
     name: 'Omar Hamid Chowdhury',
-    via: 'core',
+    via: 'a4d',
     gender: 'M',
     since: '04/03/2018',
     phone: '+8801711593144',
