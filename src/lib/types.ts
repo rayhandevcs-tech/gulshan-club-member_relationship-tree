@@ -1,79 +1,17 @@
-// export type MemberType =
-//   | 'Donor'
-//   | 'Life'
-//   | 'Permanent'
-//   | 'Senior'
-//   | 'Associate'
-//   | 'A4D'
-//   | 'Corporate'
-//   | 'Honorary'
-//   | 'Foreign';
-
-// export type RelationType =
-//   | 'spouse'
-//   | 'a4d'
-//   | 'associate'
-//   | 'nominee'
-//   | 'child'    // a descendant who is themselves a core member (their own A4D quota), not a dependent of the parent's quota
-//   | null;
-
-// export interface Member {
-//   id: string;
-//   name: string;
-//   type: MemberType;
-//   gender?: 'M' | 'F';
-//   since: string;            // membership date
-//   email?: string;
-//   phone?: string;           // mobile
-//   phoneRes?: string;        // residential phone
-//   phoneOff?: string;        // office phone
-//   pid: string | null;       // quota/structural parent — whose A4D slot this sits under in the tree
-//   rel: RelationType;        // relation to pid (spouse / a4d / associate / nominee)
-//   photoUrl?: string;        // member photo — falls back to initials avatar when absent
-
-//   // True biological parentage — separate from pid
-//   fatherId?: string;
-//   fatherName?: string;
-//   motherId?: string;
-//   motherName?: string;
-
-//   // Legacy free-text fields
-//   father?: string;
-//   mother?: string;
-
-//   // Extended member profile fields
-//   memberId?: string;        // internal system ID (e.g. LM000066)
-//   slNo?: number;
-//   bloodGroup?: string;
-//   birthDate?: string;
-//   maritalStatus?: string;
-//   marriageDate?: string;
-//   religion?: string;
-//   nationality?: string;
-//   nationalId?: string;
-//   passport?: string;
-//   rfCard?: string;
-//   address?: string;
-//   creditLimit?: number;
-//   subscriptionFee?: number;
-//   voterStatus?: string;
-
-//   quotaNote?: string;
-//   succession?: string;
-//   membershipRef?: string;
-//   note?: string;
-// }
 
 // types.ts — merge this Member interface into your existing @/lib/types
 
-export type Via = 'core' | 'a4d';
-export type Rel = 'spouse' | 'child' | 'associate' | 'nominee';
+// access route — HOW the person holds club access. This is the placement
+// switch: 'core' → full card in the tree; anything else → slot card.
+export type Via = 'core' | 'a4d' | 'associate' | 'nominee';
+// pure relationship — WHO they are to pid. Never encodes access (via does).
+export type Rel = 'spouse' | 'child';
 
 export interface Member {
   id: string;                 // A/C no — prefix drives type: P→Permanent, AFD→A4D, D→Donor, L→Life
   name: string;
   type?: string;              // optional explicit override; normally derived from id prefix
-  via: Via;                   // 'core' = own membership | 'a4d' = access via someone's 4(d) quota
+  via: Via;                   // core = own membership | a4d / associate / nominee = via someone's quota
   gender?: 'M' | 'F';
   since?: string;
   pid: string | null;         // partner (spouse) or quota holder / tree parent
@@ -83,4 +21,17 @@ export interface Member {
   succession?: string;        // account transferred to this member id
   photoUrl?: string;
   note?: string;
+  // ── optional profile fields used by panels/search ──
+  phone?: string;
+  phoneRes?: string;
+  phoneOff?: string;
+  email?: string;
+  birthDate?: string;
+  memberId?: string;
+  membershipRef?: string;
+  quotaNote?: string;
+  fatherName?: string;        // display-only names when the parent
+  motherName?: string;        // has no record in the dataset
+  father?: string;
+  mother?: string;
 }

@@ -61,7 +61,7 @@ export default function SearchBar() {
         <div className={styles.dropdown}>
           {suggestions.map(m => {
             const type = getType(m);                              // ← derive
-            const cfg  = TYPE_CONFIG[type] ?? TYPE_CONFIG.Permanent; // ← safe fallback
+            const cfg  = TYPE_CONFIG[type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent; // ← safe fallback
             return (
               <div
                 key={m.id}

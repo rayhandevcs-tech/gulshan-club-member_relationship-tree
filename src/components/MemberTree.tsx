@@ -6,6 +6,7 @@ import {
   getRoots, getSpouse, getNonSpouseChildren, getAssociates,
   getNominees, getAllDescendants, getQuotaSourceCaption, TYPE_CONFIG
 } from '@/lib/memberUtils';
+import { getType } from '@/components/Quotatreelayout';
 import MemberNode from './MemberNode';
 import { FocusedDiagram, WholeMapDiagram, BioFamilyDiagram } from './RelationshipDiagram';
 import { Search, GitBranch, Users } from 'lucide-react';
@@ -72,7 +73,7 @@ function FamilySubtree({ member }: { member: Member }) {
             {allKids.map(kid => (
               <div key={kid.id} className={s.kidCol}>
                 <div className={s.subtreeVline} />
-                {kid.rel === 'child' ? (
+                {kid.rel === 'child' && kid.via !== 'a4d' ? (
                   <div className={s.kidBox}>
                     <FamilySubtree member={kid} />
                   </div>
@@ -116,7 +117,7 @@ export default function MemberTree() {
   const [diagramMode, setDiagramMode] = useState<'focused' | 'whole' | 'bio'>('bio');
 
   const categoryMatchIds = filterType
-    ? new Set(members.filter(m => m.type === filterType).map(m => m.id))
+    ? new Set(members.filter(m => getType(m) === filterType).map(m => m.id))
     : null;
 
   const categoryRoots = categoryMatchIds
@@ -147,7 +148,8 @@ export default function MemberTree() {
     return (
       <div className={s.grid}>
         {visible.map(m => {
-          const cfg = TYPE_CONFIG[m.type];
+          const type = getType(m);
+          const cfg = TYPE_CONFIG[type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
           return (
             <div
               key={m.id}
@@ -160,7 +162,7 @@ export default function MemberTree() {
               </div>
               <div className={s.gridName}>{m.name}</div>
               <div className={s.gridId}>{m.id}</div>
-              <div className={s.gridTypeBadge} style={{ background: cfg.bg, color: cfg.dark }}>{m.type}</div>
+              <div className={s.gridTypeBadge} style={{ background: cfg.bg, color: cfg.dark }}>{type}</div>
             </div>
           );
         })}
@@ -175,11 +177,12 @@ export default function MemberTree() {
     return (
       <div className={s.filterWrap}>
         {categoryRoots.map(r => {
-          const cfg = TYPE_CONFIG[r.type];
+          const type = getType(r);
+          const cfg = TYPE_CONFIG[type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
           return (
             <div key={r.id} className={s.filterCard} style={{ borderColor: cfg.color + '33' }}>
               <div className={s.filterCardBadge} style={{ background: cfg.bg, color: cfg.dark }}>
-                {r.type} · {r.id}
+                {type} · {r.id}
               </div>
               <FamilySubtree member={r} />
             </div>

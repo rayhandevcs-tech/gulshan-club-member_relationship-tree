@@ -1,6 +1,7 @@
 'use client';
 import { Member } from '@/lib/types';
 import { getInitials, TYPE_CONFIG, getRelLabel } from '@/lib/memberUtils';
+import { getType } from '@/components/Quotatreelayout';
 import { useMemberStore } from '@/store/memberStore';
 import styles from './MemberNode.module.css';
 
@@ -14,7 +15,7 @@ interface Props {
 
 export default function MemberNode({ member, showRel, small, dashed, fixed }: Props) {
   const { selectedId } = useMemberStore();
-  const cfg = TYPE_CONFIG[member.type] ?? TYPE_CONFIG.Permanent;
+  const cfg = TYPE_CONFIG[getType(member) as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
   const isSelected = selectedId === member.id;
   const relLabel = getRelLabel(member);
 

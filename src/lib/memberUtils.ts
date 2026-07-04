@@ -1,4 +1,5 @@
 import { Member } from './types';
+import { getType } from '@/components/Quotatreelayout';
 
 export const getInitials = (name: string) =>
   name
@@ -152,7 +153,7 @@ export const DEFAULT_A4D_QUOTA = 2;
 // is the real "this consumes a quota slot" signal, rel is just how it
 // renders in the tree.
 export const getA4DQuota = (members: Member[], sponsorId: string) => {
-  const used = members.filter(m => m.pid === sponsorId && m.type === 'A4D').length;
+  const used = members.filter(m => m.pid === sponsorId && getType(m) === 'A4D').length;
   return { used, total: DEFAULT_A4D_QUOTA, remaining: Math.max(DEFAULT_A4D_QUOTA - used, 0) };
 };
 
@@ -163,9 +164,11 @@ export const getA4DQuota = (members: Member[], sponsorId: string) => {
 // nested family card instead of a dependent leaf.
 export const getRelLabel = (member: Member): string => {
   if (!member.rel) return '';
-  if (member.rel === 'child') return '';
-  if (member.rel === 'a4d' && member.gender) {
-    return member.gender === 'M' ? 'Son (A4D)' : 'Daughter (A4D)';
+  if (member.rel === 'child') {
+    if (member.via === 'a4d' && member.gender) {
+      return member.gender === 'M' ? 'Son (A4D)' : 'Daughter (A4D)';
+    }
+    return '';
   }
   if (member.rel === 'spouse' && member.gender) {
     return member.gender === 'M' ? 'Husband' : 'Wife';
@@ -210,7 +213,7 @@ export const getRelRoleLabel = (member: Member): string => {
   if (member.rel === 'spouse' && member.gender) {
     return member.gender === 'M' ? 'Husband' : 'Wife';
   }
-  if ((member.rel === 'a4d' || member.rel === 'child') && member.gender) {
+  if (member.rel === 'child' && member.gender) {
     return member.gender === 'M' ? 'Son' : 'Daughter';
   }
   return REL_LABELS[member.rel] ?? member.rel;
@@ -268,7 +271,7 @@ export const buildFocusedRelationship = (members: Member[], focusId: string): Fo
         edgeLabel: getRelRoleLabel(focus) || 'Spouse',
         reversed: true,
         isSpouse: true,
-        refNote: focus.succession ? extractArticleRef(focus.succession) : undefined,
+        refNote: extractArticleRef(focus.note),
         caption: null,
       });
     }
@@ -281,20 +284,20 @@ export const buildFocusedRelationship = (members: Member[], focusId: string): Fo
       edgeLabel: getRelRoleLabel(spouse) || 'Spouse',
       reversed: false,
       isSpouse: true,
-      refNote: extractArticleRef(spouse.succession),
+      refNote: extractArticleRef(spouse.note),
       caption: null,
     });
   }
 
   getNonSpouseChildren(members, focus.id)
-    .filter(k => k.rel === 'a4d')
+    .filter(k => k.via === 'a4d')
     .forEach(k => {
       connections.push({
         member: k,
         edgeLabel: getRelRoleLabel(k) || 'Child',
         reversed: false,
         isSpouse: false,
-        caption: k.type === 'A4D' ? getQuotaSourceCaption(k, [focus.id], members) : null,
+        caption: getType(k) === 'A4D' ? getQuotaSourceCaption(k, [focus.id], members) : null,
       });
     });
 
@@ -303,7 +306,7 @@ export const buildFocusedRelationship = (members: Member[], focusId: string): Fo
 
   return {
     owner: focus,
-    ownerCaption: focus.type === 'A4D' ? getQuotaSourceCaption(focus, focus.pid ? [focus.pid] : [], members) : null,
+    ownerCaption: getType(focus) === 'A4D' ? getQuotaSourceCaption(focus, focus.pid ? [focus.pid] : [], members) : null,
     connections,
     associateCount,
     nomineeCount,
@@ -361,8 +364,8 @@ export interface DiagramLayout {
 }
 
 const relEdgeLabel = (m: Member): string => {
+  if (m.rel === 'child' && m.via === 'a4d') return 'A4D';
   switch (m.rel) {
-    case 'a4d': return 'A4D';
     case 'child': return 'Children';
     case 'associate': return 'Associate';
     case 'nominee': return 'Nominee';
@@ -448,7 +451,7 @@ export const buildRelationshipDiagram = (members: Member[], rootId: string): Dia
         x,
         y: rowIdx * DIAGRAM_ROW_GAP,
         row: rowIdx,
-        caption: m.type === 'A4D' ? getQuotaSourceCaption(m, sponsorIds, family) : null,
+        caption: getType(m) === 'A4D' ? getQuotaSourceCaption(m, sponsorIds, family) : null,
       });
       x += DIAGRAM_BOX_W + DIAGRAM_COL_GAP;
     });

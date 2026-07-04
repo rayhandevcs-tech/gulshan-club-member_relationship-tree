@@ -8,6 +8,7 @@ import {
   getInitials,
 } from '@/lib/memberUtils';
 import { Member } from '@/lib/types';
+import { getType } from '@/components/Quotatreelayout';
 import { QuotaFamilyDiagram } from './QuotaFamilyDiagram';
 
 interface Props {
@@ -228,7 +229,8 @@ export function WholeMapDiagram({ rootId, members, onPick }: WholeProps) {
       })}
 
       {nodes.map(n => {
-        const cfg = TYPE_CONFIG[n.member.type];
+        const type = getType(n.member);
+        const cfg = TYPE_CONFIG[type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
         const x = n.x - minX;
         const y = n.y + padTop;
         return (
@@ -237,7 +239,7 @@ export function WholeMapDiagram({ rootId, members, onPick }: WholeProps) {
             <text x={x + 12} y={y + 22} fontSize="13" fontWeight={600} fill="#1F2937">
               {n.member.name.length > 22 ? n.member.name.slice(0, 21) + '…' : n.member.name}
             </text>
-            <text x={x + 12} y={y + 40} fontSize="11" fill="#9CA3AF">{n.member.id} · {n.member.type}</text>
+            <text x={x + 12} y={y + 40} fontSize="11" fill="#9CA3AF">{n.member.id} · {type}</text>
             {n.caption && <text x={x + 12} y={y + 56} fontSize="10" fontStyle="italic" fill="#9CA3AF">{n.caption}</text>}
           </g>
         );

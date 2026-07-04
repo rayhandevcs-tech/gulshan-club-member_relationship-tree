@@ -1,38 +1,20 @@
-// quotaTreeLayout.ts
-// ─────────────────────────────────────────────────────────────────────────────
-// Pure graph-building + layout logic for the quota family diagram.
-// No React imports (only type-only reactflow imports), so this module can be
-// unit-tested in plain Node.
-//
-// DATA MODEL (the new, explicit model):
-//   type      — member class (Permanent / Donor / Life / A4D...). DERIVED from
-//               the ID prefix when not provided:  P→Permanent, D→Donor,
-//               L→Life, AFD→A4D (has quota access but no own A/C yet).
-//               type ONLY controls colors/badges — never placement.
-//   via       — 'core' | 'a4d'. THE placement switch:
-//                 core → independently-held membership → full card in tree
-//                 a4d  → holds a slot off someone's 4(d) quota → slot card
-//   rel       — 'spouse' | 'child' (pure relationship; drives line + label)
-//   pid       — who this record is attached to: the partner (spouse) or the
-//               quota holder / tree parent (child). For via:'a4d' pid is
-//               ALWAYS the quota holder — even a cross-family one.
-//   fatherId / motherId — real blood parents. Used for the reference text
-//               ("Son of PA-41") and for bioMode; never for quota placement.
-//
-// PLACEMENT MATRIX:
-//   rel=spouse via=core → beside partner, full card, "Spouse" line
-//   rel=spouse via=a4d  → slot under quota holder, "Spouse of {pid}"
-//   rel=child  via=core → next generation, full card
-//   rel=child  via=a4d  → slot under quota holder, "Son/Daughter of {father}"
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 import { Graph, layout } from '@dagrejs/dagre';
 import type { Node, Edge } from 'reactflow';
 import type { Member } from './types';
-export const TEST_PHOTO_URL = '/demo.jpg';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 export const CONN_COLOR = '#CBD5E1';
+
+// dev/test: সব avatar-এ আপাতত public/demo.jpg দেখাবে। যার নিজের photoUrl
+// আছে সে সেটাই পাবে (photoOf আগে photoUrl দেখে)। production-এ এটা '' করে
+// দিলেই সব জায়গায় initials ফিরে আসবে — আর কিছু বদলাতে হবে না।
+export const TEST_PHOTO_URL = '/demo.jpg';
+
+// এক জায়গায় photo resolve: নিজের ছবি > demo fallback
+export const photoOf = (m: Member): string | undefined =>
+  m.photoUrl || TEST_PHOTO_URL || undefined;
 
 // Two-tier sizing: one size for ALL member cards (incl. successors), one size
 // for ALL slot cards (incl. nested). Same width keeps columns aligned.
@@ -54,6 +36,7 @@ export function getType(m: Member): string {
   if (m.type) return m.type; // explicit override wins
   const prefix = (m.id.split('-')[0] ?? '').trim().toUpperCase();
   if (prefix === 'AFD') return 'A4D';
+  if (prefix === 'AS')  return 'Associate';
   switch (prefix.charAt(0)) {
     case 'P': return 'Permanent';
     case 'D': return 'Donor';
@@ -68,6 +51,10 @@ export function getType(m: Member): string {
 export const isDead   = (m: Member) => m.name.trim().toLowerCase().startsWith('late ');
 export const dispName = (m: Member) =>
   isDead(m) ? m.name.trim().replace(/^late\s+/i, '') : m.name.trim();
+
+// slot badge derives from the access route
+export const slotRole = (m: Member): 'A4D' | 'Assoc' =>
+  m.via === 'a4d' ? 'A4D' : 'Assoc';
 
 export function findRoot(startId: string, members: Member[]): string {
   let cur = startId;
@@ -85,8 +72,8 @@ export function findRoot(startId: string, members: Member[]): string {
 // via 'a4d' spouse who received the member's account (succession transfer).
 // Every other spouse row — regardless of type — falls through to a quota slot.
 export function isBesideSpouse(sp: Member, holder: Member): boolean {
-  if (sp.via !== 'a4d') return true;
-  return holder.succession === sp.id;
+  if (sp.via === 'core') return true;               // own membership → beside
+  return holder.succession === sp.id;               // dependent, but received the A/C
 }
 
 export function getBioChildren(
@@ -100,13 +87,13 @@ export function getBioChildren(
       return (
         (x.fatherId != null && ids.has(x.fatherId)) ||
         (x.motherId != null && ids.has(x.motherId)) ||
-        (x.rel === 'child' && x.via !== 'a4d' && ids.has(x.pid ?? ''))
+        (x.rel === 'child' && x.via === 'core' && ids.has(x.pid ?? ''))
       );
     });
   }
   // quota tree: only independently-held children hang as full cards
   return members.filter(x =>
-    x.rel === 'child' && x.via !== 'a4d' && (x.pid === m.id || (spouse != null && x.pid === spouse.id)),
+    x.rel === 'child' && x.via === 'core' && (x.pid === m.id || (spouse != null && x.pid === spouse.id)),
   );
 }
 
@@ -156,7 +143,7 @@ export function buildGraph(
   function addSlots(owner: Member, bioChildIds: Set<string>, placeAbove: boolean, besideSpouseId?: string) {
     const slots = members.filter(x =>
       x.pid === owner.id &&
-      x.via === 'a4d' &&
+      x.via !== 'core' &&
       x.id !== besideSpouseId &&
       !bioChildIds.has(x.id) &&
       // in bioMode anyone with known blood parents renders inside the tree
@@ -172,8 +159,7 @@ export function buildGraph(
     slots.forEach(slot => {
       const sid = slotNodeId(slot.id);
       seen.add(sid);
-      const role: 'A4D' | 'Assoc' =
-        slot.rel === 'associate' || slot.rel === 'nominee' ? 'Assoc' : 'A4D';
+      const role = slotRole(slot);
 
       nodes.push({
         id: sid, type: 'slot',
@@ -192,13 +178,12 @@ export function buildGraph(
         data: { kind: eKind },
       });
 
-      // nested slots (a slot member granting further a4d access)
-      members.filter(x => x.pid === slot.id && x.via === 'a4d').forEach(sub => {
+      // nested slots (a slot member granting further quota/associate access)
+      members.filter(x => x.pid === slot.id && x.via !== 'core').forEach(sub => {
         const subId = slotNodeId(sub.id);
         if (seen.has(subId) || seen.has(sub.id)) return;
         seen.add(subId);
-        const subRole: 'A4D' | 'Assoc' =
-          sub.rel === 'associate' || sub.rel === 'nominee' ? 'Assoc' : 'A4D';
+        const subRole = slotRole(sub);
         nodes.push({
           id: subId, type: 'slot',
           data: { member: sub, role: subRole, nested: true, reference: getRef(sub, slot), onPick },
@@ -250,21 +235,29 @@ export function buildGraph(
       });
     }
 
-    // Spouse → RIGHT (full card; only via:'core' or account-transfer spouses)
+    // Spouse → RIGHT (full card; only via:'core' or account-transfer spouses).
+    // A/C transfer to the spouse shows on the spousal LINE itself (amber
+    // dashed label), not as a badge on the spouse card.
     if (spouse) {
       nodes.push({
         id: spouse.id, type: 'member',
-        data: { member: spouse, transferToSpouse: isTransferToSpouse, onPick },
+        data: { member: spouse, onPick },
         position: { x: 0, y: 0 },
       });
       edges.push({
         id: `e-spouse-${m.id}-${spouse.id}`,
         source: m.id, target: spouse.id,
         type: 'straight',
-        label: 'Spouse',
-        style: { stroke: '#9CA3AF', strokeWidth: 1.5 },
-        labelStyle: { fontSize: 8.5, fill: '#9CA3AF', fontWeight: 500 },
-        labelBgStyle: { fill: '#fff', fillOpacity: 0.92, borderRadius: 4 },
+        label: isTransferToSpouse ? 'A/C transferred' : 'Spouse',
+        style: isTransferToSpouse
+          ? { stroke: '#F59E0B', strokeWidth: 1.5, strokeDasharray: '5 3' }
+          : { stroke: '#9CA3AF', strokeWidth: 1.5 },
+        labelStyle: isTransferToSpouse
+          ? { fontSize: 8.5, fill: '#92400e', fontWeight: 600 }
+          : { fontSize: 8.5, fill: '#9CA3AF', fontWeight: 500 },
+        labelBgStyle: isTransferToSpouse
+          ? { fill: '#fffbeb', fillOpacity: 0.95, borderRadius: 4 }
+          : { fill: '#fff', fillOpacity: 0.92, borderRadius: 4 },
         data: { kind: 'spouse', rootPair: isRoot },
       });
     }
@@ -409,12 +402,14 @@ export function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edge
   const shiftIds = (ids: string[], dx: number) =>
     ids.forEach(id => { const p = posMap.get(id); if (p) posMap.set(id, { x: p.x + dx, y: p.y }); });
 
-  // 4.5 group ordering — dagre was given the beside cards' slot edges remapped
-  // onto the anchor, so it spaced the combined slot set correctly but in an
-  // ARBITRARY order (its crossing-minimization doesn't know which card each
-  // group belongs to). Reflow each anchor's groups left→right in card order:
-  // [successor groups] [anchor's own group] [spouse groups] — inside the same
-  // horizontal extent dagre already reserved, so this can't create collisions.
+  // 4.5 global slot-group ordering & packing — dagre received the beside
+  // cards' slot edges remapped onto anchors, so it spaced the combined slot
+  // set correctly but in an ARBITRARY order: it may interleave DIFFERENT
+  // anchors' groups (e.g. a beside-spouse's slots drifting into a sibling's
+  // column). Fix globally: (a) drop every owner's group at its ideal spot,
+  // centered under its own card; (b) sweep left→right in that ideal order,
+  // pushing each group right just enough (per shared row) to clear everything
+  // placed before it, hopping over immovable member-card "walls" on the way.
   const groupBox = (ids: string[]) => {
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     ids.forEach(id => {
@@ -424,50 +419,61 @@ export function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edge
     });
     return { minX, maxX, minY, maxY, w: maxX - minX };
   };
-
   {
-    const anchors = new Map<string, { lefts: string[]; rights: string[] }>();
-    besideInfo.forEach(({ anchorId, side }, bid) => {
-      const a = anchors.get(anchorId) ?? { lefts: [], rights: [] };
-      (side === 'left' ? a.lefts : a.rights).push(bid);
-      anchors.set(anchorId, a);
+    type Rect = { minX: number; maxX: number; minY: number; maxY: number };
+    const yOverlap = (a: Rect, b: Rect) => a.minY < b.maxY - 0.5 && b.minY < a.maxY - 0.5;
+
+    // one group per owner card that has slots
+    const groups = nodes
+      .filter(n => n.type === 'member' && posMap.has(n.id))
+      .map(n => ({ ownerId: n.id, ids: slotSubtree(n.id).filter(id => posMap.has(id)) }))
+      .filter(gr => gr.ids.length > 0);
+
+    // (a) ideal: center each group under its owner (collisions resolved in b)
+    groups.forEach(gr => {
+      const b = groupBox(gr.ids);
+      const oPos = posMap.get(gr.ownerId)!;
+      const shift = oPos.x + nodeW('member') / 2 - (b.minX + b.maxX) / 2;
+      if (Math.abs(shift) > 0.5) shiftIds(gr.ids, shift);
     });
 
-    anchors.forEach(({ lefts, rights }, anchorId) => {
-      const aPos = posMap.get(anchorId);
-      if (!aPos) return;
-      const anchorTop = aPos.y;
-      const anchorBot = aPos.y + nodeH('member');
+    // walls: member cards that share rows with any slot (bioMode mixes them)
+    const slotRows: Rect[] = nodes
+      .filter(n => n.type === 'slot' && posMap.has(n.id))
+      .map(n => boxOf(n.id));
+    const walls: Rect[] = nodes
+      .filter(n => n.type === 'member' && posMap.has(n.id))
+      .map(n => boxOf(n.id))
+      .filter(w => slotRows.some(srb => yOverlap(w, srb)));
 
-      // ordered owner list, left → right, matching the card order on screen
-      const ownerOrder = [...lefts, anchorId, ...rights];
-      const allGroups = ownerOrder
-        .map(oid => ({ oid, ids: slotSubtree(oid).filter(id => posMap.has(id)) }))
-        .filter(gr => gr.ids.length > 0);
-      if (allGroups.length < 2) return;
-
-      // reflow the top band and the bottom band independently
-      (['top', 'bottom'] as const).forEach(band => {
-        const groups = allGroups
-          .map(gr => ({ ...gr, box: groupBox(gr.ids) }))
-          .filter(gr =>
-            band === 'top' ? gr.box.maxY <= anchorTop + 1 : gr.box.minY >= anchorBot - 1,
-          );
-        if (groups.length < 2) return;
-
-        const extentMin = Math.min(...groups.map(gr => gr.box.minX));
-        const extentMax = Math.max(...groups.map(gr => gr.box.maxX));
-        const sumW      = groups.reduce((s, gr) => s + gr.box.w, 0);
-        const spare     = extentMax - extentMin - sumW;
-        const gap       = Math.min(GROUP_GAP, spare / (groups.length - 1)); // ≥ dagre's nodesep
-
-        let cursor = extentMin;
-        groups.forEach(gr => {
-          shiftIds(gr.ids, cursor - gr.box.minX);
-          cursor += gr.box.w + gap;
-        });
+    // (b) sweep in ideal left→right order
+    const placed: Rect[] = [];
+    [...groups]
+      .sort((a, b) => groupBox(a.ids).minX - groupBox(b.ids).minX)
+      .forEach(gr => {
+        const memberBoxes = gr.ids.map(id => boxOf(id));
+        // clear everything already placed (they belong to our left)
+        let shift = 0;
+        placed.forEach(r => memberBoxes.forEach(gb => {
+          if (!yOverlap(r, gb)) return;
+          shift = Math.max(shift, r.maxX + NODE_SEP - gb.minX);
+        }));
+        // hop over any wall the shifted group would land on
+        for (let guard = 0; guard < 8; guard++) {
+          let bumped = false;
+          walls.forEach(w => memberBoxes.forEach(gb => {
+            if (!yOverlap(w, gb)) return;
+            const gMin = gb.minX + shift, gMax = gb.maxX + shift;
+            if (gMin < w.maxX && gMax > w.minX) {
+              shift = w.maxX + NODE_SEP - gb.minX;
+              bumped = true;
+            }
+          }));
+          if (!bumped) break;
+        }
+        if (shift > 0.5) shiftIds(gr.ids, shift);
+        gr.ids.forEach(id => placed.push(boxOf(id)));
       });
-    });
   }
 
   // 5. re-center every owner's slot group under its own card — clamped so a
@@ -494,19 +500,53 @@ export function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edge
       let desired = ownerCenter - (minX + maxX) / 2;
       if (Math.abs(desired) < 1) return;
 
-      // clamp against every other box sharing any of the group's rows
+      // clamp per group-member (not per group-bbox): an obstacle sitting
+      // INSIDE the group's x-span at a deeper rank (e.g. someone else's
+      // nested slot between two of ours) must also constrain the shift
+      const memberBoxes = ids.map(id => boxOf(id));
       nodes.forEach(other => {
         if (idSet.has(other.id) || !posMap.has(other.id)) return;
         const b = boxOf(other.id);
-        if (b.maxY <= minY || b.minY >= maxY) return; // no row overlap
-        if (desired > 0 && b.minX >= maxX) {
-          desired = Math.min(desired, Math.max(0, b.minX - GROUP_GAP - maxX));
-        } else if (desired < 0 && b.maxX <= minX) {
-          desired = Math.max(desired, Math.min(0, b.maxX + GROUP_GAP - minX));
-        }
+        memberBoxes.forEach(gb => {
+          if (b.maxY <= gb.minY || b.minY >= gb.maxY) return; // no row overlap
+          if (desired > 0 && b.minX >= gb.maxX) {
+            desired = Math.min(desired, Math.max(0, b.minX - GROUP_GAP - gb.maxX));
+          } else if (desired < 0 && b.maxX <= gb.minX) {
+            desired = Math.max(desired, Math.min(0, b.maxX + GROUP_GAP - gb.minX));
+          }
+        });
       });
 
       if (Math.abs(desired) >= 1) shiftIds(ids, desired);
+    });
+  }
+
+  // 5.5 final safety sweep — after reflow + recentering, walk every slot row
+  // left→right and nudge any residual same-row collision clear. With the
+  // rank-aware steps above this rarely fires, but it guarantees the
+  // zero-overlap invariant no matter what the data throws at us.
+  {
+    const rows = new Map<number, string[]>();
+    nodes.forEach(n => {
+      if (n.type !== 'slot' || !posMap.has(n.id)) return;
+      const key = Math.round(posMap.get(n.id)!.y / 10) * 10;
+      const arr = rows.get(key) ?? [];
+      arr.push(n.id);
+      rows.set(key, arr);
+    });
+    rows.forEach(ids => {
+      const sorted = ids
+        .map(id => ({ id, x: posMap.get(id)!.x }))
+        .sort((a, b) => a.x - b.x);
+      for (let i = 1; i < sorted.length; i++) {
+        const prev = sorted[i - 1];
+        const cur  = sorted[i];
+        const minX = prev.x + nodeW('slot') + NODE_SEP;
+        if (cur.x < minX) {
+          cur.x = minX;
+          posMap.set(cur.id, { x: cur.x, y: posMap.get(cur.id)!.y });
+        }
+      }
     });
   }
 
@@ -520,17 +560,28 @@ export function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edge
   let unionPos: { x: number; y: number } | null = null;
   let unionLabelOffsetY = 40;
   const redirectToUnion = new Set<string>();
-  if (rootSpouseEdge) {
-    const rootId    = rootSpouseEdge.source;
-    const spouseId  = rootSpouseEdge.target;
-    const rootPos   = posMap.get(rootId);
-    const spousePos = posMap.get(spouseId);
+  // traverse pushes the root member first, so the first member node is the root
+  const rootNode = nodes.find(n => n.type === 'member');
+  if (rootNode) {
+    const rootId  = rootNode.id;
+    const rootPos = posMap.get(rootId);
     const rootChildEdges = edges.filter(e => e.id.startsWith(`e-child-${rootId}-`));
-    if (rootPos && spousePos && rootChildEdges.length) {
-      const rootCenterX   = rootPos.x   + nodeW('member') / 2;
-      const spouseCenterX = spousePos.x + nodeW('member') / 2;
-      unionId  = `union-${rootId}-${spouseId}`;
-      unionPos = { x: (rootCenterX + spouseCenterX) / 2, y: rootPos.y + nodeH('member') / 2 };
+    if (rootPos && rootChildEdges.length) {
+      const spousePos =
+        rootSpouseEdge && rootSpouseEdge.source === rootId
+          ? posMap.get(rootSpouseEdge.target)
+          : undefined;
+      if (spousePos) {
+        // couple: branch off the midpoint of the spousal line
+        const rootCenterX   = rootPos.x   + nodeW('member') / 2;
+        const spouseCenterX = spousePos.x + nodeW('member') / 2;
+        unionPos = { x: (rootCenterX + spouseCenterX) / 2, y: rootPos.y + nodeH('member') / 2 };
+      } else {
+        // single root parent: drop the same labeled stem straight from the
+        // card's bottom handle, so the "Children" caption shows here too
+        unionPos = { x: rootPos.x + nodeW('member') / 2, y: rootPos.y + nodeH('member') };
+      }
+      unionId = `union-${rootId}`;
       posMap.set(unionId, unionPos);
       const childY = posMap.get(rootChildEdges[0].target)?.y;
       if (childY !== undefined) unionLabelOffsetY = (childY - unionPos.y) * 0.4;

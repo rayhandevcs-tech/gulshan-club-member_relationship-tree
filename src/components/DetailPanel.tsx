@@ -1,3 +1,5 @@
+
+
 'use client';
 
 import { useState } from 'react';
@@ -10,15 +12,29 @@ import {
   getSiblings,
 } from '@/lib/memberUtils';
 // getType: prefix থেকে type derive করে (P→Permanent, AFD→A4D, D→Donor, L→Life)
-// memberUtils-এ move করে থাকলে উপরের import-এ যোগ করো, নাহলে layout module থেকে:
-import { getType, getRef } from '@/components/Quotatreelayout';
+// TEST_PHOTO_URL: dev/test-এ সব avatar-এ demo ছবি দেখানোর জন্য
+import { getType, getRef, photoOf } from '@/components/Quotatreelayout';
 import { Member } from '@/lib/types';
 import { X, ChevronRight, Users, ArrowRight } from 'lucide-react';
 import s from './DetailPanel.module.css';
 
 // এক জায়গায় safe color lookup — কোথাও আর সরাসরি TYPE_CONFIG[...] নয়
 function cfgOf(m: Member) {
-  return TYPE_CONFIG[getType(m)] ?? TYPE_CONFIG.Permanent;
+  return TYPE_CONFIG[getType(m) as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
+}
+
+// ── photo system ──────────────────────────────────────────────────────────────
+// photoOf layout module থেকে আসে: নিজের photoUrl > TEST_PHOTO_URL (demo.jpg)।
+// সব component এক জায়গা থেকে নেয়, তাই পরে বদলাতে হলে এক লাইন।
+function avatarStyle(m: Member, cfg: { bg: string; dark: string }) {
+  const url = photoOf(m);
+  return {
+    backgroundColor: cfg.bg,
+    color: cfg.dark,
+    backgroundImage: url ? `url(${url})` : undefined,
+    backgroundSize: 'cover' as const,
+    backgroundPosition: 'center' as const,
+  };
 }
 
 function MemberPreviewModal({
@@ -60,14 +76,15 @@ function MemberPreviewModal({
 
         <div className={s.previewModalBody}>
           <div className={s.previewAvatarWrap}>
-            <div className={s.previewAvatar} style={{ backgroundColor: cfg.bg, color: cfg.dark, backgroundImage: member.photoUrl ? `url(${member.photoUrl})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-              {!member.photoUrl && getInitials(member.name)}
+            <div className={s.previewAvatar} style={avatarStyle(member, cfg)}>
+              {!photoOf(member) && getInitials(member.name)}
             </div>
             <div className={s.previewName}>{member.name}</div>
             <div className={s.previewId} style={{ background: cfg.bg, color: cfg.dark }}>{member.id}</div>
             <div className={s.previewTypeBadge} style={{ background: cfg.bg, color: cfg.dark }}>
-              {getType(member)}                     {/* ← derived type */}
-              {member.via === 'a4d' && ' · 4(d)'}   {/* quota-access hint */}
+              {getType(member)}                             {/* ← derived type */}
+              {member.via === 'a4d' && ' · 4(d)'}           {/* access hints */}
+              {(member.via === 'associate' || member.via === 'nominee') && ' · Assoc'}
             </div>
           </div>
 
@@ -136,22 +153,69 @@ function MemberPreviewModal({
 function MemberRow({
   member,
   onPreview,
+  subtitle,
+  badges,
 }: {
   member: Member;
   onPreview: (id: string) => void;
+  subtitle?: string;                 // e.g. "Spouse of PA-41" / "Son of PW-6"
+  badges?: { text: string; color: string; bg: string }[];
 }) {
   const cfg = cfgOf(member);                       // ← getType + fallback
   return (
     <div className={s.memberRow} onClick={() => onPreview(member.id)}>
-      <div className={s.memberRowAvatar} style={{ backgroundColor: cfg.bg, color: cfg.dark, backgroundImage: member.photoUrl ? `url(${member.photoUrl})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-        {!member.photoUrl && getInitials(member.name)}
+      <div className={s.memberRowAvatar} style={avatarStyle(member, cfg)}>
+        {!photoOf(member) && getInitials(member.name)}
       </div>
       <div className={s.memberRowInfo}>
-        <div className={s.memberRowName}>{member.name}</div>
+        <div className={s.memberRowName}>
+          {member.name}
+          {badges?.map(b => (
+            <span
+              key={b.text}
+              style={{
+                marginLeft: 6, fontSize: 8.5, fontWeight: 700, verticalAlign: 'middle',
+                color: b.color, background: b.bg, padding: '1px 6px', borderRadius: 999,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {b.text}
+            </span>
+          ))}
+        </div>
         <div className={s.memberRowId} style={{ background: cfg.bg, color: cfg.dark }}>{member.id}</div>
+        {subtitle && (
+          <div style={{ fontSize: 10, color: '#6B7280', fontStyle: 'italic', marginTop: 2, lineHeight: 1.3 }}>
+            {subtitle}
+          </div>
+        )}
       </div>
       <ChevronRight size={14} className={s.memberRowChevron} />
     </div>
+  );
+}
+
+// slot list-এর badge গুলো এক জায়গায়
+function slotBadges(c: Member): { text: string; color: string; bg: string }[] {
+  const out: { text: string; color: string; bg: string }[] = [];
+  const t = getType(c);
+  out.push(
+    c.via === 'a4d'
+      ? { text: 'A4D',   color: '#7c3aed', bg: '#f3e8ff' }
+      : { text: 'Assoc', color: '#c2410c', bg: '#ffedd5' },
+  );
+  // pending = কোনো joining date-ই নেই; AFD prefix মানেই pending না —
+  // since থাকলে সে active A4D-access member
+  if (t === 'A4D' && !c.since) out.push({ text: 'Pending A/C', color: '#92400e', bg: '#fef3c7' });
+  return out;
+}
+
+// spouse rows আগে, তারপর children — নাম অনুযায়ী
+function sortSlots(list: Member[]): Member[] {
+  return [...list].sort(
+    (a, b) =>
+      (a.rel === 'spouse' ? 0 : 1) - (b.rel === 'spouse' ? 0 : 1) ||
+      a.name.localeCompare(b.name),
   );
 }
 
@@ -174,26 +238,24 @@ export default function DetailPanel() {
   const motherDisplay = motherMember?.name ?? m.motherName ?? m.mother;
 
   // quota দিতে পারে = নিজের membership (via core)। type নয় — কেউ Permanent
-  // হয়েও a4d route-এ থাকতে পারে, সে quota holder নয়।
-  const isSponsorType = m.via !== 'a4d';
+  // হয়েও a4d/associate route-এ থাকতে পারে, সে quota holder নয়।
+  const isSponsorType = m.via === 'core';
   const quota = getA4DQuota(members, m.id);
 
   const spouseMember = m.rel === 'spouse' && parent
     ? parent
     : (members.find(c => c.pid === m.id && c.rel === 'spouse') ?? null);
 
-  // Primary Member (quota holder) দেখাই শুধু a4d slot-দের জন্য; a4d spouse-এর
-  // ক্ষেত্রে pid-ওয়ালা মানুষটা এমনিতেই Spouse section-এ আছে — দুইবার নয়।
-  const showPrimary = !!parent && m.via === 'a4d' && m.rel !== 'spouse';
+  // Primary Member (quota holder) দেখাই dependent slot-দের জন্য; dependent
+  // spouse-এর ক্ষেত্রে pid-ওয়ালা মানুষটা এমনিতেই Spouse section-এ আছে।
+  const showPrimary = !!parent && m.via !== 'core' && m.rel !== 'spouse';
 
   const bioChildren = members.filter(c => c.fatherId === m.id || c.motherId === m.id);
 
-  // নতুন model: slot মানে via === 'a4d' (rel spouse/child যাই হোক)
-  const a4dMembers = children.filter(
-    c => c.via === 'a4d' && c.rel !== 'associate' && c.rel !== 'nominee',
-  );
-  const associateMembers = children.filter(
-    c => c.rel === 'associate' || c.rel === 'nominee',
+  // access route (via) দিয়ে ভাগ — rel এখন খাঁটি সম্পর্ক (spouse/child)
+  const a4dMembers = sortSlots(children.filter(c => c.via === 'a4d'));
+  const associateMembers = sortSlots(
+    children.filter(c => c.via === 'associate' || c.via === 'nominee'),
   );
   const siblings = getSiblings(members, m);
 
@@ -215,8 +277,8 @@ export default function DetailPanel() {
           </button>
         </div>
 
-        <div className={s.panelAvatar} style={{ backgroundColor: cfg.bg, color: cfg.dark, backgroundImage: m.photoUrl ? `url(${m.photoUrl})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-          {!m.photoUrl && getInitials(m.name)}
+        <div className={s.panelAvatar} style={avatarStyle(m, cfg)}>
+          {!photoOf(m) && getInitials(m.name)}
         </div>
 
         <div className={s.panelName}>{m.name}</div>
@@ -233,7 +295,9 @@ export default function DetailPanel() {
         {[
           ['Member ID',      m.memberId],
           ['Type',           getType(m)],
-          ['Access',         m.via === 'a4d' ? 'via 4(d) quota' : 'Own membership'],
+          ['Access',         m.via === 'core' ? 'Own membership'
+                             : m.via === 'a4d' ? 'via 4(d) quota'
+                             : 'Associate access'],
           ['Joined',         m.since],
           ['Birth Date',     m.birthDate],
           ['Email',          m.email],
@@ -320,7 +384,13 @@ export default function DetailPanel() {
               <>
                 <div className={s.panelSectionLabel}>A4D Members ({a4dMembers.length})</div>
                 {a4dMembers.map(ch => (
-                  <MemberRow key={ch.id} member={ch} onPreview={setPreviewId} />
+                  <MemberRow
+                    key={ch.id}
+                    member={ch}
+                    onPreview={setPreviewId}
+                    subtitle={getRef(ch, m)}
+                    badges={slotBadges(ch)}
+                  />
                 ))}
               </>
             )}
@@ -329,7 +399,13 @@ export default function DetailPanel() {
               <>
                 <div className={s.panelSectionLabel}>Associate Members ({associateMembers.length})</div>
                 {associateMembers.map(ch => (
-                  <MemberRow key={ch.id} member={ch} onPreview={setPreviewId} />
+                  <MemberRow
+                    key={ch.id}
+                    member={ch}
+                    onPreview={setPreviewId}
+                    subtitle={getRef(ch, m)}
+                    badges={slotBadges(ch)}
+                  />
                 ))}
               </>
             )}

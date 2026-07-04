@@ -1,6 +1,7 @@
 'use client';
 
 import { getMember, getInitials, TYPE_CONFIG, REL_LABELS } from '@/lib/memberUtils';
+import { getType } from '@/components/Quotatreelayout';
 import { useMemberStore } from '@/store/memberStore';
 import styles from './FamilyRelationshipView.module.css';
 
@@ -14,13 +15,16 @@ export default function FamilyRelationshipView({ memberId }: Props) {
   const member = getMember(members, memberId);
   if (!member) return null;
 
-  const cfg = TYPE_CONFIG[member.type];
+  const type = getType(member);
+  const cfg = TYPE_CONFIG[type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
 
   const father = member.father;
   const mother = member.mother;
 
   const spouse = members.find(m => m.pid === member.id && m.rel === 'spouse');
-  const children = members.filter(m => m.pid === member.id && m.rel === 'a4d');
+  const children = members.filter(m =>
+    m.pid === member.id && m.via === 'a4d' && m.rel !== 'associate' && m.rel !== 'nominee',
+  );
   const associates = members.filter(m => m.pid === member.id && m.rel === 'associate');
   const nominees = members.filter(m => m.pid === member.id && m.rel === 'nominee');
 
@@ -70,7 +74,7 @@ export default function FamilyRelationshipView({ memberId }: Props) {
 
         <div className={styles.rowCenter}>
           <Box
-            title={`Member · ${member.type}`}
+            title={`Member · ${type}`}
             name={member.name}
             id={member.id}
             color={cfg.color}
@@ -94,7 +98,7 @@ export default function FamilyRelationshipView({ memberId }: Props) {
             <div className={styles.sectionLabel}>A4D / Children</div>
             <div className={styles.row}>
               {children.map(child => {
-                const cc = TYPE_CONFIG[child.type];
+                const cc = TYPE_CONFIG[getType(child) as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
                 return (
                   <Box
                     key={child.id}
@@ -116,7 +120,7 @@ export default function FamilyRelationshipView({ memberId }: Props) {
             <div className={styles.sectionLabel}>Associates</div>
             <div className={styles.row}>
               {associates.map(a => {
-                const ac = TYPE_CONFIG[a.type];
+                const ac = TYPE_CONFIG[getType(a) as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
                 return (
                   <Box
                     key={a.id}
@@ -138,7 +142,7 @@ export default function FamilyRelationshipView({ memberId }: Props) {
             <div className={styles.sectionLabel}>Nominees</div>
             <div className={styles.row}>
               {nominees.map(n => {
-                const nc = TYPE_CONFIG[n.type];
+                const nc = TYPE_CONFIG[getType(n) as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
                 return (
                   <Box
                     key={n.id}

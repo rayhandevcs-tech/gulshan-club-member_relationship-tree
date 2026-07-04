@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useMemberStore } from '@/store/memberStore';
 import { getMember, TYPE_CONFIG } from '@/lib/memberUtils';
-import { Member, MemberType, RelationType } from '@/lib/types';
+import { Member, Rel, Via } from '@/lib/types';
 import { X } from 'lucide-react';
 import styles from './MemberForm.module.css';
 
@@ -22,6 +22,7 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
     id: editing?.id ?? '',
     name: editing?.name ?? '',
     type: editing?.type ?? 'Permanent',
+    via: editing?.via ?? 'core',
     since: editing?.since ?? '',
     email: editing?.email ?? '',
     phone: editing?.phone ?? '',
@@ -49,12 +50,13 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
     const member: Member = {
       id: form.id!,
       name: form.name!,
-      type: (form.type as MemberType) || 'Permanent',
+      type: form.type || 'Permanent',
+      via: (form.via as Via) || 'core',
       since: form.since || '',
       email: form.email,
       phone: form.phone,
       pid: form.pid || null,
-      rel: (form.rel as RelationType) || null,
+      rel: (form.rel as Rel) || null,
       father: form.father,
       mother: form.mother,
       note: form.note,
@@ -115,7 +117,7 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
           <label className={styles.label}>Membership Type</label>
           <select
             value={form.type}
-            onChange={e => setForm(f => ({ ...f, type: e.target.value as MemberType }))}
+            onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
             className={styles.select}
           >
             {Object.keys(TYPE_CONFIG).map(t => (
@@ -125,15 +127,27 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
         </div>
 
         <div className={styles.field}>
+          <label className={styles.label}>Access</label>
+          <select
+            value={form.via ?? 'core'}
+            onChange={e => setForm(f => ({ ...f, via: e.target.value as Via }))}
+            className={styles.select}
+          >
+            <option value="core">Own membership</option>
+            <option value="a4d">Via 4(d) quota</option>
+          </select>
+        </div>
+
+        <div className={styles.field}>
           <label className={styles.label}>Relationship</label>
           <select
             value={form.rel ?? ''}
-            onChange={e => setForm(f => ({ ...f, rel: (e.target.value as RelationType) || null }))}
+            onChange={e => setForm(f => ({ ...f, rel: (e.target.value as Rel) || null }))}
             className={styles.select}
           >
             <option value="">Primary Member</option>
             <option value="spouse">Spouse</option>
-            <option value="a4d">A4D Child</option>
+            <option value="child">Child</option>
             <option value="associate">Associate</option>
             <option value="nominee">Nominee Corporate</option>
           </select>
