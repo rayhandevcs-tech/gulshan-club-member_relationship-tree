@@ -9,9 +9,17 @@ import {
   getA4DQuota,
   getSiblings,
 } from '@/lib/memberUtils';
+// getType: prefix থেকে type derive করে (P→Permanent, AFD→A4D, D→Donor, L→Life)
+// memberUtils-এ move করে থাকলে উপরের import-এ যোগ করো, নাহলে layout module থেকে:
+import { getType, getRef } from '@/components/Quotatreelayout';
 import { Member } from '@/lib/types';
 import { X, ChevronRight, Users, ArrowRight } from 'lucide-react';
 import s from './DetailPanel.module.css';
+
+// এক জায়গায় safe color lookup — কোথাও আর সরাসরি TYPE_CONFIG[...] নয়
+function cfgOf(m: Member) {
+  return TYPE_CONFIG[getType(m)] ?? TYPE_CONFIG.Permanent;
+}
 
 function MemberPreviewModal({
   member,
@@ -24,7 +32,7 @@ function MemberPreviewModal({
   onClose: () => void;
   onNavigate: (id: string) => void;
 }) {
-  const cfg = TYPE_CONFIG[member.type] ?? TYPE_CONFIG.Permanent;
+  const cfg = cfgOf(member);                       // ← getType + fallback
 
   const fatherMember = member.fatherId ? getMember(members, member.fatherId) : null;
   const motherMember = member.motherId ? getMember(members, member.motherId) : null;
@@ -58,7 +66,8 @@ function MemberPreviewModal({
             <div className={s.previewName}>{member.name}</div>
             <div className={s.previewId} style={{ background: cfg.bg, color: cfg.dark }}>{member.id}</div>
             <div className={s.previewTypeBadge} style={{ background: cfg.bg, color: cfg.dark }}>
-              {member.type}
+              {getType(member)}                     {/* ← derived type */}
+              {member.via === 'a4d' && ' · 4(d)'}   {/* quota-access hint */}
             </div>
           </div>
 
@@ -131,7 +140,7 @@ function MemberRow({
   member: Member;
   onPreview: (id: string) => void;
 }) {
-  const cfg = TYPE_CONFIG[member.type] ?? TYPE_CONFIG.Permanent;
+  const cfg = cfgOf(member);                       // ← getType + fallback
   return (
     <div className={s.memberRow} onClick={() => onPreview(member.id)}>
       <div className={s.memberRowAvatar} style={{ backgroundColor: cfg.bg, color: cfg.dark, backgroundImage: member.photoUrl ? `url(${member.photoUrl})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}>
@@ -155,7 +164,7 @@ export default function DetailPanel() {
   const m = getMember(members, selectedId);
   if (!m) return null;
 
-  const cfg = TYPE_CONFIG[m.type];
+  const cfg = cfgOf(m);                            // ← crash-এর লাইন fixed
   const parent = m.pid ? getMember(members, m.pid) : null;
   const children = members.filter(c => c.pid === m.id);
 
@@ -164,16 +173,28 @@ export default function DetailPanel() {
   const fatherDisplay = fatherMember?.name ?? m.fatherName ?? m.father;
   const motherDisplay = motherMember?.name ?? m.motherName ?? m.mother;
 
-  const isSponsorType = m.type !== 'A4D' && m.type !== 'Associate';
+  // quota দিতে পারে = নিজের membership (via core)। type নয় — কেউ Permanent
+  // হয়েও a4d route-এ থাকতে পারে, সে quota holder নয়।
+  const isSponsorType = m.via !== 'a4d';
   const quota = getA4DQuota(members, m.id);
 
   const spouseMember = m.rel === 'spouse' && parent
     ? parent
     : (members.find(c => c.pid === m.id && c.rel === 'spouse') ?? null);
-  const showPrimary = !!parent && (m.rel === 'a4d' || m.rel === 'associate' || m.rel === 'nominee');
+
+  // Primary Member (quota holder) দেখাই শুধু a4d slot-দের জন্য; a4d spouse-এর
+  // ক্ষেত্রে pid-ওয়ালা মানুষটা এমনিতেই Spouse section-এ আছে — দুইবার নয়।
+  const showPrimary = !!parent && m.via === 'a4d' && m.rel !== 'spouse';
+
   const bioChildren = members.filter(c => c.fatherId === m.id || c.motherId === m.id);
-  const a4dMembers = children.filter(c => c.rel === 'a4d');
-  const associateMembers = children.filter(c => c.rel === 'associate' || c.rel === 'nominee');
+
+  // নতুন model: slot মানে via === 'a4d' (rel spouse/child যাই হোক)
+  const a4dMembers = children.filter(
+    c => c.via === 'a4d' && c.rel !== 'associate' && c.rel !== 'nominee',
+  );
+  const associateMembers = children.filter(
+    c => c.rel === 'associate' || c.rel === 'nominee',
+  );
   const siblings = getSiblings(members, m);
 
   const previewMember = previewId ? getMember(members, previewId) : null;
@@ -211,6 +232,8 @@ export default function DetailPanel() {
 
         {[
           ['Member ID',      m.memberId],
+          ['Type',           getType(m)],
+          ['Access',         m.via === 'a4d' ? 'via 4(d) quota' : 'Own membership'],
           ['Joined',         m.since],
           ['Birth Date',     m.birthDate],
           ['Email',          m.email],

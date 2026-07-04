@@ -1,65 +1,86 @@
-export type MemberType =
-  | 'Donor'
-  | 'Life'
-  | 'Permanent'
-  | 'Senior'
-  | 'Associate'
-  | 'A4D'
-  | 'Corporate'
-  | 'Honorary'
-  | 'Foreign';
+// export type MemberType =
+//   | 'Donor'
+//   | 'Life'
+//   | 'Permanent'
+//   | 'Senior'
+//   | 'Associate'
+//   | 'A4D'
+//   | 'Corporate'
+//   | 'Honorary'
+//   | 'Foreign';
 
-export type RelationType =
-  | 'spouse'
-  | 'a4d'
-  | 'associate'
-  | 'nominee'
-  | 'child'    // a descendant who is themselves a core member (their own A4D quota), not a dependent of the parent's quota
-  | null;
+// export type RelationType =
+//   | 'spouse'
+//   | 'a4d'
+//   | 'associate'
+//   | 'nominee'
+//   | 'child'    // a descendant who is themselves a core member (their own A4D quota), not a dependent of the parent's quota
+//   | null;
+
+// export interface Member {
+//   id: string;
+//   name: string;
+//   type: MemberType;
+//   gender?: 'M' | 'F';
+//   since: string;            // membership date
+//   email?: string;
+//   phone?: string;           // mobile
+//   phoneRes?: string;        // residential phone
+//   phoneOff?: string;        // office phone
+//   pid: string | null;       // quota/structural parent — whose A4D slot this sits under in the tree
+//   rel: RelationType;        // relation to pid (spouse / a4d / associate / nominee)
+//   photoUrl?: string;        // member photo — falls back to initials avatar when absent
+
+//   // True biological parentage — separate from pid
+//   fatherId?: string;
+//   fatherName?: string;
+//   motherId?: string;
+//   motherName?: string;
+
+//   // Legacy free-text fields
+//   father?: string;
+//   mother?: string;
+
+//   // Extended member profile fields
+//   memberId?: string;        // internal system ID (e.g. LM000066)
+//   slNo?: number;
+//   bloodGroup?: string;
+//   birthDate?: string;
+//   maritalStatus?: string;
+//   marriageDate?: string;
+//   religion?: string;
+//   nationality?: string;
+//   nationalId?: string;
+//   passport?: string;
+//   rfCard?: string;
+//   address?: string;
+//   creditLimit?: number;
+//   subscriptionFee?: number;
+//   voterStatus?: string;
+
+//   quotaNote?: string;
+//   succession?: string;
+//   membershipRef?: string;
+//   note?: string;
+// }
+
+// types.ts — merge this Member interface into your existing @/lib/types
+
+export type Via = 'core' | 'a4d';
+export type Rel = 'spouse' | 'child' | 'associate' | 'nominee';
 
 export interface Member {
-  id: string;
+  id: string;                 // A/C no — prefix drives type: P→Permanent, AFD→A4D, D→Donor, L→Life
   name: string;
-  type: MemberType;
+  type?: string;              // optional explicit override; normally derived from id prefix
+  via: Via;                   // 'core' = own membership | 'a4d' = access via someone's 4(d) quota
   gender?: 'M' | 'F';
-  since: string;            // membership date
-  email?: string;
-  phone?: string;           // mobile
-  phoneRes?: string;        // residential phone
-  phoneOff?: string;        // office phone
-  pid: string | null;       // quota/structural parent — whose A4D slot this sits under in the tree
-  rel: RelationType;        // relation to pid (spouse / a4d / associate / nominee)
-  photoUrl?: string;        // member photo — falls back to initials avatar when absent
-
-  // True biological parentage — separate from pid
-  fatherId?: string;
-  fatherName?: string;
-  motherId?: string;
-  motherName?: string;
-
-  // Legacy free-text fields
-  father?: string;
-  mother?: string;
-
-  // Extended member profile fields
-  memberId?: string;        // internal system ID (e.g. LM000066)
-  slNo?: number;
-  bloodGroup?: string;
-  birthDate?: string;
-  maritalStatus?: string;
-  marriageDate?: string;
-  religion?: string;
-  nationality?: string;
-  nationalId?: string;
-  passport?: string;
-  rfCard?: string;
-  address?: string;
-  creditLimit?: number;
-  subscriptionFee?: number;
-  voterStatus?: string;
-
-  quotaNote?: string;
-  succession?: string;
-  membershipRef?: string;
+  since?: string;
+  pid: string | null;         // partner (spouse) or quota holder / tree parent
+  rel: Rel | null;            // pure relationship — never encodes dependency (via does that)
+  fatherId?: string | null;   // blood parents — reference text + bioMode only
+  motherId?: string | null;
+  succession?: string;        // account transferred to this member id
+  photoUrl?: string;
   note?: string;
 }

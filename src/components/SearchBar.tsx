@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMemberStore } from '@/store/memberStore';
 import { getRootMember, getInitials, TYPE_CONFIG } from '@/lib/memberUtils';
+import { getType } from '@/components/Quotatreelayout'; // ← path তোমার structure অনুযায়ী
 import { Search } from 'lucide-react';
 import styles from './SearchBar.module.css';
 
@@ -24,7 +25,10 @@ export default function SearchBar() {
   const q = searchQuery.trim().toLowerCase();
 
   const suggestions = q
-    ? members.filter(m => (m.name + ' ' + m.id).toLowerCase().includes(q)).slice(0, 8)
+    ? members.filter(m =>
+        // getType(m) দিয়ে search-ও করা যাবে: "permanent" লিখলে P-রা আসবে
+        (m.name + ' ' + m.id + ' ' + getType(m)).toLowerCase().includes(q)
+      ).slice(0, 8)
     : [];
 
   const pick = (id: string) => {
@@ -34,7 +38,8 @@ export default function SearchBar() {
     setSearch(m.name);
     setActiveRoot(root ? root.id : id);
     setSelected(id);
-    const isLeaf = m.rel === 'a4d' || m.rel === 'associate' || m.rel === 'nominee';
+    // নতুন model: slot মানে via === 'a4d' (rel যাই হোক — spouse বা child)
+    const isLeaf = m.via === 'a4d';
     setFocusView(isLeaf && m.pid ? m.pid : id);
     setOpen(false);
   };
@@ -55,7 +60,8 @@ export default function SearchBar() {
       {open && suggestions.length > 0 && (
         <div className={styles.dropdown}>
           {suggestions.map(m => {
-            const cfg = TYPE_CONFIG[m.type];
+            const type = getType(m);                              // ← derive
+            const cfg  = TYPE_CONFIG[type] ?? TYPE_CONFIG.Permanent; // ← safe fallback
             return (
               <div
                 key={m.id}
@@ -71,7 +77,10 @@ export default function SearchBar() {
 
                 <div className={styles.memberInfo}>
                   <div className={styles.memberName}>{m.name}</div>
-                  <div className={styles.memberMeta}>{m.id} · {m.type}</div>
+                  <div className={styles.memberMeta}>
+                    {m.id} · {type}
+                    {m.via === 'a4d' && ' · 4(d)'}   {/* slot-দের ছোট hint */}
+                  </div>
                 </div>
               </div>
             );
