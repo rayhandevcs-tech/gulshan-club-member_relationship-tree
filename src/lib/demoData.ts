@@ -10,9 +10,9 @@ import type { Member } from './types';
 
 export const familyMembers: Member[] = [
   // ═══ ROOT ═══════════════════════════════════════════════════════════════
-  {
+   {
     id: 'DM-8',
-    name:  'Late Mr. M. A. Hashem',
+    name: 'Late Mr. M. A. Hashem',
     via: 'core',
     gender: 'M',
     since: '04/10/1989',
@@ -20,7 +20,7 @@ export const familyMembers: Member[] = [
     succession: 'DS-44',
     note: 'Chairman & Managing Director, Partex Group of Industries, 74 Mohakhali C/A, Dhaka-1212',
   },
-
+ 
   // ═══ ROOT SPOUSE — Remarks: 4(d)-DM-8 → she came in via his quota, so she
   //     is a slot under DM-8 even though her A/C is Permanent (PS-…) now.
   {
@@ -32,7 +32,7 @@ export const familyMembers: Member[] = [
     pid: 'DM-8', rel: 'spouse',
     note: 'House # 9, Road # 55, Gulshan-2, Dhaka-1212',
   },
-
+ 
   // ═══ SONS — all core members, children of DM-8 ═════════════════════════
   {
     id: 'PA-41',
@@ -41,7 +41,7 @@ export const familyMembers: Member[] = [
     gender: 'M',
     since: '21/11/1990',
     pid: 'DM-8', rel: 'child',
-    //succession: 'PO-10',
+    succession: 'PO-10', // এই dataset-এ PO-10 নেই → silently কিছু render হয় না
     fatherId: 'DM-8', motherId: 'PS-295',
     note: '(Level-13), SPL Western Tower, 186, Tejgaon, Dhaka-1208',
   },
@@ -82,12 +82,10 @@ export const familyMembers: Member[] = [
     gender: 'M',
     since: '03/06/1998',
     pid: 'DM-8', rel: 'child',
-    //succession: 'PS-356',
-    //succession: 'PT-7',
     fatherId: 'DM-8', motherId: 'PS-295',
     note: 'Chairman, Amber Group, House # 2, Road # 62, Gulshan-2, Dhaka-1212',
   },
-
+ 
   // ═══ SONS' SPOUSES ═════════════════════════════════════════════════════
   // 4(d)-PA-41 → via a4d → slot under PA-41 (her own A/C being P-type doesn't matter)
   {
@@ -151,7 +149,7 @@ export const familyMembers: Member[] = [
     pid: 'DS-25', rel: 'spouse',
     note: 'House # 2, Road # 62, Gulshan-2, Dhaka-1212',
   },
-
+ 
   // ═══ GRANDCHILDREN ═════════════════════════════════════════════════════
   // — Children of PA-41 + PT-70 —
   // 4(d)-DM-8 → grandfather's quota → slot above the root
@@ -161,7 +159,7 @@ export const familyMembers: Member[] = [
     via: 'a4d',
     gender: 'M',
     since: '28/12/2019',
-    pid: 'DM-8', rel: 'child',
+    pid: 'DM-8', rel: 'other',
     fatherId: 'PA-41', motherId: 'PT-70',
     note: '(Level-13), SPL Western Tower, 186, Tejgaon, Dhaka-1208',
   },
@@ -176,7 +174,7 @@ export const familyMembers: Member[] = [
     fatherId: 'PA-41', motherId: 'PT-70',
     note: '24, Dutabash Road, Baridhara, Dhaka-1212',
   },
-
+ 
   // — Children of PA-74 + PS-238 —
   // 4(d)-PA-74
   {
@@ -196,11 +194,11 @@ export const familyMembers: Member[] = [
     via: 'a4d',
     gender: 'F',
     since: '19/02/2022',
-    pid: 'DR-7', rel: 'child',
+    pid: 'DR-7', rel: 'other',
     fatherId: 'PA-74', motherId: 'PS-238',
     note: '(Level-13), SPL Western Tower, 186, Tejgaon, Dhaka-1208',
   },
-
+ 
   // — Children of PA-83 + PJ-16 —
   // 4(d)-PA-83
   {
@@ -213,7 +211,7 @@ export const familyMembers: Member[] = [
     fatherId: 'PA-83', motherId: 'PJ-16',
     note: 'Partex Group, 74 Mohakhali C/A, Dhaka-1212',
   },
-
+ 
   // — Children of DR-7 + DS-36 —
   // 4(d)-DR-7
   {
@@ -248,7 +246,7 @@ export const familyMembers: Member[] = [
     fatherId: 'DR-7', motherId: 'DS-36',
     note: 'House # 8, Road # 62, Gulshan-2, Dhaka-1212 | Pending A/C',
   },
-
+ 
   // — Children of DS-25 + PF-25 —
   // 4(d)-DS-25
   {
@@ -283,7 +281,8 @@ export const familyMembers: Member[] = [
     fatherId: 'DS-25', motherId: 'PF-25',
     note: 'House # 2, Road # 62, Gulshan-2, Dhaka-1212 | Pending A/C',
   },
-
+ 
+  // succession target of DM-8 — rel child হলেও successor হিসেবে আগে consume হয়
   {
     id: 'DS-44',
     name: 'Simran Rahman',
@@ -411,9 +410,9 @@ export const familyMembers: Member[] = [
 
 //// LM-11 and LS-8 family members
 
-{
+ {
     id: 'LM-11',
-    name: 'Late Md. Saiful Islam',
+    name: 'Md. Saiful Islam',
     via: 'core',
     gender: 'M',
     since: '28/10/1985',
@@ -421,7 +420,7 @@ export const familyMembers: Member[] = [
     email: 'islam1944bd@gmail.com',
     pid: null, rel: null,
     succession: 'LS-35',
-    //membershipRef: 'Linked to LS-35',
+    membershipRef: 'Linked to LS-35',
     fatherName: 'Ahafiqur Rahman',
   },
  
@@ -471,7 +470,7 @@ export const familyMembers: Member[] = [
   {
     id: 'PO-10',
     name: 'Omar Hamid Chowdhury',
-    via: 'a4d',
+    via: 'core',
     gender: 'M',
     since: '04/03/2018',
     phone: '+8801711593144',
@@ -515,7 +514,7 @@ export const familyMembers: Member[] = [
     since: '17/09/2018',
     phone: '+8801711593144',
     email: 'shareef.arsenal95@gmail.com',
-    pid: 'LS-8', rel: 'child',
+    pid: 'LS-8', rel: 'other',
     fatherId: 'PO-10', motherId: 'PT-7',
   },
   // দাদার (LM-11, root) quota → slot ABOVE the root couple
@@ -525,7 +524,7 @@ export const familyMembers: Member[] = [
     via: 'a4d',
     gender: 'F',
     since: '01/05/2020',
-    pid: 'LM-11', rel: 'child',
+    pid: 'LM-11', rel: 'other',
     fatherId: 'PW-6', motherId: 'PK-49',
   },
   {
@@ -534,7 +533,7 @@ export const familyMembers: Member[] = [
     via: 'a4d',
     gender: 'M',
     since: '01/05/2020',
-    pid: 'LM-11', rel: 'child',
+    pid: 'LM-11', rel: 'other',
     fatherId: 'PW-6', motherId: 'PK-49',
   },
   // মায়ের (PK-49, beside spouse) quota → slot under HER
@@ -563,9 +562,10 @@ export const familyMembers: Member[] = [
     via: 'a4d',
     gender: 'F',
     since: '15/09/2022',
-    pid: 'LS-8', rel: 'child',
+    pid: 'LS-8', rel: 'other',
+    fatherId: 'PW-6', motherId: 'PK-49',
+
   },
- 
   // ═══ NESTED — slot-এর নিজের slot (associate chain) ═══════════════════════
   // PS-329 (নিজেই PT-7-এর slot) → তার নিচে দুই associate। via:'associate' → কমলা "Assoc" badge; rel:'child' → "Daughter/Son of PW-6"
   // reference। type override 'Associate' কারণ AFD prefix নাহলে A4D derive করত।

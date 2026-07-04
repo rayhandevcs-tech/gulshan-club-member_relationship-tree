@@ -22,11 +22,9 @@ export default function FamilyRelationshipView({ memberId }: Props) {
   const mother = member.mother;
 
   const spouse = members.find(m => m.pid === member.id && m.rel === 'spouse');
-  const children = members.filter(m =>
-    m.pid === member.id && m.via === 'a4d' && m.rel !== 'associate' && m.rel !== 'nominee',
-  );
-  const associates = members.filter(m => m.pid === member.id && m.rel === 'associate');
-  const nominees = members.filter(m => m.pid === member.id && m.rel === 'nominee');
+  const children = members.filter(m => m.pid === member.id && m.via === 'a4d');
+  const associates = members.filter(m => m.pid === member.id && m.via === 'associate');
+  const nominees = members.filter(m => m.pid === member.id && m.via === 'nominee');
 
   const Box = ({
     title,

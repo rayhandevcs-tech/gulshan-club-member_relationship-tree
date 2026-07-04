@@ -1,8 +1,34 @@
-
+// quotaTreeLayout.ts
+// ─────────────────────────────────────────────────────────────────────────────
+// Pure graph-building + layout logic for the quota family diagram.
+// No React imports (only type-only reactflow imports), so this module can be
+// unit-tested in plain Node.
+//
+// DATA MODEL (the new, explicit model):
+//   type      — member class (Permanent / Donor / Life / A4D...). DERIVED from
+//               the ID prefix when not provided:  P→Permanent, D→Donor,
+//               L→Life, AFD→A4D (has quota access but no own A/C yet).
+//               type ONLY controls colors/badges — never placement.
+//   via       — 'core' | 'a4d'. THE placement switch:
+//                 core → independently-held membership → full card in tree
+//                 a4d  → holds a slot off someone's 4(d) quota → slot card
+//   rel       — 'spouse' | 'child' (pure relationship; drives line + label)
+//   pid       — who this record is attached to: the partner (spouse) or the
+//               quota holder / tree parent (child). For via:'a4d' pid is
+//               ALWAYS the quota holder — even a cross-family one.
+//   fatherId / motherId — real blood parents. Used for the reference text
+//               ("Son of PA-41") and for bioMode; never for quota placement.
+//
+// PLACEMENT MATRIX:
+//   rel=spouse via=core → beside partner, full card, "Spouse" line
+//   rel=spouse via=a4d  → slot under quota holder, "Spouse of {pid}"
+//   rel=child  via=core → next generation, full card
+//   rel=child  via=a4d  → slot under quota holder, "Son/Daughter of {father}"
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { Graph, layout } from '@dagrejs/dagre';
 import type { Node, Edge } from 'reactflow';
-import type { Member } from './types';
+import type { Member } from '@/lib/types';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 export const CONN_COLOR = '#CBD5E1';
@@ -97,9 +123,11 @@ export function getBioChildren(
   );
 }
 
-// Reference line on a slot card. Prefers the blood parent that matches the
-// listing (quota holding) member; falls back to whichever parent exists — so a
-// cross-family quota slot still reads "Daughter of PA-74" under uncle DR-7.
+// Reference line on a slot card:
+//   rel 'spouse' → "Spouse of {quota holder}"; নাহলে blood parents থেকে
+//   "Son/Daughter of {parent}" — rel 'child' হোক বা 'other', লেখাটা
+//   fatherId/motherId-ই ঠিক করে, তাই cross-family quota-তেও সঠিক থাকে
+//   (চাচার slot-এ ঝুলেও লেখা আসে বাবার নামে)। parent info না থাকলে line নেই।
 export function getRef(slot: Member, listing: Member): string | undefined {
   if (slot.rel === 'spouse') return `Spouse of ${listing.id}`;
   const fid = slot.fatherId ?? undefined;
@@ -248,7 +276,7 @@ export function buildGraph(
         id: `e-spouse-${m.id}-${spouse.id}`,
         source: m.id, target: spouse.id,
         type: 'straight',
-        label: isTransferToSpouse ? 'A/C transferred' : 'Spouse',
+        label: isTransferToSpouse ? 'Spouse · A/C transferred' : 'Spouse',
         style: isTransferToSpouse
           ? { stroke: '#F59E0B', strokeWidth: 1.5, strokeDasharray: '5 3' }
           : { stroke: '#9CA3AF', strokeWidth: 1.5 },

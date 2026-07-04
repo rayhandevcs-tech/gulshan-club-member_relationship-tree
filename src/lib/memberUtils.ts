@@ -19,10 +19,10 @@ export const getNonSpouseChildren = (members: Member[], id: string) =>
   members.filter(m => m.pid === id && m.rel !== 'spouse');
 
 export const getAssociates = (members: Member[], id: string) =>
-  members.filter(m => m.pid === id && m.rel === 'associate');
+  members.filter(m => m.pid === id && m.via === 'associate');
 
 export const getNominees = (members: Member[], id: string) =>
-  members.filter(m => m.pid === id && m.rel === 'nominee');
+  members.filter(m => m.pid === id && m.via === 'nominee');
 
 export const getRoots = (members: Member[]) =>
   members.filter(m => !m.pid);
@@ -163,6 +163,8 @@ export const getA4DQuota = (members: Member[], sponsorId: string) => {
 // a core member) get no pill at all, since they render as their own
 // nested family card instead of a dependent leaf.
 export const getRelLabel = (member: Member): string => {
+  if (member.via === 'associate') return 'Associate';
+  if (member.via === 'nominee') return 'Nominee';
   if (!member.rel) return '';
   if (member.rel === 'child') {
     if (member.via === 'a4d' && member.gender) {
@@ -209,6 +211,8 @@ export const getQuotaSourceCaption = (
 // (A4D etc.) is shown separately as the box's own subtitle instead of
 // being folded into the relationship label.
 export const getRelRoleLabel = (member: Member): string => {
+  if (member.via === 'associate') return 'Associate';
+  if (member.via === 'nominee') return 'Nominee';
   if (!member.rel) return '';
   if (member.rel === 'spouse' && member.gender) {
     return member.gender === 'M' ? 'Husband' : 'Wife';
@@ -364,12 +368,12 @@ export interface DiagramLayout {
 }
 
 const relEdgeLabel = (m: Member): string => {
-  if (m.rel === 'child' && m.via === 'a4d') return 'A4D';
+  if (m.rel === 'spouse') return 'Spouse';
+  if (m.via === 'a4d') return 'A4D';
+  if (m.via === 'associate') return 'Associate';
+  if (m.via === 'nominee') return 'Nominee';
   switch (m.rel) {
     case 'child': return 'Children';
-    case 'associate': return 'Associate';
-    case 'nominee': return 'Nominee';
-    case 'spouse': return 'Spouse';
     default: return '';
   }
 };

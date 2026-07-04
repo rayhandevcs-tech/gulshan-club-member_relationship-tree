@@ -42,7 +42,7 @@ function FamilySubtree({ member }: { member: Member }) {
   const allKids = [
     ...getNonSpouseChildren(members, member.id),
     ...(spouse ? getNonSpouseChildren(members, spouse.id) : []),
-  ].filter(k => k.rel !== 'associate' && k.rel !== 'nominee');
+  ].filter(k => k.via !== 'associate' && k.via !== 'nominee');
 
   const sponsorIds = [member.id, ...(spouse ? [spouse.id] : [])];
 

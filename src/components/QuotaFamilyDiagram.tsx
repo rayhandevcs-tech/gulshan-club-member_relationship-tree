@@ -20,7 +20,7 @@ import {
 // type drives ONLY colors/badges — placement is via/rel (see layout module)
 function cardColors(m: Member) {
   if (isDead(m)) return { border: '#F59E0B', avatarBg: '#D97706', cardBg: '#FFFBEB' };
-  const c = TYPE_CONFIG[getType(m)] ?? TYPE_CONFIG.Permanent;
+  const c = TYPE_CONFIG[getType(m) as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
   return { border: c.color, avatarBg: c.color, cardBg: '#FFFFFF' };
 }
 

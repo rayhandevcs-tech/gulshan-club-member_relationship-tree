@@ -135,6 +135,8 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
           >
             <option value="core">Own membership</option>
             <option value="a4d">Via 4(d) quota</option>
+            <option value="associate">Associate</option>
+            <option value="nominee">Nominee Corporate</option>
           </select>
         </div>
 
@@ -148,8 +150,7 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
             <option value="">Primary Member</option>
             <option value="spouse">Spouse</option>
             <option value="child">Child</option>
-            <option value="associate">Associate</option>
-            <option value="nominee">Nominee Corporate</option>
+            <option value="other">Other</option>
           </select>
         </div>
 
