@@ -8,7 +8,7 @@ import { Search } from 'lucide-react';
 import styles from './SearchBar.module.css';
 
 export default function SearchBar() {
-  const { members, searchQuery, setSearch, setActiveRoot, setSelected, setFocusView } = useMemberStore();
+  const { members, searchQuery, setSearch, setActiveRoot, setFocusView, setHighlighted } = useMemberStore();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -37,10 +37,10 @@ export default function SearchBar() {
     const root = getRootMember(members, id);
     setSearch(m.name);
     setActiveRoot(root ? root.id : id);
-    setSelected(id);
     // নতুন model: slot মানে via === 'a4d' (rel যাই হোক — spouse বা child)
     const isLeaf = m.via === 'a4d';
     setFocusView(isLeaf && m.pid ? m.pid : id);
+    setHighlighted(id);
     setOpen(false);
   };
 

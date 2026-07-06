@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState } from 'react';
@@ -15,7 +13,7 @@ import {
 // TEST_PHOTO_URL: dev/test-এ সব avatar-এ demo ছবি দেখানোর জন্য
 import { getType, getRef, photoOf } from '@/components/Quotatreelayout';
 import { Member } from '@/lib/types';
-import { X, ChevronRight, Users, ArrowRight } from 'lucide-react';
+import { X, ChevronRight, Users, ArrowRight, Pencil } from 'lucide-react';
 import s from './DetailPanel.module.css';
 
 // এক জায়গায় safe color lookup — কোথাও আর সরাসরি TYPE_CONFIG[...] নয়
@@ -26,7 +24,7 @@ function cfgOf(m: Member) {
 // ── photo system ──────────────────────────────────────────────────────────────
 // photoOf layout module থেকে আসে: নিজের photoUrl > TEST_PHOTO_URL (demo.jpg)।
 // সব component এক জায়গা থেকে নেয়, তাই পরে বদলাতে হলে এক লাইন।
-function avatarStyle(m: Member, cfg: { bg: string; dark: string }) {
+function avatarStyle(m: Member, cfg: { bg: string; dark: string; color?: string }) {
   const url = photoOf(m);
   return {
     backgroundColor: cfg.bg,
@@ -34,6 +32,8 @@ function avatarStyle(m: Member, cfg: { bg: string; dark: string }) {
     backgroundImage: url ? `url(${url})` : undefined,
     backgroundSize: 'cover' as const,
     backgroundPosition: 'center' as const,
+    border: `2px solid ${cfg.color ?? cfg.dark}`,
+    boxSizing: 'border-box' as const,
   };
 }
 
@@ -84,7 +84,8 @@ function MemberPreviewModal({
             <div className={s.previewTypeBadge} style={{ background: cfg.bg, color: cfg.dark }}>
               {getType(member)}                             {/* ← derived type */}
               {member.via === 'a4d' && ' · 4(d)'}           {/* access hints */}
-              {(member.via === 'associate' || member.via === 'nominee') && ' · Assoc'}
+              {member.via === 'associate' && ' · Assoc'}
+              {member.via === 'succession' && ' · Succession'}
             </div>
           </div>
 
@@ -219,7 +220,7 @@ function sortSlots(list: Member[]): Member[] {
   );
 }
 
-export default function DetailPanel() {
+export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void }) {
   const { members, selectedId, setSelected, navigateTo } = useMemberStore();
   const [previewId, setPreviewId] = useState<string | null>(null);
 
@@ -237,9 +238,9 @@ export default function DetailPanel() {
   const fatherDisplay = fatherMember?.name ?? m.fatherName ?? m.father;
   const motherDisplay = motherMember?.name ?? m.motherName ?? m.mother;
 
-  // quota দিতে পারে = নিজের membership (via core)। type নয় — কেউ Permanent
-  // হয়েও a4d/associate route-এ থাকতে পারে, সে quota holder নয়।
-  const isSponsorType = m.via === 'core';
+  // quota দিতে পারে = নিজের membership (via core/succession)। type নয় — কেউ
+  // Permanent হয়েও a4d/associate route-এ থাকতে পারে, সে quota holder নয়।
+  const isSponsorType = m.via === 'core' || m.via === 'succession';
   const quota = getA4DQuota(members, m.id);
 
   const spouseMember = m.rel === 'spouse' && parent
@@ -248,14 +249,14 @@ export default function DetailPanel() {
 
   // Primary Member (quota holder) দেখাই dependent slot-দের জন্য; dependent
   // spouse-এর ক্ষেত্রে pid-ওয়ালা মানুষটা এমনিতেই Spouse section-এ আছে।
-  const showPrimary = !!parent && m.via !== 'core' && m.rel !== 'spouse';
+  const showPrimary = !!parent && m.via !== 'core' && m.via !== 'succession' && m.rel !== 'spouse';
 
   const bioChildren = members.filter(c => c.fatherId === m.id || c.motherId === m.id);
 
   // access route (via) দিয়ে ভাগ — rel এখন খাঁটি সম্পর্ক (spouse/child)
   const a4dMembers = sortSlots(children.filter(c => c.via === 'a4d'));
   const associateMembers = sortSlots(
-    children.filter(c => c.via === 'associate' || c.via === 'nominee'),
+    children.filter(c => c.via === 'associate'),
   );
   const siblings = getSiblings(members, m);
 
@@ -272,9 +273,16 @@ export default function DetailPanel() {
 
         <div className={s.panelHeader}>
           <span className={s.panelHeaderLabel}>Member Details</span>
-          <button onClick={() => setSelected(null)} className={s.closeBtn}>
-            <X size={16} />
-          </button>
+          <div className={s.panelHeaderActions}>
+            {onEdit && (
+              <button onClick={() => onEdit(m.id)} className={s.editBtn} title="Edit member">
+                <Pencil size={12} /> Edit
+              </button>
+            )}
+            <button onClick={() => setSelected(null)} className={s.closeBtn}>
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
         <div className={s.panelAvatar} style={avatarStyle(m, cfg)}>
@@ -284,19 +292,20 @@ export default function DetailPanel() {
         <div className={s.panelName}>{m.name}</div>
         <div className={s.panelId} style={{ background: cfg.bg, color: cfg.dark }}>{m.id}</div>
 
-        {isSponsorType ? (
-          <div className={s.panelQuota}>
-            A4D Quota: <span className={s.panelQuotaValue}>{quota.used}/{quota.total}</span> used
-          </div>
+        {/* {isSponsorType ? (
+          // <div className={s.panelQuota}>
+          //   A4D Quota: <span className={s.panelQuotaValue}>{quota.used}/{quota.total}</span> used
+          // </div>
         ) : (
-          <div className={s.panelQuotaSpacer} />
-        )}
+          // <div className={s.panelQuotaSpacer} />
+        )} */}
 
         {[
           ['Member ID',      m.memberId],
           ['Type',           getType(m)],
           ['Access',         m.via === 'core' ? 'Own membership'
                              : m.via === 'a4d' ? 'via 4(d) quota'
+                             : m.via === 'succession' ? 'Received via succession'
                              : 'Associate access'],
           ['Joined',         m.since],
           ['Birth Date',     m.birthDate],
@@ -349,39 +358,39 @@ export default function DetailPanel() {
             )}
 
             {showPrimary && parent && (
-              <>
+              <div className={s.sectionBlock}>
                 <div className={s.panelSectionLabel}>Primary Member</div>
                 <MemberRow member={parent} onPreview={setPreviewId} />
-              </>
+              </div>
             )}
 
             {spouseMember && (
-              <>
+              <div className={s.sectionBlock}>
                 <div className={s.panelSectionLabel}>Spouse</div>
                 <MemberRow member={spouseMember} onPreview={setPreviewId} />
-              </>
+              </div>
             )}
 
             {siblings.length > 0 && (
-              <>
+              <div className={s.sectionBlock}>
                 <div className={s.panelSectionLabel}>Siblings ({siblings.length})</div>
                 {siblings.map(sib => (
                   <MemberRow key={sib.id} member={sib} onPreview={setPreviewId} />
                 ))}
-              </>
+              </div>
             )}
 
             {bioChildren.length > 0 && (
-              <>
+              <div className={s.sectionBlock}>
                 <div className={s.panelSectionLabel}>Children ({bioChildren.length})</div>
                 {bioChildren.map(ch => (
                   <MemberRow key={ch.id} member={ch} onPreview={setPreviewId} />
                 ))}
-              </>
+              </div>
             )}
 
             {a4dMembers.length > 0 && (
-              <>
+              <div className={s.sectionBlock}>
                 <div className={s.panelSectionLabel}>A4D Members ({a4dMembers.length})</div>
                 {a4dMembers.map(ch => (
                   <MemberRow
@@ -392,11 +401,11 @@ export default function DetailPanel() {
                     badges={slotBadges(ch)}
                   />
                 ))}
-              </>
+              </div>
             )}
 
             {associateMembers.length > 0 && (
-              <>
+              <div className={s.sectionBlock}>
                 <div className={s.panelSectionLabel}>Associate Members ({associateMembers.length})</div>
                 {associateMembers.map(ch => (
                   <MemberRow
@@ -407,7 +416,7 @@ export default function DetailPanel() {
                     badges={slotBadges(ch)}
                   />
                 ))}
-              </>
+              </div>
             )}
           </div>
         )}

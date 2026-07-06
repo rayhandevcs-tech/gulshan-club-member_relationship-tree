@@ -1,5 +1,19 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
+import ReactFlow, {
+  ReactFlowProvider,
+  Background,
+  Controls,
+  Handle,
+  Position,
+  NodeTypes,
+  NodeMouseHandler,
+  useReactFlow,
+  useNodesInitialized,
+  type Node,
+  type Edge,
+} from 'reactflow';
 import {
   buildRelationshipDiagram,
   DIAGRAM_BOX_W,
@@ -8,18 +22,138 @@ import {
   getInitials,
 } from '@/lib/memberUtils';
 import { Member } from '@/lib/types';
-import { getType } from '@/components/Quotatreelayout';
+import { getType, photoOf, dispName, isDead } from '@/components/Quotatreelayout';
 import { QuotaFamilyDiagram } from './QuotaFamilyDiagram';
 
 interface Props {
   focusId: string;
   members: Member[];
   onPick: (id: string) => void;
+  highlightedId?: string | null;
 }
 
-export function FocusedDiagram({ focusId, members, onPick }: Props) {
+// ─── Family Relationship tab: owner + spouse + direct children (React Flow) ──
+
+const FAM_CARD_W = 210;
+const FAM_CARD_H = 205;
+const FAM_HGAP   = 40;
+const FAM_SGAP   = 90;
+const FAM_VGAP   = 130;
+
+type FamRole = 'owner' | 'spouse' | 'child';
+
+const FAM_ROLE_STYLE: Record<FamRole, { border: string; bg: string }> = {
+  owner:  { border: '#0F766E', bg: '#F0FDFA' },
+  spouse: { border: '#BE185D', bg: '#FDF2F8' },
+  child:  { border: '#6D28D9', bg: '#F5F3FF' },
+};
+
+interface FamCardData {
+  member: Member;
+  role: FamRole;
+  caption?: string;
+  quotaRef?: string;
+  onPick: (id: string) => void;
+  highlighted?: boolean;
+}
+
+function FamCard({ data }: { data: FamCardData }) {
+  const { member: m, role, caption, quotaRef, onPick, highlighted } = data;
+  const { border, bg } = FAM_ROLE_STYLE[role];
+  const name = dispName(m);
+  const photo = photoOf(m);
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div style={{ position: 'relative', width: FAM_CARD_W }}>
+      <Handle type="target" position={Position.Top} isConnectable={false} style={{ opacity: 0 }} />
+      <Handle id="right-out" type="source" position={Position.Right} isConnectable={false} style={{ opacity: 0 }} />
+      <Handle id="left-in" type="target" position={Position.Left} isConnectable={false} style={{ opacity: 0 }} />
+
+      <button
+        onClick={e => { e.stopPropagation(); onPick(m.id); }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        className={highlighted ? 'search-highlight-card' : undefined}
+        style={{
+          border: `1.5px solid ${border}`, borderRadius: 14, background: bg,
+          padding: '18px 14px', width: '100%',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
+          cursor: 'pointer',
+          boxShadow: hovered ? `0 10px 22px rgba(0,0,0,0.16), 0 0 0 1px ${border}55` : '0 1px 4px rgba(0,0,0,0.06)',
+          transform: hovered ? 'translateY(-3px)' : 'none',
+          transition: 'box-shadow 150ms ease, transform 150ms ease, border-color 150ms ease',
+        }}
+      >
+        <div style={{
+          width: 60, height: 60, borderRadius: '50%', backgroundColor: border,
+          backgroundImage: photo ? `url(${photo})` : undefined,
+          backgroundSize: 'cover', backgroundPosition: 'center',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 15, fontWeight: 700, color: '#fff', flexShrink: 0,
+          border: `1.5px solid ${border}`,
+          boxSizing: 'border-box',
+        }}>
+          {!photo && getInitials(name)}
+        </div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', textAlign: 'center', lineHeight: 1.3 }}>
+          {name}
+        </div>
+        <div style={{
+          fontSize: 11, fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.02em',
+          color: border, background: `${border}1a`, padding: '1px 9px', borderRadius: 999,
+        }}>
+          {m.id}
+        </div>
+        {m.since && (
+          <div style={{ fontSize: 9.5, color: '#9CA3AF' }}>
+            Joined {m.since}
+          </div>
+        )}
+        {isDead(m) && (
+          <span style={{ fontSize: 9, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '1px 7px', borderRadius: 999 }}>
+            Deceased
+          </span>
+        )}
+      </button>
+
+      {caption && (
+        <div style={{ textAlign: 'center', marginTop: 6, fontSize: 11, fontWeight: 600, color: border }}>
+          {caption}
+        </div>
+      )}
+      {quotaRef && (
+        <div style={{ textAlign: 'center', marginTop: 2, fontSize: 9.5, fontStyle: 'italic', color: '#9CA3AF' }}>
+          {quotaRef}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FamUnion({ data }: { data: { labelOffsetY?: number } }) {
+  return (
+    <div style={{ width: 1, height: 1, position: 'relative' }}>
+      <Handle id="bottom" type="source" position={Position.Bottom} isConnectable={false} style={{ width: 1, height: 1, opacity: 0 }} />
+      <span style={{
+        position: 'absolute', top: data.labelOffsetY ?? 40, left: 8, whiteSpace: 'nowrap',
+        fontSize: 10.5, fontWeight: 600, color: '#94A3B8',
+        background: '#fff', padding: '1px 6px', borderRadius: 4,
+      }}>
+        Children
+      </span>
+    </div>
+  );
+}
+
+const famNodeTypes: NodeTypes = { card: FamCard, union: FamUnion };
+
+const famChildLabel = (m: Member) =>
+  m.gender === 'M' ? 'Son' : m.gender === 'F' ? 'Daughter' : 'Child';
+
+function buildFocusedGraph(focusId: string, members: Member[]): { nodes: Node[]; edges: Edge[] } {
   const owner = members.find(m => m.id === focusId);
-  if (!owner) return null;
+  if (!owner) return { nodes: [], edges: [] };
 
   // Spouse: if owner is registered as a spouse, find their partner;
   // otherwise find who registered as spouse under owner
@@ -40,117 +174,136 @@ export function FocusedDiagram({ focusId, members, onPick }: Props) {
     return false;
   });
 
-  // Dimensions (larger cards)
-  const CW = 148; const CH = 100;
-  const AV_R = 22; const AV_CY = 34;
-  const HG = 20; const VG = 76; const SG = 56;
-  const PX = 32; const PY = 28; const LH = 22;
+  const topW = spouse ? 2 * FAM_CARD_W + FAM_SGAP : FAM_CARD_W;
+  const botW = bioChildren.length > 0
+    ? bioChildren.length * FAM_CARD_W + (bioChildren.length - 1) * FAM_HGAP : 0;
+  const totalW = Math.max(topW, botW);
+  const mid = totalW / 2;
 
-  // Role colours
-  const OWNER_C  = '#0F766E'; const OWNER_BG  = '#F0FDFA';
-  const SPOUSE_C = '#BE185D'; const SPOUSE_BG = '#FDF2F8';
-  const CHILD_C  = '#6D28D9'; const CHILD_BG  = '#F5F3FF';
-  const LINE = '#CBD5E1';
+  const ownerX  = spouse ? mid - FAM_CARD_W - FAM_SGAP / 2 : mid - FAM_CARD_W / 2;
+  const spouseX = mid + FAM_SGAP / 2;
+  const row1Y   = 0;
+  const row2Y   = row1Y + FAM_CARD_H + FAM_VGAP;
+  const childX0 = mid - botW / 2;
 
-  const childLabel = (m: Member) =>
-    m.gender === 'M' ? 'Son' : m.gender === 'F' ? 'Daughter' : 'Child';
+  const nodes: Node[] = [];
+  const edges: Edge[] = [];
 
-  const drawCard = (m: Member, x: number, y: number, color: string, bg: string, caption?: string) => (
-    <g key={m.id} style={{ cursor: 'pointer' }} onClick={() => onPick(m.id)}>
-      <rect x={x} y={y} width={CW} height={CH} rx={12}
-        fill={bg} stroke={color} strokeWidth={1.5} />
-      <circle cx={x + CW / 2} cy={y + AV_CY} r={AV_R} fill={color} />
-      <text x={x + CW / 2} y={y + AV_CY + 7} textAnchor="middle"
-        fontSize="13" fontWeight="700" fill="#fff">
-        {getInitials(m.name)}
-      </text>
-      <text x={x + CW / 2} y={y + AV_CY + AV_R + 18} textAnchor="middle"
-        fontSize="12" fontWeight="600" fill="#111827">
-        {m.name.length > 18 ? m.name.slice(0, 17) + '…' : m.name}
-      </text>
-      <text x={x + CW / 2} y={y + AV_CY + AV_R + 32} textAnchor="middle"
-        fontSize="10" fill="#9CA3AF">
-        {m.id}
-      </text>
-      {caption && (
-        <text x={x + CW / 2} y={y + CH + 16} textAnchor="middle"
-          fontSize="9" fontWeight="500" fill={color}>
-          {caption}
-        </text>
-      )}
-    </g>
+  nodes.push({
+    id: owner.id, type: 'card', position: { x: ownerX, y: row1Y },
+    data: { member: owner, role: 'owner' as FamRole, onPick: undefined },
+  });
+
+  if (spouse) {
+    nodes.push({
+      id: spouse.id, type: 'card', position: { x: spouseX, y: row1Y },
+      data: { member: spouse, role: 'spouse' as FamRole, onPick: undefined },
+    });
+    edges.push({
+      id: `e-spouse-${owner.id}-${spouse.id}`,
+      source: owner.id, sourceHandle: 'right-out',
+      target: spouse.id, targetHandle: 'left-in',
+      type: 'straight', label: 'SPOUSE',
+      style: { stroke: '#CBD5E1', strokeWidth: 1.5 },
+      labelStyle: { fontSize: 9, fill: '#94A3B8', fontWeight: 600, letterSpacing: 0.6 },
+      labelBgStyle: { fill: '#F9FAFB', fillOpacity: 1 },
+      labelBgPadding: [6, 3],
+      labelBgBorderRadius: 5,
+    });
+  }
+
+  if (bioChildren.length > 0) {
+    const unionId = `union-${owner.id}`;
+    const unionX = spouse ? mid : ownerX + FAM_CARD_W / 2;
+    const unionY = spouse ? row1Y + FAM_CARD_H / 2 : row1Y + FAM_CARD_H;
+    const labelOffsetY = (row2Y - unionY) * 0.4;
+    nodes.push({
+      id: unionId, type: 'union', position: { x: unionX, y: unionY },
+      data: { labelOffsetY }, style: { width: 1, height: 1 },
+    });
+
+    bioChildren.forEach((c, i) => {
+      const cx = childX0 + i * (FAM_CARD_W + FAM_HGAP);
+      // Bio child, but membership can hang off someone else's quota (e.g. a
+      // grandparent's) instead of the parent(s) shown here — flag that.
+      const sponsor = c.pid && !parentIds.has(c.pid) ? members.find(m => m.id === c.pid) : null;
+      const quotaRef = sponsor ? `Membership via ${sponsor.name} (${sponsor.id})` : undefined;
+      nodes.push({
+        id: c.id, type: 'card', position: { x: cx, y: row2Y },
+        data: { member: c, role: 'child' as FamRole, caption: famChildLabel(c), quotaRef, onPick: undefined },
+      });
+      edges.push({
+        id: `e-child-${owner.id}-${c.id}`,
+        source: unionId, sourceHandle: 'bottom', target: c.id,
+        type: 'smoothstep',
+        style: { stroke: '#CBD5E1', strokeWidth: 1.5 },
+      });
+    });
+  }
+
+  return { nodes, edges };
+}
+
+function FocusedDiagramInner({ focusId, members, onPick, highlightedId }: Props) {
+  const { nodes: rawNodes, edges } = useMemo(
+    () => buildFocusedGraph(focusId, members),
+    [focusId, members],
   );
 
-  // Layout
-  const topW   = spouse ? 2 * CW + SG : CW;
-  const botW   = bioChildren.length > 0
-    ? bioChildren.length * CW + (bioChildren.length - 1) * HG : 0;
-  const svgW   = Math.max(topW, botW) + 2 * PX;
-  const mid    = svgW / 2;
+  const nodes = useMemo(
+    () => rawNodes.map(n => n.type === 'card'
+      ? { ...n, data: { ...n.data, onPick, highlighted: !!highlightedId && n.id === highlightedId } }
+      : n),
+    [rawNodes, onPick, highlightedId],
+  );
 
-  const ownerX       = spouse ? mid - CW - SG / 2 : mid - CW / 2;
-  const spouseX      = mid + SG / 2;
-  const mainCX       = spouse ? mid : ownerX + CW / 2;
-  const childX0      = (svgW - botW) / 2;
-  const row1Y        = PY;
-  const row2Y        = row1Y + CH + VG;
-  const spouseLineY  = row1Y + CH / 2;
-  const spouseLabelX = ownerX + CW + SG / 2;
-  const svgH = bioChildren.length > 0
-    ? row2Y + CH + 24 + PY
-    : row1Y + CH + PY;
+  const rf = useReactFlow();
+  const nodesInitialized = useNodesInitialized();
+  useEffect(() => {
+    if (!nodesInitialized) return;
+    if (highlightedId) {
+      const target = nodes.find(n => n.id === highlightedId);
+      if (target) {
+        rf.setCenter(target.position.x + FAM_CARD_W / 2, target.position.y + FAM_CARD_H / 2, { zoom: 1, duration: 600 });
+        return;
+      }
+    }
+    rf.fitView({ padding: 0.2, minZoom: 0.2, maxZoom: 1.5, duration: 300 });
+  }, [nodesInitialized, highlightedId, nodes, rf]);
+
+  if (!nodes.length) return null;
+
+  const handleNodeClick: NodeMouseHandler = (_evt, node) => {
+    const d = node.data as { member?: Member };
+    if (d?.member?.id) onPick(d.member.id);
+  };
 
   return (
-    <div style={{ width: '100%', overflowX: 'auto' }}>
-      <svg width={svgW} height={svgH}
-        style={{ display: 'block', margin: '0 auto', minWidth: svgW }}>
-
-        {/* Spouse connector */}
-        {spouse && (
-          <g>
-            <line x1={ownerX + CW} y1={spouseLineY} x2={spouseX} y2={spouseLineY}
-              stroke={LINE} strokeWidth={1.5} />
-            <rect x={spouseLabelX - 24} y={spouseLineY - 9} width={48} height={17} rx={5}
-              fill="#F9FAFB" stroke={LINE} strokeWidth={1} />
-            <text x={spouseLabelX} y={spouseLineY + 5} textAnchor="middle"
-              fontSize="8" fill="#94A3B8" letterSpacing="0.6">
-              SPOUSE
-            </text>
-          </g>
-        )}
-
-        {/* Lines to children */}
-        {bioChildren.length > 0 && (
-          <g>
-            <line x1={mainCX} y1={row1Y + CH} x2={mainCX} y2={row2Y - LH}
-              stroke={LINE} strokeWidth={1.5} />
-            {bioChildren.length > 1 && (
-              <line
-                x1={childX0 + CW / 2} y1={row2Y - LH}
-                x2={childX0 + botW - CW / 2} y2={row2Y - LH}
-                stroke={LINE} strokeWidth={1.5}
-              />
-            )}
-            {bioChildren.map((c, i) => {
-              const cx = childX0 + i * (CW + HG) + CW / 2;
-              return (
-                <line key={`stem-${c.id}`}
-                  x1={cx} y1={row2Y - LH} x2={cx} y2={row2Y}
-                  stroke={LINE} strokeWidth={1.5}
-                />
-              );
-            })}
-          </g>
-        )}
-
-        {drawCard(owner, ownerX, row1Y, OWNER_C, OWNER_BG)}
-        {spouse && drawCard(spouse, spouseX, row1Y, SPOUSE_C, SPOUSE_BG)}
-        {bioChildren.map((c, i) =>
-          drawCard(c, childX0 + i * (CW + HG), row2Y, CHILD_C, CHILD_BG, childLabel(c))
-        )}
-
-      </svg>
+    <div style={{ width: '100%', height: 560 }}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={famNodeTypes}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={false}
+        onNodeClick={handleNodeClick}
+        panOnScroll
+        minZoom={0.2}
+        maxZoom={2}
+      >
+        <Background color="#E2E8F0" gap={22} size={1} />
+        <Controls showInteractive={false} style={{ bottom: 10, right: 10, left: 'auto', top: 'auto' }} />
+      </ReactFlow>
     </div>
+  );
+}
+
+export function FocusedDiagram(props: Props) {
+  return (
+    <ReactFlowProvider>
+      <FocusedDiagramInner {...props} />
+    </ReactFlowProvider>
   );
 }
 
@@ -254,14 +407,15 @@ interface BioProps {
   rootId: string;
   members: Member[];
   onPick: (id: string) => void;
+  highlightedId?: string | null;
 }
 
 // Member Relationship tab: quota/sponsorship tree only — no bio children
-export function BioFamilyDiagram({ rootId, members, onPick }: BioProps) {
-  return <QuotaFamilyDiagram rootId={rootId} members={members} onPick={onPick} />;
+export function BioFamilyDiagram({ rootId, members, onPick, highlightedId }: BioProps) {
+  return <QuotaFamilyDiagram rootId={rootId} members={members} onPick={onPick} highlightedId={highlightedId} />;
 }
 
 // Family Relationship tab: biological family tree with recursive children
-export function FamilyTreeDiagram({ rootId, members, onPick }: BioProps) {
-  return <QuotaFamilyDiagram rootId={rootId} members={members} onPick={onPick} bioMode />;
+export function FamilyTreeDiagram({ rootId, members, onPick, highlightedId }: BioProps) {
+  return <QuotaFamilyDiagram rootId={rootId} members={members} onPick={onPick} highlightedId={highlightedId} bioMode />;
 }

@@ -1,35 +1,53 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background-color: rgb(0 0 0 / 0.3);
+  background-color: rgb(15 23 42 / 0.4);
   z-index: 50;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 1rem;
 }
 
 .modal {
   background-color: #ffffff;
-  border-radius: 0.75rem;
+  border-radius: 1rem;
   border: 1px solid #e5e7eb;
-  width: calc(100vw - 2rem);
-  max-width: 20rem;
+  box-shadow: 0 24px 48px -12px rgb(0 0 0 / 0.28);
+  width: 100%;
+  max-width: 26rem;
   max-height: 90vh;
   overflow-y: auto;
-  padding: 1rem;
+  padding: 1.25rem 1.25rem 1rem;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.875rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
 }
 
 .title {
-  font-size: 13px;
-  font-weight: 500;
-  color: #1f2937;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.titleId {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: monospace;
+  letter-spacing: 0.03em;
+  color: #3b82f6;
+  background-color: #eff6ff;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
 }
 
 .closeBtn {
@@ -42,81 +60,278 @@
 
 .parentBadge {
   font-size: 10px;
-  color: #9ca3af;
+  color: #6b7280;
   background-color: #f9fafb;
+  border: 1px solid #f3f4f6;
   border-radius: 0.5rem;
-  padding: 0.375rem 0.5rem;
+  padding: 0.5rem 0.625rem;
+  margin-bottom: 0.875rem;
+}
+
+.formBody {
+  display: flex;
+  flex-direction: column;
+}
+
+.sectionLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 10px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0.875rem 0 0.5rem;
+}
+
+.sectionLabel:first-child {
+  margin-top: 0;
+}
+
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem;
+}
+
+.avatarPreviewWrap {
+  display: flex;
+  justify-content: center;
   margin-bottom: 0.75rem;
 }
 
+.avatarPreview {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 4px 10px -2px rgb(0 0 0 / 0.25);
+  border: 3px solid #ffffff;
+  outline: 1px solid #f3f4f6;
+  transition: background-color 150ms;
+}
+
+.pickerHint {
+  font-size: 10px;
+  color: #9ca3af;
+  font-style: italic;
+  margin: -0.25rem 0 0.5rem;
+  line-height: 1.4;
+}
+
 .field {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.625rem;
 }
 
 .label {
   display: block;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  font-size: 12.5px;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  color: #1f2937;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 150ms, box-shadow 150ms;
+  font-family: inherit;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 2.25rem;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.12);
+}
+
+/* ── Father/Mother picker ─────────────────────────────────────────────── */
+
+.pickerInputWrap {
+  position: relative;
+}
+
+.pickerSearchIcon {
+  position: absolute;
+  left: 0.625rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #d1d5db;
+  pointer-events: none;
+}
+
+.pickerInput {
+  padding-left: 1.75rem;
+}
+
+.pickerDropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.625rem;
+  box-shadow: 0 12px 24px -8px rgb(0 0 0 / 0.18);
+  overflow: hidden;
+  z-index: 5;
+}
+
+.pickerOption {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  cursor: pointer;
+}
+
+.pickerOption:hover {
+  background-color: #f9fafb;
+}
+
+.pickerOptionAvatar {
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 999px;
+  background-color: #eef2ff;
+  color: #4338ca;
+  font-size: 8.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pickerOptionName {
+  font-size: 12px;
+  color: #1f2937;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pickerOptionId {
   font-size: 10px;
   color: #9ca3af;
-  margin-bottom: 0.125rem;
+  font-family: monospace;
+  flex-shrink: 0;
 }
 
-.input {
-  width: 100%;
-  padding: 0.375rem 0.5rem;
-  font-size: 12px;
-  border: 1px solid #e5e7eb;
+.pickerSelected {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid #bbf7d0;
+  background-color: #f0fdf4;
   border-radius: 0.5rem;
-  background-color: #ffffff;
-  color: #1f2937;
-  outline: none;
-  box-sizing: border-box;
 }
 
-.input:focus {
-  border-color: #93c5fd;
+.pickerCheckIcon {
+  color: #16a34a;
+  flex-shrink: 0;
 }
 
-.select {
-  width: 100%;
-  padding: 0.375rem 0.5rem;
+.pickerSelectedName {
   font-size: 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  background-color: #ffffff;
-  color: #1f2937;
-  outline: none;
-  box-sizing: border-box;
+  font-weight: 500;
+  color: #14532d;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
+.pickerSelectedId {
+  font-size: 10px;
+  font-family: monospace;
+  color: #16a34a;
+}
+
+.pickerClearBtn {
+  color: #86efac;
+  flex-shrink: 0;
+  display: flex;
+}
+
+.pickerClearBtn:hover {
+  color: #16a34a;
+}
+
+/* ── Actions ───────────────────────────────────────────────────────────── */
 
 .actions {
   display: flex;
   gap: 0.5rem;
-  margin-top: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid #f3f4f6;
 }
 
 .cancelBtn {
   flex: 1;
-  padding: 0.5rem 0;
-  font-size: 11px;
+  padding: 0.6rem 0;
+  font-size: 11.5px;
+  font-weight: 500;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
   color: #6b7280;
   background: none;
+  transition: background-color 150ms;
 }
 
 .cancelBtn:hover {
   background-color: #f9fafb;
 }
 
-.saveBtn {
+.deleteBtn {
   flex: 1;
-  padding: 0.5rem 0;
-  font-size: 11px;
+  padding: 0.6rem 0;
+  font-size: 11.5px;
+  font-weight: 500;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  color: #dc2626;
+  background: none;
+  transition: background-color 150ms;
+}
+
+.deleteBtn:hover {
+  background-color: #fef2f2;
+}
+
+.saveBtn {
+  flex: 1.4;
+  padding: 0.6rem 0;
+  font-size: 11.5px;
   background-color: #3b82f6;
   color: #ffffff;
   border-radius: 0.5rem;
-  font-weight: 500;
+  font-weight: 600;
   border: none;
+  transition: background-color 150ms;
 }
 
 .saveBtn:hover {

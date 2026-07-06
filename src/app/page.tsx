@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useMemberStore } from '@/store/memberStore';
+import { fetchMembers } from '@/lib/api';
 import MemberTree from '@/components/MemberTree';
 import DetailPanel from '@/components/DetailPanel';
 import MemberForm from '@/components/MemberForm';
@@ -10,13 +12,26 @@ import { Plus, LayoutGrid, Network } from 'lucide-react';
 import s from './page.module.css';
 
 export default function Home() {
-  const { view, setView, selectedId } = useMemberStore();
+  const { view, setView, selectedId, setMembers } = useMemberStore();
+  const { data, isLoading, isError } = useQuery({ queryKey: ['members'], queryFn: fetchMembers });
+
+  useEffect(() => {
+    if (data) setMembers(data);
+  }, [data, setMembers]);
 
   const [formState, setFormState] = useState<{
     open: boolean;
     editId?: string;
     pid?: string;
   }>({ open: false });
+
+  if (isLoading) {
+    return <div className={s.root} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#9ca3af' }}>Loading members…</div>;
+  }
+
+  if (isError) {
+    return <div className={s.root} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#dc2626' }}>Failed to load members. Please refresh.</div>;
+  }
 
   return (
     <div className={s.root}>
@@ -87,7 +102,9 @@ export default function Home() {
         <div className={s.treeArea}>
           <MemberTree />
         </div>
-        {selectedId && <DetailPanel />}
+        {selectedId && (
+          <DetailPanel onEdit={id => setFormState({ open: true, editId: id })} />
+        )}
       </div>
 
       {/* Add / Edit Modal */}

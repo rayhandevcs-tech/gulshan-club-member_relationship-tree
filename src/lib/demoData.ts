@@ -179,7 +179,7 @@ export const familyMembers: Member[] = [
     via: 'a4d',
     gender: 'M',
     since: '28/12/2019',
-    pid: 'DM-8', rel: 'other',
+    pid: 'DM-8', rel: 'grandchild',
     fatherId: 'PA-41', motherId: 'PT-70',
     note: '(Level-13), SPL Western Tower, 186, Tejgaon, Dhaka-1208',
   },
@@ -194,9 +194,22 @@ export const familyMembers: Member[] = [
     fatherId: 'PA-41', motherId: 'PT-70',
     note: '24, Dutabash Road, Baridhara, Dhaka-1212',
   },
+
+  {
+    id: 'AFD-1155',
+    name: 'Mr. Arsh Al Aziz',
+    via: 'a4d',
+    gender: 'M',
+    since: '27/01/2021',
+    pid: 'PM-199', rel: 'grandchild',
+    fatherId: 'PA-41', motherId: 'PT-70',
+    note: '24, Dutabash Road, Baridhara, Dhaka-1212',
+  },
+
+
  
   // — Children of PA-74 + PS-238 —
-  // 4(d)-PA-74
+
   {
     id: 'PF-90',
     name: 'Ms. Fabiana Aziz',
@@ -214,10 +227,37 @@ export const familyMembers: Member[] = [
     via: 'a4d',
     gender: 'F',
     since: '19/02/2022',
-    pid: 'DR-7', rel: 'other',
+    pid: 'DR-7', rel: 'grandchild',
     fatherId: 'PA-74', motherId: 'PS-238',
     note: '(Level-13), SPL Western Tower, 186, Tejgaon, Dhaka-1208',
   },
+
+  {
+    id: 'AFD-0835',
+    name: 'Ms. Nashrah Sultana Aziz',
+    via: 'a4d',
+    gender: 'F',
+    since: '19/02/2022',
+    pid: 'PH-23', rel: 'grandchild',
+    fatherId: 'PA-74', motherId: 'PS-238',
+    note: '(Level-13), SPL Western Tower, 186, Tejgaon, Dhaka-1208',
+  },
+
+  {
+    id: 'AFD-0503',
+    name: 'Ms. Giovana Aziz',
+    via: 'a4d',
+    gender: 'F',
+    since: '19/02/2022',
+    pid: 'LN-5', rel: 'grandchild',
+    fatherId: 'PA-74', motherId: 'PS-238',
+    note: '(Level-13), SPL Western Tower, 186, Tejgaon, Dhaka-1208',
+  },
+
+
+  
+
+
  
   // — Children of PA-83 + PJ-16 —
   // 4(d)-PA-83
@@ -227,10 +267,23 @@ export const familyMembers: Member[] = [
     via: 'a4d',
     gender: 'M',
     since: '28/06/2021',
+    pid: 'PM-122', rel: 'grandchild',
+    fatherId: 'PA-83', motherId: 'PJ-16',
+    note: 'Partex Group, 74 Mohakhali C/A, Dhaka-1212',
+  },
+
+  {
+    id: 'PA-307',
+    name: 'Mr. Arshad Lee',
+    via: 'a4d',
+    gender: 'M',
+    since: '28/06/2021',
     pid: 'PA-83', rel: 'child',
     fatherId: 'PA-83', motherId: 'PJ-16',
     note: 'Partex Group, 74 Mohakhali C/A, Dhaka-1212',
   },
+
+
  
   // — Children of DR-7 + DS-36 —
   // 4(d)-DR-7
@@ -279,6 +332,20 @@ export const familyMembers: Member[] = [
     fatherId: 'DS-25', motherId: 'PF-25',
     note: 'House # 2, Road # 62, Gulshan-2, Dhaka-1212',
   },
+
+  {
+    id: 'AFD-1397',
+    name: 'Mr. Austin Russell',
+    via: 'a4d',
+    gender: 'M',
+    since: '17/09/2018',
+    pid: 'PS-25', rel: 'grandchild',
+    fatherId: 'DS-25', motherId: 'PF-25',
+    note: 'House # 2, Road # 62, Gulshan-2, Dhaka-1212',
+  },
+
+
+
   // 4(d)-PF-25 → mother's own quota → slot under HER
   {
     id: 'PS-412',
@@ -302,174 +369,19 @@ export const familyMembers: Member[] = [
     note: 'House # 2, Road # 62, Gulshan-2, Dhaka-1212 | Pending A/C',
   },
  
-  // succession target of DM-8 — rel child হলেও successor হিসেবে আগে consume হয়
+  // succession target of DM-8 — wasn't a member before; received the A/C via transfer
   {
     id: 'DS-44',
     name: 'Simran Rahman',
-    via: 'core',
+    via: 'succession',
     gender: 'F',
     since: '',
-    pid: 'DM-8', rel: 'child',
-    fatherId: 'DS-25', motherId: 'PF-25',
+    pid: 'DM-8', rel: 'other',
+    fatherId: null, motherId: null,
+    fatherName: 'X', motherName: 'Y',
     note: 'House # 2, Road # 62, Gulshan-2, Dhaka-1212 | Pending A/C',
   },
 
-// extra data
-  // {
-  //   id: 'PA-273',
-  //   name: 'Mr. Asef Aziz',
-  //   via: 'a4d',
-  //   gender: 'M',
-  //   since: '23/06/2020',
-  //   pid: 'DS-37', rel: 'child',
-  //   fatherId: 'DR-7', motherId: 'DS-36',
-  //   note: 'House # 8, Road # 62, Gulshan-2, Dhaka-1212',
-  // },
-  // 4(d)-DS-36 → mother's own quota (she's a beside spouse) → slot under HER
-  // {
-  //   id: 'PA-355',
-  //   name: 'Mr. Adil Aziz',
-  //   via: 'a4d',
-  //   gender: 'M',
-  //   since: '18/09/2023',
-  //   pid: 'DS-37', rel: 'child',
-  //   fatherId: 'DR-7', motherId: 'DS-36',
-  //   note: 'House # 8, Road # 62, Gulshan-2, Dhaka-1212',
-  // },
-
-  //
-  // {
-  //   id: 'PA-274',
-  //   name: 'Mr. Asef Aziz',
-  //   via: 'a4d',
-  //   gender: 'M',
-  //   since: '23/06/2020',
-  //   pid: 'DS-38', rel: 'child',
-  //   fatherId: 'DR-7', motherId: 'DS-36',
-  //   note: 'House # 8, Road # 62, Gulshan-2, Dhaka-1212',
-  // },
-  // 4(d)-DS-36 → mother's own quota (she's a beside spouse) → slot under HER
-  // {
-  //   id: 'PA-356',
-  //   name: 'Mr. Adil Aziz',
-  //   via: 'a4d',
-  //   gender: 'M',
-  //   since: '18/09/2023',
-  //   pid: 'DS-38', rel: 'child',
-  //   fatherId: 'DR-7', motherId: 'DS-36',
-  //   note: 'House # 8, Road # 62, Gulshan-2, Dhaka-1212',
-  // },
-
-
-// // LM-11 and LS-8 Family members
-
-// {
-//   id: 'LM-11',
-//   name: 'Md. Saiful Islam',
-//   via: 'core',
-//   gender: 'M',
-//   since: '28/10/1985',
-//   phone: '+8801711538657',
-//   email: 'islam1944bd@gmail.com',
-//   pid: null,
-//   rel: null,
-//   succession: 'LS-35',
-//   membershipRef: 'Linked to LS-35',
-//   fatherName: 'Ahafiqur Rahman',
-// },
-
-// {
-//   id: 'LS-8',
-//   name: 'Sultana Shaheda Islam',
-//   via: 'core',
-//   gender: 'F',
-//   since: '28/10/1985',
-//   phone: '+8801819213808',
-//   email: 'ssbdl@agni.com',
-//   pid: 'LM-11',
-//   rel: 'spouse',
-//   fatherName: 'Md. Serajul Islam',
-// },
-
-// {
-//   id: 'PT-7',
-//   name: 'Tahmina Rehman',
-//   via: 'core',
-//   gender: 'F',
-//   since: '12/12/1995',
-//   phone: '+8801713012475',
-//   email: 'tahminar67@gmail.com',
-//   pid: 'LM-11',
-//   rel: 'child',
-//   fatherId: 'LM-11',
-//   motherId: 'LS-8',
-// },
-
-// {
-//   id: 'PW-6',
-//   name: 'Late Wasim Sajjad',
-//   via: 'core',
-//   gender: 'M',
-//   since: '15/10/2001',
-//   phone: '+8801711595459',
-//   email: 'wali@utahgroup.net',
-//   pid: 'LM-11',
-//   rel: 'child',
-//   fatherId: 'LM-11',
-//   motherId: 'LS-8',
-//   succession: 'PK-49',
-// },
-
-// {
-//   id: 'PO-10',
-//   name: 'Omar Hamid Chowdhury',
-//   via: 'core',
-//   gender: 'M',
-//   since: '04/03/2018',
-//   phone: '+8801711593144',
-//   email: 'omar.dhaka@gmail.com',
-//   pid: 'null',
-//   rel: 'null',
-//   fatherName: 'Abdul Hamid Chowdhury',
-//   motherName: 'Dureshar Ponok Chowdhury',
-// },
-
-// {
-//   id: 'PS-329',
-//   name: 'Sanjana Chowdhury',
-//   via: 'core',
-//   gender: 'F',
-//   since: '17/09/2018',
-//   email: 'transaction.gcl@gmail.com',
-//   pid: 'PA-41',
-//   rel: 'spouse',
-//   fatherId: 'PO-10',
-//   motherId: 'PT-7',
-// },
-
-// {
-//   id: 'AFD-09',
-//   name: 'Daniyah Fatema Sajjad',
-//   via: 'a4d',
-//   gender: 'F',
-//   since: '01/05/2020',
-//   pid: 'DS-44',
-//   rel: 'child',
-//   fatherId: 'PW-6',
-//   motherId: 'PK-49',
-// },
-//  {
-//   id: 'AFD-099',
-//   name: 'Daniyah Fatema Sajjad',
-//   via: 'a4d',
-//   gender: 'F',
-//   since: '01/05/2020',
-//   pid: 'PA-41',
-//   rel: 'associate',
-//   fatherId: 'PW-6',
-//   motherId: 'PK-49',
-// },
- 
 
 
 
@@ -580,7 +492,7 @@ export const familyMembers: Member[] = [
     since: '17/09/2018',
     phone: '+8801711593144',
     email: 'shareef.arsenal95@gmail.com',
-    pid: 'LS-8', rel: 'other',
+    pid: 'LS-8', rel: 'grandchild',
     fatherId: 'PO-10', motherId: 'PT-7',
   },
   // দাদার (LM-11, root) quota → slot ABOVE the root couple
@@ -590,7 +502,7 @@ export const familyMembers: Member[] = [
     via: 'a4d',
     gender: 'F',
     since: '01/05/2020',
-    pid: 'LM-11', rel: 'other',
+    pid: 'LM-11', rel: 'grandchild',
     fatherId: 'PW-6', motherId: 'PK-49',
   },
   {
@@ -599,7 +511,7 @@ export const familyMembers: Member[] = [
     via: 'a4d',
     gender: 'M',
     since: '01/05/2020',
-    pid: 'LM-11', rel: 'other',
+    pid: 'LM-11', rel: 'grandchild',
     fatherId: 'PW-6', motherId: 'PK-49',
   },
   // মায়ের (PK-49, beside spouse) quota → slot under HER
@@ -628,79 +540,14 @@ export const familyMembers: Member[] = [
     via: 'a4d',
     gender: 'F',
     since: '15/09/2022',
-    pid: 'LS-8', rel: 'other',
+    pid: 'LS-8', rel: 'grandchild',
     fatherId: 'PW-6', motherId: 'PK-49',
 
   },
-  // ═══ NESTED — slot-এর নিজের slot (associate chain) ═══════════════════════
-  // PS-329 (নিজেই PT-7-এর slot) → তার নিচে দুই associate। via:'associate' → কমলা "Assoc" badge; rel:'child' → "Daughter/Son of PW-6"
-  // reference। type override 'Associate' কারণ AFD prefix নাহলে A4D derive করত।
-  // {
-  //   id: 'AFD-09',
-  //   name: 'Daniyah Fatema Sajjad',
-  //   type: 'Associate',
-  //   via: 'associate',
-  //   gender: 'F',
-  //   since: '01/05/2020',
-  //   pid: 'PS-329', rel: 'child',
-  //   fatherId: 'PW-6', motherId: 'PK-49',
-  // },
-  // {
-  //   id: 'AFD-093',
-  //   name: 'Dameer Sajjad',
-  //   type: 'Associate',
-  //   via: 'associate',
-  //   gender: 'M',
-  //   since: '01/05/2020',
-  //   pid: 'PS-329', rel: 'child',
-  //   fatherId: 'PW-6', motherId: 'PK-49',
-  // },
-  // // AFD-0927 → নিচে দুই associate
-  // {
-  //   id: 'AFD-099',
-  //   name: 'Daniyah Fatema Sajjad',
-  //   type: 'Associate',
-  //   via: 'associate',
-  //   gender: 'F',
-  //   since: '01/05/2020',
-  //   pid: 'AFD-0927', rel: 'child',
-  //   fatherId: 'PW-6', motherId: 'PK-49',
-  // },
-  // {
-  //   id: 'AFD-0933',
-  //   name: 'Dameer Sajjad',
-  //   type: 'Associate',
-  //   via: 'associate',
-  //   gender: 'M',
-  //   since: '01/05/2020',
-  //   pid: 'AFD-0927', rel: 'child',
-  //   fatherId: 'PW-6', motherId: 'PK-49',
-  // },
-  // // AFD-0928 → নিচে দুই associate
-  // {
-  //   id: 'AFD-079',
-  //   name: 'Daniyah Fatema Sajjad',
-  //   type: 'Associate',
-  //   via: 'associate',
-  //   gender: 'F',
-  //   since: '01/05/2020',
-  //   pid: 'AFD-0928', rel: 'child',
-  //   fatherId: 'PW-6', motherId: 'PK-49',
-  // },
-  // {
-  //   id: 'AFD-0937',
-  //   name: 'Dameer Sajjad',
-  //   type: 'Associate',
-  //   via: 'associate',
-  //   gender: 'M',
-  //   since: '01/05/2020',
-  //   pid: 'AFD-0928', rel: 'child',
-  //   fatherId: 'PW-6', motherId: 'PK-49',
-  // },
  
   // // ═══ ASSOCIATES under a beside spouse ════════════════════════════════════
   // // PO-10 (PT-7-এর beside spouse) → নিজের quota-য় দুই associate A/C
-  // // (একই ছেলের দুইটা আলাদা A/C — দুটোই আলাদা slot হিসেবে দেখাবে)
+ 
    {
     id: 'AS-151',
     name: 'Ahnaf Hamid Chowdhury',
@@ -726,7 +573,7 @@ export const familyMembers: Member[] = [
   {
     id: 'LS-35',
     name: 'Syed Abubakar Siddique',
-    via: 'core',
+    via: 'succession',
     gender: 'M',
     since: '',
     pid: null, rel: null,
@@ -763,15 +610,6 @@ export const familyMembers: Member[] = [
   //   since: '',
   //   pid: 'LS-35', rel: 'child',
   // },
-
-
-
-
-
-
-
-
-
 
 
 

@@ -30,3 +30,16 @@ button {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 9999px; }
 ::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+
+/* Search-result highlight: pulses briefly, then leaves a lasting ring so the
+   user can spot which card they just searched for inside the tree diagrams. */
+@keyframes search-highlight-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5); }
+  70%  { box-shadow: 0 0 0 12px rgba(37, 99, 235, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+}
+.search-highlight-card {
+  animation: search-highlight-pulse 1.4s ease-out 2;
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35) !important;
+}

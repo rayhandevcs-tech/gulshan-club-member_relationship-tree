@@ -1,29 +1,4 @@
-// quotaTreeLayout.ts
-// ─────────────────────────────────────────────────────────────────────────────
-// Pure graph-building + layout logic for the quota family diagram.
-// No React imports (only type-only reactflow imports), so this module can be
-// unit-tested in plain Node.
-//
-// DATA MODEL (the new, explicit model):
-//   type      — member class (Permanent / Donor / Life / A4D...). DERIVED from
-//               the ID prefix when not provided:  P→Permanent, D→Donor,
-//               L→Life, AFD→A4D (has quota access but no own A/C yet).
-//               type ONLY controls colors/badges — never placement.
-//   via       — 'core' | 'a4d'. THE placement switch:
-//                 core → independently-held membership → full card in tree
-//                 a4d  → holds a slot off someone's 4(d) quota → slot card
-//   rel       — 'spouse' | 'child' (pure relationship; drives line + label)
-//   pid       — who this record is attached to: the partner (spouse) or the
-//               quota holder / tree parent (child). For via:'a4d' pid is
-//               ALWAYS the quota holder — even a cross-family one.
-//   fatherId / motherId — real blood parents. Used for the reference text
-//               ("Son of PA-41") and for bioMode; never for quota placement.
-//
-// PLACEMENT MATRIX:
-//   rel=spouse via=core → beside partner, full card, "Spouse" line
-//   rel=spouse via=a4d  → slot under quota holder, "Spouse of {pid}"
-//   rel=child  via=core → next generation, full card
-//   rel=child  via=a4d  → slot under quota holder, "Son/Daughter of {father}"
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { Graph, layout } from '@dagrejs/dagre';
@@ -33,31 +8,26 @@ import type { Member } from '@/lib/types';
 // ── Constants ─────────────────────────────────────────────────────────────────
 export const CONN_COLOR = '#CBD5E1';
 
-// dev/test: সব avatar-এ আপাতত public/demo.jpg দেখাবে। যার নিজের photoUrl
-// আছে সে সেটাই পাবে (photoOf আগে photoUrl দেখে)। production-এ এটা '' করে
-// দিলেই সব জায়গায় initials ফিরে আসবে — আর কিছু বদলাতে হবে না।
+
 export const TEST_PHOTO_URL = '/demo.jpg';
 
-// এক জায়গায় photo resolve: নিজের ছবি > demo fallback
+
 export const photoOf = (m: Member): string | undefined =>
   m.photoUrl || TEST_PHOTO_URL || undefined;
 
 // Two-tier sizing: one size for ALL member cards (incl. successors), one size
 // for ALL slot cards (incl. nested). Same width keeps columns aligned.
-export const CARD_W = 150;
-export const CARD_H = 140;
-export const SLOT_W = 150;
-export const SLOT_H = 112;
+export const CARD_W = 185;
+export const CARD_H = 170;
+export const SLOT_W = 180;
+export const SLOT_H = 130;
 
-export const BESIDE_GAP     = 90;  // anchor card ↔ beside card (spouse/successor)
-export const GROUP_GAP      = 28;  // min gap kept between slot groups / obstacles
-export const RANK_SEP       = 80;
-export const NODE_SEP       = 16;
+export const BESIDE_GAP = 110;  
+export const GROUP_GAP  = 34;   
+export const RANK_SEP   = 100;  
+export const NODE_SEP   = 20;  
 
-// ── Type derivation from ID prefix ────────────────────────────────────────────
-// P…  → Permanent (regardless of how access was obtained — that's `via`'s job)
-// AFD → A4D quota access, own A/C not yet opened
-// D…  → Donor, L… → Life, C… → Corporate, H… → Honorary
+
 export function getType(m: Member): string {
   if (m.type) return m.type; // explicit override wins
   const prefix = (m.id.split('-')[0] ?? '').trim().toUpperCase();
@@ -94,11 +64,9 @@ export function findRoot(startId: string, members: Member[]): string {
   return cur;
 }
 
-// The ONE spouse allowed in the beside seat: via 'core' (own membership), or a
-// via 'a4d' spouse who received the member's account (succession transfer).
-// Every other spouse row — regardless of type — falls through to a quota slot.
+
 export function isBesideSpouse(sp: Member, holder: Member): boolean {
-  if (sp.via === 'core') return true;               // own membership → beside
+  if (sp.via === 'core' || sp.via === 'succession') return true; // own membership → beside
   return holder.succession === sp.id;               // dependent, but received the A/C
 }
 
@@ -123,11 +91,7 @@ export function getBioChildren(
   );
 }
 
-// Reference line on a slot card:
-//   rel 'spouse' → "Spouse of {quota holder}"; নাহলে blood parents থেকে
-//   "Son/Daughter of {parent}" — rel 'child' হোক বা 'other', লেখাটা
-//   fatherId/motherId-ই ঠিক করে, তাই cross-family quota-তেও সঠিক থাকে
-//   (চাচার slot-এ ঝুলেও লেখা আসে বাবার নামে)। parent info না থাকলে line নেই।
+
 export function getRef(slot: Member, listing: Member): string | undefined {
   if (slot.rel === 'spouse') return `Spouse of ${listing.id}`;
   const fid = slot.fatherId ?? undefined;
@@ -171,7 +135,7 @@ export function buildGraph(
   function addSlots(owner: Member, bioChildIds: Set<string>, placeAbove: boolean, besideSpouseId?: string) {
     const slots = members.filter(x =>
       x.pid === owner.id &&
-      x.via !== 'core' &&
+      x.via !== 'core' && x.via !== 'succession' &&
       x.id !== besideSpouseId &&
       !bioChildIds.has(x.id) &&
       // in bioMode anyone with known blood parents renders inside the tree
@@ -207,7 +171,7 @@ export function buildGraph(
       });
 
       // nested slots (a slot member granting further quota/associate access)
-      members.filter(x => x.pid === slot.id && x.via !== 'core').forEach(sub => {
+      members.filter(x => x.pid === slot.id && x.via !== 'core' && x.via !== 'succession').forEach(sub => {
         const subId = slotNodeId(sub.id);
         if (seen.has(subId) || seen.has(sub.id)) return;
         seen.add(subId);
@@ -321,18 +285,7 @@ export function buildGraph(
 }
 
 // ── Layout ────────────────────────────────────────────────────────────────────
-//
-// v2 strategy — ONE dagre pass owns all horizontal spacing:
-//   • Only the beside CARDS (spouse / successor) are excluded from dagre.
-//     Their slot subtrees stay IN the main graph, with the slot edges'
-//     source remapped onto the anchor. So dagre knows the true width of
-//     every slot under every couple and spaces sibling subtrees correctly —
-//     no more independent mini-layouts drifting into each other.
-//   • Anchors reserve width only for the beside card itself (+gap).
-//   • After dagre: each owner's slot group is re-centered under its own card,
-//     with the shift CLAMPED against every neighbouring box so re-centering
-//     can never create an overlap. Big data stays collision-free by
-//     construction instead of by patch-sweeps.
+
 
 export function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edges: Edge[] } {
   const nodeById = new Map(nodes.map(n => [n.id, n]));
@@ -430,14 +383,7 @@ export function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edge
   const shiftIds = (ids: string[], dx: number) =>
     ids.forEach(id => { const p = posMap.get(id); if (p) posMap.set(id, { x: p.x + dx, y: p.y }); });
 
-  // 4.5 global slot-group ordering & packing — dagre received the beside
-  // cards' slot edges remapped onto anchors, so it spaced the combined slot
-  // set correctly but in an ARBITRARY order: it may interleave DIFFERENT
-  // anchors' groups (e.g. a beside-spouse's slots drifting into a sibling's
-  // column). Fix globally: (a) drop every owner's group at its ideal spot,
-  // centered under its own card; (b) sweep left→right in that ideal order,
-  // pushing each group right just enough (per shared row) to clear everything
-  // placed before it, hopping over immovable member-card "walls" on the way.
+ 
   const groupBox = (ids: string[]) => {
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     ids.forEach(id => {
@@ -504,9 +450,7 @@ export function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edge
       });
   }
 
-  // 5. re-center every owner's slot group under its own card — clamped so a
-  // shift can never collide with anything else on the same rows. Two passes:
-  // the first pass often frees room that lets the second get closer to center.
+ 
   const owners = nodes.filter(n => n.type === 'member' && (slotKids.get(n.id)?.length ?? 0) > 0);
 
   for (let pass = 0; pass < 2; pass++) {
@@ -528,9 +472,7 @@ export function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edge
       let desired = ownerCenter - (minX + maxX) / 2;
       if (Math.abs(desired) < 1) return;
 
-      // clamp per group-member (not per group-bbox): an obstacle sitting
-      // INSIDE the group's x-span at a deeper rank (e.g. someone else's
-      // nested slot between two of ours) must also constrain the shift
+  
       const memberBoxes = ids.map(id => boxOf(id));
       nodes.forEach(other => {
         if (idSet.has(other.id) || !posMap.has(other.id)) return;
@@ -549,10 +491,7 @@ export function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edge
     });
   }
 
-  // 5.5 final safety sweep — after reflow + recentering, walk every slot row
-  // left→right and nudge any residual same-row collision clear. With the
-  // rank-aware steps above this rarely fires, but it guarantees the
-  // zero-overlap invariant no matter what the data throws at us.
+
   {
     const rows = new Map<number, string[]>();
     nodes.forEach(n => {

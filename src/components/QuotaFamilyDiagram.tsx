@@ -1,5 +1,5 @@
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
   Background,
@@ -8,18 +8,27 @@ import ReactFlow, {
   Position,
   NodeTypes,
   NodeMouseHandler,
+  useReactFlow,
+  useNodesInitialized,
 } from 'reactflow';
 import { TYPE_CONFIG, getInitials } from '@/lib/memberUtils';
 import type { Member } from '@/lib/types';
 import {
   buildGraph, applyLayout, findRoot,
   getType, isDead, dispName, photoOf,
-  CARD_W, SLOT_W, CONN_COLOR,
+  CARD_W, CARD_H, SLOT_W, SLOT_H, CONN_COLOR,
 } from './Quotatreelayout';
 
-// type drives ONLY colors/badges — placement is via/rel (see layout module)
+
 function cardColors(m: Member) {
-  if (isDead(m)) return { border: '#F59E0B', avatarBg: '#D97706', cardBg: '#FFFBEB' };
+  if (isDead(m)) {
+   
+    return { border: '#9CA3AF', avatarBg: '#6B7280', cardBg: '#F3F4F6' };
+  }
+  if (m.succession) {
+   
+    return { border: '#EAB308', avatarBg: '#CA8A04', cardBg: '#FEFCE8' };
+  }
   const c = TYPE_CONFIG[getType(m) as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
   return { border: c.color, avatarBg: c.color, cardBg: '#FFFFFF' };
 }
@@ -32,10 +41,11 @@ interface MemberNodeData {
   member: Member;
   isSuccessor?: boolean;
   onPick: (id: string) => void;
+  highlighted?: boolean;
 }
 
 function MemberNodeComp({ data }: { data: MemberNodeData }) {
-  const { member: m, isSuccessor, onPick } = data;
+  const { member: m, isSuccessor, onPick, highlighted } = data;
   const [hovered, setHovered] = useState(false);
   const { border, avatarBg, cardBg } = cardColors(m);
   const name = dispName(m);
@@ -58,6 +68,7 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
         onClick={e => { e.stopPropagation(); onPick(m.id); }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        className={highlighted ? 'search-highlight-card' : undefined}
         style={{
           border: `2px solid ${border}`, borderRadius: 16, background: bg,
           padding: '13px 16px',
@@ -70,36 +81,58 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
         }}
       >
         <div style={{
-          width: 44, height: 44, borderRadius: '50%', backgroundColor: avatarBg,
+          width: 65, height: 65, borderRadius: '50%', backgroundColor: avatarBg,
           backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
           backgroundSize: 'cover', backgroundPosition: 'center',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0,
+          border: `2px solid ${border}`, 
+          boxSizing: 'border-box',
+
         }}>
+
           {!photoOf(m) && getInitials(name)}
+
         </div>
+
         <div style={{
-          fontSize: 11.5, fontWeight: 600, color: '#111827', textAlign: 'center',
+          fontSize: 15, fontWeight: 600, color: '#111827', textAlign: 'center',
           lineHeight: 1.3, width: CARD_W - 28, overflowWrap: 'break-word',
         }}>
           {name}
         </div>
+
         <div style={{
-          fontSize: 9.5, fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.02em',
+          fontSize: 11, fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.02em',
           color: border, background: `${border}1a`, padding: '1px 7px', borderRadius: 999,
         }}>{m.id}</div>
+
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+
           <span style={{ fontSize: 7.5, fontWeight: 600, color: '#6B7280', background: '#F3F4F6', padding: '1px 7px', borderRadius: 999 }}>
             {type}
           </span>
+
           {isDead(m) && (
-            <span style={{ fontSize: 7.5, fontWeight: 600, color: '#92400e', background: '#fef3c7', padding: '1px 7px', borderRadius: 999 }}>
+
+            <span style={{ fontSize: 7.5, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '1px 7px', borderRadius: 999 }}>
               Deceased
             </span>
+
           )}
+
         </div>
+
+        {m.since && (
+          <div style={{ fontSize: 7.5, color: '#9CA3AF' }}>
+            Joined {m.since}
+          </div>
+        )}
+
       </button>
+
     </div>
+
   );
 }
 
@@ -111,10 +144,11 @@ interface SlotNodeData {
   nested?: boolean;
   reference?: string;
   onPick: (id: string) => void;
+  highlighted?: boolean;
 }
 
 function SlotNodeComp({ data }: { data: SlotNodeData }) {
-  const { member: m, role, nested, reference, onPick } = data;
+  const { member: m, role, nested, reference, onPick, highlighted } = data;
   const [hovered, setHovered] = useState(false);
   const { border, avatarBg, cardBg } = cardColors(m);
   const name      = dispName(m);
@@ -124,6 +158,7 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
   const slotHandleStyle = { background: CONN_COLOR, width: 7, height: 7, border: 'none' } as const;
 
   return (
+
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 0', opacity: nested ? 0.85 : 1 }}>
       <Handle id="top"       type="target" position={Position.Top}    isConnectable={false} style={slotHandleStyle} />
       <Handle id="bottom"    type="source" position={Position.Bottom} isConnectable={false} style={slotHandleStyle} />
@@ -141,6 +176,7 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
         onClick={e => { e.stopPropagation(); onPick(m.id); }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        className={highlighted ? 'search-highlight-card' : undefined}
         style={{
           border: `${nested ? 1.5 : 2}px solid ${border}`, borderRadius: 11, background: cardBg,
           padding: '7px 10px',
@@ -152,26 +188,35 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+
           <div style={{
-            width: 26, height: 26, borderRadius: '50%', backgroundColor: avatarBg,
+            width: 34, height: 34, borderRadius: '50%', backgroundColor: avatarBg,
             backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
             backgroundSize: 'cover', backgroundPosition: 'center',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 8, fontWeight: 700, color: '#fff', flexShrink: 0,
+            border: `1.5px solid ${border}`,
+            boxSizing: 'border-box', 
+
           }}>
             {!photoOf(m) && getInitials(name)}
           </div>
+
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: 9, fontWeight: 600, color: '#111827', lineHeight: 1.3, overflowWrap: 'break-word' }}>
+
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#111827', lineHeight: 1.3, overflowWrap: 'break-word' }}>
               {name}
             </div>
+
             <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 1, flexWrap: 'wrap' }}>
               <span style={{
-                fontSize: 7.5, fontWeight: 700, fontFamily: 'monospace',
+                fontSize: 8.5, fontWeight: 700, fontFamily: 'monospace',
                 color: border, background: `${border}1a`, padding: '0 5px', borderRadius: 999,
               }}>{m.id}</span>
-              <span style={{ fontSize: 6.5, fontWeight: 600, color: '#6B7280' }}>{type}</span>
+              <span style={{ fontSize: 7.5, fontWeight: 600, color: '#6B7280' }}>{type}</span>
+              {m.since && <span style={{ fontSize: 7.5, color: '#9CA3AF' }}>· {m.since}</span>}
             </div>
+
           </div>
         </div>
         {reference && (
@@ -210,19 +255,43 @@ interface Props {
   members:  Member[];
   onPick:   (id: string) => void;
   bioMode?: boolean;
+  highlightedId?: string | null;
 }
 
-function FlowInner({ rootId, members, onPick, bioMode }: Props) {
+function FlowInner({ rootId, members, onPick, bioMode, highlightedId }: Props) {
   const rootMember = useMemo(
     () => members.find(m => m.id === findRoot(rootId, members)),
     [rootId, members],
   );
 
-  const { nodes, edges } = useMemo(() => {
+  const { nodes: rawNodes, edges } = useMemo(() => {
     if (!rootMember) return { nodes: [], edges: [] };
     const raw = buildGraph(rootMember, members, onPick, bioMode ?? false);
     return applyLayout(raw.nodes, raw.edges);
   }, [rootMember, members, onPick, bioMode]);
+
+  const nodes = useMemo(
+    () => rawNodes.map(n => (n.type === 'member' || n.type === 'slot')
+      ? { ...n, data: { ...n.data, highlighted: !!highlightedId && (n.data as { member?: Member }).member?.id === highlightedId } }
+      : n),
+    [rawNodes, highlightedId],
+  );
+
+  const rf = useReactFlow();
+  const nodesInitialized = useNodesInitialized();
+  useEffect(() => {
+    if (!nodesInitialized) return;
+    if (highlightedId) {
+      const target = nodes.find(n => (n.data as { member?: Member })?.member?.id === highlightedId);
+      if (target) {
+        const w = target.type === 'slot' ? SLOT_W : CARD_W;
+        const h = target.type === 'slot' ? SLOT_H : CARD_H;
+        rf.setCenter(target.position.x + w / 2, target.position.y + h / 2, { zoom: 1, duration: 600 });
+        return;
+      }
+    }
+    rf.fitView({ padding: 0.18, minZoom: 0.12, maxZoom: 1.6, duration: 300 });
+  }, [nodesInitialized, highlightedId, nodes, rf]);
 
   if (!rootMember) return null;
 
@@ -242,8 +311,6 @@ function FlowInner({ rootId, members, onPick, bioMode }: Props) {
         elementsSelectable={false}
         onNodeClick={handleNodeClick}
         panOnScroll
-        fitView
-        fitViewOptions={{ padding: 0.18, minZoom: 0.12, maxZoom: 1.6 }}
         minZoom={0.1}
         maxZoom={2.5}
       >

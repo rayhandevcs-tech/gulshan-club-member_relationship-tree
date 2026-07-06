@@ -4,28 +4,26 @@ import { useMemberStore } from '@/store/memberStore';
 import { Member } from '@/lib/types';
 import {
   getRoots, getSpouse, getNonSpouseChildren, getAssociates,
-  getNominees, getAllDescendants, getQuotaSourceCaption, TYPE_CONFIG
+  getAllDescendants, getQuotaSourceCaption, TYPE_CONFIG
 } from '@/lib/memberUtils';
 import { getType } from '@/components/Quotatreelayout';
 import MemberNode from './MemberNode';
 import { FocusedDiagram, WholeMapDiagram, BioFamilyDiagram } from './RelationshipDiagram';
-import { Search, GitBranch, Users } from 'lucide-react';
+import { Search, GitBranch, Users, ArrowLeft } from 'lucide-react';
 import s from './MemberTree.module.css';
 
 function AssocGroup({ parentId }: { parentId: string }) {
   const { members, navigateTo } = useMemberStore();
   const assocs = getAssociates(members, parentId);
-  const noms   = getNominees(members, parentId);
-  const all = [...assocs, ...noms];
-  if (!all.length) return null;
+  if (!assocs.length) return null;
   return (
     <div className={s.assocGroup}>
       <div className={s.assocLine} />
       <div className={s.assocLabel}>
-        {noms.length ? `Nominee (${all.length})` : `Associate (${all.length})`}
+        Associate ({assocs.length})
       </div>
       <div className={s.assocCards}>
-        {all.map(a => (
+        {assocs.map(a => (
           <div key={a.id} onClick={() => navigateTo(a.id)}>
             <MemberNode member={a} small dashed />
           </div>
@@ -42,7 +40,7 @@ function FamilySubtree({ member }: { member: Member }) {
   const allKids = [
     ...getNonSpouseChildren(members, member.id),
     ...(spouse ? getNonSpouseChildren(members, spouse.id) : []),
-  ].filter(k => k.via !== 'associate' && k.via !== 'nominee');
+  ].filter(k => k.via !== 'associate');
 
   const sponsorIds = [member.id, ...(spouse ? [spouse.id] : [])];
 
@@ -113,7 +111,8 @@ function EmptyPrompt() {
 }
 
 export default function MemberTree() {
-  const { members, filterType, activeRootId, focusViewId, view, navigateTo } = useMemberStore();
+
+  const { members, filterType, activeRootId, focusViewId, focusHistory, highlightedId, view, navigateTo, goBack } = useMemberStore();
   const [diagramMode, setDiagramMode] = useState<'focused' | 'whole' | 'bio'>('bio');
 
   const categoryMatchIds = filterType
@@ -196,37 +195,64 @@ export default function MemberTree() {
   const focusId = focusViewId ?? activeRoot.id;
 
   return (
+
     <div className={s.diagramWrap}>
-      <div className={s.tabs}>
-        <button
-          onClick={() => setDiagramMode('bio')}
-          className={`${s.tab} ${diagramMode === 'bio' ? s.tabActive : ''}`}
-        >
-          <GitBranch size={12} /> Member Relationship
-        </button>
-        <button
-          onClick={() => setDiagramMode('focused')}
-          className={`${s.tab} ${diagramMode === 'focused' ? s.tabActive : ''}`}
-        >
-          <Users size={12} /> Family Relationship
-        </button>
+
+      <div className={s.tabsRow}>
+
+        {diagramMode === 'focused' && focusHistory.length > 0 && (
+          <button onClick={goBack} className={s.backBtn}>
+            <ArrowLeft size={12} /> Back
+          </button>
+        )}
+
+        <div className={s.tabs}>
+
+          <button
+            onClick={() => setDiagramMode('bio')}
+            className={`${s.tab} ${diagramMode === 'bio' ? s.tabActive : ''}`}
+          >
+            <GitBranch size={12} /> Member Relationship
+          </button>
+
+          <button
+            onClick={() => setDiagramMode('focused')}
+            className={`${s.tab} ${diagramMode === 'focused' ? s.tabActive : ''}`}
+          >
+            <Users size={12} /> Family Relationship
+          </button>
+
+        </div>
+
       </div>
+
 
       <div className={`${s.diagramArea} ${diagramMode === 'bio' ? s.diagramAreaStart : ''}`}>
         {diagramMode === 'focused' && (
+
           <div className={s.bioWrap}>
-            <FocusedDiagram focusId={focusId} members={members} onPick={navigateTo} />
+            <FocusedDiagram focusId={focusId} members={members} onPick={navigateTo} highlightedId={highlightedId} />
           </div>
+
         )}
+
         {diagramMode === 'whole' && (
+
           <WholeMapDiagram rootId={activeRoot.id} members={members} onPick={navigateTo} />
         )}
+
         {diagramMode === 'bio' && (
+
           <div className={s.bioWrap}>
-            <BioFamilyDiagram rootId={activeRoot.id} members={members} onPick={navigateTo} />
+            <BioFamilyDiagram rootId={activeRoot.id} members={members} onPick={navigateTo} highlightedId={highlightedId} />
           </div>
         )}
+
       </div>
+
     </div>
+
+
+
   );
 }

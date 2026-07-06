@@ -6,83 +6,32 @@ datasource db {
   provider = "postgresql"
 }
 
-// ── Core membership record ────────────────────────────────────────────────
+// ── Flat member record — mirrors src/lib/types.ts `Member` 1:1 ────────────
 model Member {
-  acNo       String  @id            // e.g. LM-11, PT-7
-  name       String
-  gender     String?                // M | F
-  birthDate  String?
-  memberType String                 // Donor | Life | Permanent | Senior | A4D | Associate
-  joinedDate String?
-  status     String  @default("Active") // Active | Deceased | Transferred | Cancelled
-  email      String?
-  phone      String?
-  memberId   String?                // Card number e.g. LM000066
-  notes      String?
+  id            String  @id
+  name          String
+  type          String?
+  via           String
+  gender        String?
+  since         String?
+  pid           String?
+  rel           String?
+  fatherId      String?
+  motherId      String?
+  succession    String?
+  photoUrl      String?
+  note          String?
 
-  // Structural club tree (mirrors existing pid/rel system)
-  pidAc   String?                   // sponsor A/C in club hierarchy
-  relType String?                   // child | spouse | a4d | associate | nominee
-
-  quotaGranted   QuotaGrant[]      @relation("grantor")
-  quotaReceived  QuotaGrant[]      @relation("grantee")
-  successionFrom SuccessionEvent[] @relation("from")
-  successionTo   SuccessionEvent[] @relation("to")
-  nominees       Nominee[]
-}
-
-// ── Biological / social family links ─────────────────────────────────────
-model BioRelationship {
-  id           Int     @id @default(autoincrement())
-  subjectAc    String
-  relativeAc   String?               // null when relative is not a club member
-  relativeName String?               // free-text name when not a member
-  relType      String                // father | mother | spouse | sibling
-
-  @@unique([subjectAc, relType, relativeAc])
-}
-
-// ── A4D / Associate quota grants ──────────────────────────────────────────
-model QuotaGrant {
-  id           Int    @id @default(autoincrement())
-  grantorAc    String
-  granteeAc    String @unique        // one member = one quota grant
-  grantType    String                // A4D | Associate
-  slotNo       Int                   // 1 or 2
-  articleRef   String?
-  grantedDate  String?
-  status       String @default("Active") // Active | Cancelled | Transferred
-  cancelReason String?
-  cancelDate   String?
-
-  grantor Member @relation("grantor", fields: [grantorAc], references: [acNo])
-  grantee Member @relation("grantee", fields: [granteeAc], references: [acNo])
-}
-
-// ── Succession / transfer history ─────────────────────────────────────────
-model SuccessionEvent {
-  id           Int    @id @default(autoincrement())
-  fromAc       String
-  toAc         String
-  eventType    String  // Death | VoluntaryTransfer | SeniorUpgrade | FamilyTransfer | NonFamilyTransfer
-  eventDate    String?
-  articleRef   String?
-  successorRel String? // Son | Daughter | Spouse | Grandchild | Self | Other
-  remarks      String?
-
-  from Member @relation("from", fields: [fromAc], references: [acNo])
-  to   Member @relation("to",   fields: [toAc],   references: [acNo])
-}
-
-// ── Nominee list ──────────────────────────────────────────────────────────
-model Nominee {
-  id            Int    @id @default(autoincrement())
-  memberAc      String
-  nomineeName   String
-  relToMember   String?
-  priority      Int    @default(1)
-  status        String @default("Active") // Active | Used | Revoked
-  nominatedDate String?
-
-  member Member @relation(fields: [memberAc], references: [acNo])
+  phone         String?
+  phoneRes      String?
+  phoneOff      String?
+  email         String?
+  birthDate     String?
+  memberId      String?
+  membershipRef String?
+  quotaNote     String?
+  fatherName    String?
+  motherName    String?
+  father        String?
+  mother        String?
 }
