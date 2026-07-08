@@ -49,7 +49,6 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
   const [hovered, setHovered] = useState(false);
   const { border, avatarBg, cardBg } = cardColors(m);
   const name = dispName(m);
-  const type = getType(m);
   const bg   = isSuccessor ? '#fffbeb' : cardBg;
 
   return (
@@ -98,35 +97,25 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
         </div>
 
         <div style={{
-          fontSize: 18, fontWeight: 650, color: '#111827', textAlign: 'center',
+          fontSize: 20, fontWeight: 650, color: '#111827', textAlign: 'center',
           lineHeight: 1.3, width: CARD_W - 30, overflowWrap: 'break-word',
         }}>
           {name}
         </div>
 
         <div style={{
-          fontSize: 13, fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.02em',
+          fontSize: 14.5, fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.02em',
           color: border, background: `${border}1a`, padding: '2px 9px', borderRadius: 999,
         }}>{m.id}</div>
 
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
-
-          <span style={{ fontSize: 9.5, fontWeight: 600, color: '#6B7280', background: '#F3F4F6', padding: '2px 8px', borderRadius: 999 }}>
-            {type}
+        {isDead(m) && (
+          <span style={{ fontSize: 10.5, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '2px 8px', borderRadius: 999 }}>
+            Deceased
           </span>
-
-          {isDead(m) && (
-
-            <span style={{ fontSize: 9.5, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '2px 8px', borderRadius: 999 }}>
-              Deceased
-            </span>
-
-          )}
-
-        </div>
+        )}
 
         {m.since && (
-          <div style={{ fontSize: 11.5, fontWeight: 500, color: '#6B7280', marginTop: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', marginTop: 1 }}>
             Joined {m.since}
           </div>
         )}
@@ -154,7 +143,6 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
   const [hovered, setHovered] = useState(false);
   const { border, avatarBg, cardBg } = cardColors(m);
   const name      = dispName(m);
-  const type      = getType(m);
   const roleColor = role === 'A4D' ? '#7c3aed' : '#c2410c';
   const roleBg    = role === 'A4D' ? '#f3e8ff' : '#ffedd5';
   const slotHandleStyle = { background: CONN_COLOR, width: 7, height: 7, border: 'none' } as const;
@@ -206,20 +194,19 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
 
           <div style={{ minWidth: 0, flex: 1 }}>
 
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#111827', lineHeight: 1.3, overflowWrap: 'break-word' }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: '#111827', lineHeight: 1.3, overflowWrap: 'break-word' }}>
               {name}
             </div>
 
             <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 2, flexWrap: 'wrap' }}>
               <span style={{
-                fontSize: 10.5, fontWeight: 700, fontFamily: 'monospace',
+                fontSize: 12.5, fontWeight: 700, fontFamily: 'monospace',
                 color: border, background: `${border}1a`, padding: '0 6px', borderRadius: 999,
               }}>{m.id}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 600, color: '#6B7280' }}>{type}</span>
             </div>
 
             {m.since && (
-              <div style={{ fontSize: 11, fontWeight: 500, color: '#6B7280', marginTop: 2 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', marginTop: 2 }}>
                 Joined {m.since}
               </div>
             )}

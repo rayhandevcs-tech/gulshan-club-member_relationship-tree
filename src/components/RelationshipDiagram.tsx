@@ -98,17 +98,17 @@ function FamCard({ data }: { data: FamCardData }) {
         }}>
           {!photo && getInitials(name)}
         </div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: '#111827', textAlign: 'center', lineHeight: 1.3 }}>
+        <div style={{ fontSize: 20, fontWeight: 700, color: '#111827', textAlign: 'center', lineHeight: 1.3 }}>
           {name}
         </div>
         <div style={{
-          fontSize: 13.5, fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.02em',
+          fontSize: 15, fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.02em',
           color: border, background: `${border}1a`, padding: '2px 11px', borderRadius: 999,
         }}>
           {m.id}
         </div>
         {m.since && (
-          <div style={{ fontSize: 13, fontWeight: 500, color: '#6B7280', marginTop: 1 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#6B7280', marginTop: 1 }}>
             Joined {m.since}
           </div>
         )}
@@ -120,12 +120,12 @@ function FamCard({ data }: { data: FamCardData }) {
       </button>
 
       {caption && (
-        <div style={{ textAlign: 'center', marginTop: 7, fontSize: 13, fontWeight: 600, color: border }}>
+        <div style={{ textAlign: 'center', marginTop: 7, fontSize: 14, fontWeight: 600, color: border }}>
           {caption}
         </div>
       )}
       {quotaRef && (
-        <div style={{ textAlign: 'center', marginTop: 2, fontSize: 11, fontStyle: 'italic', color: '#9CA3AF' }}>
+        <div style={{ textAlign: 'center', marginTop: 2, fontSize: 12, fontStyle: 'italic', color: '#9CA3AF' }}>
           {quotaRef}
         </div>
       )}
@@ -396,7 +396,7 @@ export function WholeMapDiagram({ rootId, members, onPick }: WholeProps) {
             <text x={x + 12} y={y + 22} fontSize="13" fontWeight={600} fill="#1F2937">
               {n.member.name.length > 22 ? n.member.name.slice(0, 21) + '…' : n.member.name}
             </text>
-            <text x={x + 12} y={y + 40} fontSize="11" fill="#9CA3AF">{n.member.id} · {type}</text>
+            <text x={x + 12} y={y + 40} fontSize="11" fill="#9CA3AF">{n.member.id}</text>
             {n.caption && <text x={x + 12} y={y + 56} fontSize="10" fontStyle="italic" fill="#9CA3AF">{n.caption}</text>}
           </g>
         );

@@ -159,13 +159,13 @@
 }
 
 .gridAvatar {
-  width: 4rem;
-  height: 4rem;
+  width: 4.5rem;
+  height: 4.5rem;
   border-radius: 9999px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   position: relative;
   box-shadow: 0 2px 8px -1px rgb(0 0 0 / 0.12);
@@ -173,24 +173,8 @@
   outline: 1px solid #f3f4f6;
 }
 
-.gridAvatarBadge {
-  position: absolute;
-  bottom: -0.25rem;
-  right: -0.25rem;
-  width: 1.25rem;
-  height: 1.25rem;
-  border-radius: 9999px;
-  font-size: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  color: #ffffff;
-  border: 2px solid #ffffff;
-}
-
 .gridName {
-  font-size: 12.5px;
+  font-size: 14.5px;
   font-weight: 600;
   text-align: center;
   color: #1f2937;
@@ -198,15 +182,8 @@
 }
 
 .gridId {
-  font-size: 11px;
+  font-size: 12.5px;
   color: #9ca3af;
-}
-
-.gridTypeBadge {
-  font-size: 9.5px;
-  padding: 0.25rem 0.625rem;
-  border-radius: 9999px;
-  font-weight: 500;
 }
 
 /* FilterType view */

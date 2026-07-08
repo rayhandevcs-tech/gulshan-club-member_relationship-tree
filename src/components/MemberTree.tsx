@@ -147,8 +147,7 @@ export default function MemberTree() {
     return (
       <div className={s.grid}>
         {visible.map(m => {
-          const type = getType(m);
-          const cfg = TYPE_CONFIG[type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
+          const cfg = TYPE_CONFIG[getType(m) as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
           return (
             <div
               key={m.id}
@@ -164,11 +163,9 @@ export default function MemberTree() {
                 }}
               >
                 {!photoOf(m) && m.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}
-                <div className={s.gridAvatarBadge} style={{ background: cfg.color }}>{cfg.short}</div>
               </div>
               <div className={s.gridName}>{m.name}</div>
               <div className={s.gridId}>{m.id}</div>
-              <div className={s.gridTypeBadge} style={{ background: cfg.bg, color: cfg.dark }}>{type}</div>
             </div>
           );
         })}

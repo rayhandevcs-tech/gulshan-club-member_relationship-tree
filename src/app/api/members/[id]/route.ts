@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { supabaseAdmin, PHOTOS_BUCKET, photoKeyFromUrl } from '@/lib/supabaseAdmin';
+import { getSupabaseAdmin, PHOTOS_BUCKET, photoKeyFromUrl } from '@/lib/supabaseAdmin';
 
 export async function PATCH(
   request: Request,
@@ -48,7 +48,7 @@ export async function DELETE(
     .map(did => photoKeyFromUrl(byId.get(did)?.photoUrl))
     .filter((k): k is string => !!k);
   if (photoKeys.length) {
-    await supabaseAdmin.storage.from(PHOTOS_BUCKET).remove(photoKeys);
+    await getSupabaseAdmin().storage.from(PHOTOS_BUCKET).remove(photoKeys);
   }
 
   return NextResponse.json({ deletedIds });

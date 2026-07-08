@@ -1,12 +1,21 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 // Service-role client — server-side only (bypasses RLS). Never import this
 // from a client component or expose the key to the browser.
-export const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } },
-);
+// Built lazily (not at module load) so the build doesn't crash in
+// environments where these env vars aren't set yet (e.g. a fresh Vercel
+// deploy before the Storage env vars are configured).
+let _client: SupabaseClient | undefined;
+export const getSupabaseAdmin = (): SupabaseClient => {
+  if (!_client) {
+    _client = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } },
+    );
+  }
+  return _client;
+};
 
 export const PHOTOS_BUCKET = 'member-photos';
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
-import { supabaseAdmin, PHOTOS_BUCKET } from '@/lib/supabaseAdmin';
+import { getSupabaseAdmin, PHOTOS_BUCKET } from '@/lib/supabaseAdmin';
 
 export async function POST(request: Request) {
   const formData = await request.formData();
@@ -12,6 +12,7 @@ export async function POST(request: Request) {
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const key = `${randomUUID()}.jpg`;
+  const supabaseAdmin = getSupabaseAdmin();
 
   const { error } = await supabaseAdmin.storage
     .from(PHOTOS_BUCKET)
@@ -32,7 +33,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Missing key' }, { status: 400 });
   }
 
-  const { error } = await supabaseAdmin.storage.from(PHOTOS_BUCKET).remove([key]);
+  const { error } = await getSupabaseAdmin().storage.from(PHOTOS_BUCKET).remove([key]);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
