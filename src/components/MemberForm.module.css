@@ -121,7 +121,7 @@
   border: 3px solid #ffffff;
   outline: 1px solid #f3f4f6;
   background-size: cover;
-  background-position: center;
+  background-position: center 22%;
   transition: background-color 150ms;
 }
 

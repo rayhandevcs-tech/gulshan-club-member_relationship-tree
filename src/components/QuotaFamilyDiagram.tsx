@@ -82,7 +82,7 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
         <div style={{
           width: 108, height: 108, borderRadius: '50%', backgroundColor: avatarBg,
           backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
-          backgroundSize: 'cover', backgroundPosition: 'center',
+          backgroundSize: 'cover', backgroundPosition: 'center 22%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 20, fontWeight: 700, color: '#fff', flexShrink: 0,
           border: `2.5px solid ${border}`,
@@ -182,7 +182,7 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
           <div style={{
             width: 58, height: 58, borderRadius: '50%', backgroundColor: avatarBg,
             backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
-            backgroundSize: 'cover', backgroundPosition: 'center',
+            backgroundSize: 'cover', backgroundPosition: 'center 22%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0,
             border: `1.5px solid ${border}`,

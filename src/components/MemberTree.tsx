@@ -159,7 +159,7 @@ export default function MemberTree() {
                 style={{
                   background: cfg.bg, color: cfg.dark,
                   backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
-                  backgroundSize: 'cover', backgroundPosition: 'center',
+                  backgroundSize: 'cover', backgroundPosition: 'center 22%',
                 }}
               >
                 {!photoOf(m) && m.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}

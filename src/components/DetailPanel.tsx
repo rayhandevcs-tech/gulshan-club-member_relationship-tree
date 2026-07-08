@@ -30,7 +30,7 @@ function avatarStyle(m: Member, cfg: { bg: string; dark: string; color?: string 
     color: cfg.dark,
     backgroundImage: url ? `url(${url})` : undefined,
     backgroundSize: 'cover' as const,
-    backgroundPosition: 'center' as const,
+    backgroundPosition: 'center 22%' as const,
     border: `2px solid ${cfg.color ?? cfg.dark}`,
     boxSizing: 'border-box' as const,
   };

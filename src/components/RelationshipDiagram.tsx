@@ -88,7 +88,7 @@ function FamCard({ data }: { data: FamCardData }) {
         <div style={{
           width: 100, height: 100, borderRadius: '50%', backgroundColor: border,
           backgroundImage: photo ? `url(${photo})` : undefined,
-          backgroundSize: 'cover', backgroundPosition: 'center',
+          backgroundSize: 'cover', backgroundPosition: 'center 22%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 21, fontWeight: 700, color: '#fff', flexShrink: 0,
           border: `2.5px solid ${border}`,

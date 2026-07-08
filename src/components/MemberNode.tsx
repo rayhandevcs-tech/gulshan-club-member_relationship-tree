@@ -54,7 +54,7 @@ export default function MemberNode({ member, showRel, small, dashed, fixed }: Pr
         style={{
           background: cfg.bg, color: cfg.dark,
           backgroundImage: photoOf(member) ? `url(${photoOf(member)})` : undefined,
-          backgroundSize: 'cover', backgroundPosition: 'center',
+          backgroundSize: 'cover', backgroundPosition: 'center 22%',
         }}
       >
         {!photoOf(member) && getInitials(member.name)}
