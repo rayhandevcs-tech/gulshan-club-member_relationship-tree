@@ -42,10 +42,10 @@ const FAM_VGAP   = 150;
 
 type FamRole = 'owner' | 'spouse' | 'child';
 
-const FAM_ROLE_STYLE: Record<FamRole, { border: string; bg: string }> = {
-  owner:  { border: '#0F766E', bg: '#F0FDFA' },
-  spouse: { border: '#BE185D', bg: '#FDF2F8' },
-  child:  { border: '#6D28D9', bg: '#F5F3FF' },
+const FAM_ROLE_STYLE: Record<FamRole, { border: string; bg: string; bgHover: string }> = {
+  owner:  { border: '#0F766E', bg: '#F0FDFA', bgHover: '#CCFBF1' },
+  spouse: { border: '#BE185D', bg: '#FDF2F8', bgHover: '#FCE7F3' },
+  child:  { border: '#6D28D9', bg: '#F5F3FF', bgHover: '#EDE9FE' },
 };
 
 interface FamCardData {
@@ -59,7 +59,7 @@ interface FamCardData {
 
 function FamCard({ data }: { data: FamCardData }) {
   const { member: m, role, caption, quotaRef, onPick, highlighted } = data;
-  const { border, bg } = FAM_ROLE_STYLE[role];
+  const { border, bg, bgHover } = FAM_ROLE_STYLE[role];
   const name = dispName(m);
   const photo = photoOf(m);
   const [hovered, setHovered] = useState(false);
@@ -76,13 +76,13 @@ function FamCard({ data }: { data: FamCardData }) {
         onMouseLeave={() => setHovered(false)}
         className={highlighted ? 'search-highlight-card' : undefined}
         style={{
-          border: `1.5px solid ${border}`, borderRadius: 16, background: bg,
+          border: `1.5px solid ${border}`, borderRadius: 16, background: hovered ? bgHover : bg,
           padding: '20px 16px', width: '100%',
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
           cursor: 'pointer',
           boxShadow: hovered ? `0 14px 28px -4px rgba(0,0,0,0.2), 0 0 0 3px ${border}2e` : '0 1px 4px rgba(0,0,0,0.06)',
           transform: hovered ? 'translateY(-4px) scale(1.015)' : 'none',
-          transition: 'box-shadow 180ms ease, transform 180ms ease, border-color 180ms ease',
+          transition: 'box-shadow 180ms ease, transform 180ms ease, border-color 180ms ease, background 180ms ease',
         }}
       >
         <div style={{

@@ -22,15 +22,18 @@ import {
 
 function cardColors(m: Member) {
   if (isDead(m)) {
-   
-    return { border: '#9CA3AF', avatarBg: '#6B7280', cardBg: '#F3F4F6' };
+
+    return { border: '#9CA3AF', avatarBg: '#6B7280', cardBg: '#F3F4F6', cardBgHover: '#E5E7EB' };
   }
   if (m.succession) {
-   
-    return { border: '#EAB308', avatarBg: '#CA8A04', cardBg: '#FEFCE8' };
+
+    return { border: '#EAB308', avatarBg: '#CA8A04', cardBg: '#FEFCE8', cardBgHover: '#FDF3C7' };
   }
   const c = TYPE_CONFIG[getType(m) as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
-  return { border: c.color, avatarBg: c.color, cardBg: '#FFFFFF' };
+  // A light tint of the member's type color instead of flat white — keeps
+  // cards from blending into the page background — with a deeper tint of
+  // the same hue on hover instead of just a shadow/lift.
+  return { border: c.color, avatarBg: c.color, cardBg: c.bg, cardBgHover: `${c.color}29` };
 }
 
 const handleStyle = { background: CONN_COLOR, width: 8, height: 8, border: 'none' } as const;
@@ -47,9 +50,9 @@ interface MemberNodeData {
 function MemberNodeComp({ data }: { data: MemberNodeData }) {
   const { member: m, isSuccessor, onPick, highlighted } = data;
   const [hovered, setHovered] = useState(false);
-  const { border, avatarBg, cardBg } = cardColors(m);
+  const { border, avatarBg, cardBg, cardBgHover } = cardColors(m);
   const name = dispName(m);
-  const bg   = isSuccessor ? '#fffbeb' : cardBg;
+  const bg   = isSuccessor ? (hovered ? '#fef3c7' : '#fffbeb') : (hovered ? cardBgHover : cardBg);
 
   return (
     // no fixed node width: the container hugs the card, so the left/right
@@ -75,7 +78,7 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
           cursor: 'pointer', width: CARD_W,
           boxShadow: hovered ? `0 12px 26px -4px rgba(0,0,0,0.2), 0 0 0 3px ${border}2e` : '0 2px 6px rgba(0,0,0,0.08)',
           transform: hovered ? 'translateY(-3px) scale(1.015)' : 'none',
-          transition: 'box-shadow 180ms ease, transform 180ms ease, border-color 180ms ease',
+          transition: 'box-shadow 180ms ease, transform 180ms ease, border-color 180ms ease, background 180ms ease',
           opacity: isSuccessor ? 0.92 : 1,
         }}
       >
@@ -141,7 +144,7 @@ interface SlotNodeData {
 function SlotNodeComp({ data }: { data: SlotNodeData }) {
   const { member: m, role, nested, reference, onPick, highlighted } = data;
   const [hovered, setHovered] = useState(false);
-  const { border, avatarBg, cardBg } = cardColors(m);
+  const { border, avatarBg, cardBg, cardBgHover } = cardColors(m);
   const name      = dispName(m);
   const roleColor = role === 'A4D' ? '#7c3aed' : '#c2410c';
   const roleBg    = role === 'A4D' ? '#f3e8ff' : '#ffedd5';
@@ -168,13 +171,13 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
         onMouseLeave={() => setHovered(false)}
         className={highlighted ? 'search-highlight-card' : undefined}
         style={{
-          border: `${nested ? 1.5 : 2}px solid ${border}`, borderRadius: 13, background: cardBg,
+          border: `${nested ? 1.5 : 2}px solid ${border}`, borderRadius: 13, background: hovered ? cardBgHover : cardBg,
           padding: '10px 12px',
           display: 'flex', flexDirection: 'column', gap: 4,
           cursor: 'pointer', width: SLOT_W, textAlign: 'left',
           boxShadow: hovered ? `0 8px 18px -3px rgba(0,0,0,0.18), 0 0 0 2px ${border}26` : '0 1px 3px rgba(0,0,0,0.06)',
           transform: hovered ? 'translateY(-2px)' : 'none',
-          transition: 'box-shadow 180ms ease, transform 180ms ease',
+          transition: 'box-shadow 180ms ease, transform 180ms ease, background 180ms ease',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

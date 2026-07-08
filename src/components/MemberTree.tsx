@@ -12,6 +12,33 @@ import { FocusedDiagram, WholeMapDiagram, BioFamilyDiagram } from './Relationshi
 import { Search, GitBranch, Users, ArrowLeft } from 'lucide-react';
 import s from './MemberTree.module.css';
 
+function GridCard({ member: m }: { member: Member }) {
+  const [hovered, setHovered] = useState(false);
+  const cfg = TYPE_CONFIG[getType(m) as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
+  return (
+    <div
+      onClick={() => useMemberStore.getState().navigateTo(m.id)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={s.gridCard}
+      style={{ background: hovered ? `${cfg.color}29` : cfg.bg }}
+    >
+      <div
+        className={s.gridAvatar}
+        style={{
+          background: cfg.bg, color: cfg.dark,
+          backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
+          backgroundSize: 'cover', backgroundPosition: 'center 22%',
+        }}
+      >
+        {!photoOf(m) && m.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}
+      </div>
+      <div className={s.gridName}>{m.name}</div>
+      <div className={s.gridId}>{m.id}</div>
+    </div>
+  );
+}
+
 function AssocGroup({ parentId }: { parentId: string }) {
   const { members, navigateTo } = useMemberStore();
   const assocs = getAssociates(members, parentId);
@@ -146,29 +173,7 @@ export default function MemberTree() {
         : [];
     return (
       <div className={s.grid}>
-        {visible.map(m => {
-          const cfg = TYPE_CONFIG[getType(m) as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
-          return (
-            <div
-              key={m.id}
-              onClick={() => useMemberStore.getState().navigateTo(m.id)}
-              className={s.gridCard}
-            >
-              <div
-                className={s.gridAvatar}
-                style={{
-                  background: cfg.bg, color: cfg.dark,
-                  backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
-                  backgroundSize: 'cover', backgroundPosition: 'center 22%',
-                }}
-              >
-                {!photoOf(m) && m.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}
-              </div>
-              <div className={s.gridName}>{m.name}</div>
-              <div className={s.gridId}>{m.id}</div>
-            </div>
-          );
-        })}
+        {visible.map(m => <GridCard key={m.id} member={m} />)}
       </div>
     );
   }
