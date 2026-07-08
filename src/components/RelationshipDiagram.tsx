@@ -86,11 +86,11 @@ function FamCard({ data }: { data: FamCardData }) {
         }}
       >
         <div style={{
-          width: 82, height: 82, borderRadius: '50%', backgroundColor: border,
+          width: 100, height: 100, borderRadius: '50%', backgroundColor: border,
           backgroundImage: photo ? `url(${photo})` : undefined,
           backgroundSize: 'cover', backgroundPosition: 'center',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 19, fontWeight: 700, color: '#fff', flexShrink: 0,
+          fontSize: 21, fontWeight: 700, color: '#fff', flexShrink: 0,
           border: `2.5px solid ${border}`,
           boxSizing: 'border-box',
           boxShadow: hovered ? '0 3px 10px rgba(0,0,0,0.18)' : 'none',

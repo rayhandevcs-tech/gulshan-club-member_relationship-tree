@@ -80,11 +80,11 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
         }}
       >
         <div style={{
-          width: 88, height: 88, borderRadius: '50%', backgroundColor: avatarBg,
+          width: 108, height: 108, borderRadius: '50%', backgroundColor: avatarBg,
           backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
           backgroundSize: 'cover', backgroundPosition: 'center',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 18, fontWeight: 700, color: '#fff', flexShrink: 0,
+          fontSize: 20, fontWeight: 700, color: '#fff', flexShrink: 0,
           border: `2.5px solid ${border}`,
           boxSizing: 'border-box',
           boxShadow: hovered ? '0 3px 10px rgba(0,0,0,0.18)' : 'none',
@@ -180,11 +180,11 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
 
           <div style={{
-            width: 46, height: 46, borderRadius: '50%', backgroundColor: avatarBg,
+            width: 58, height: 58, borderRadius: '50%', backgroundColor: avatarBg,
             backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
             backgroundSize: 'cover', backgroundPosition: 'center',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 10.5, fontWeight: 700, color: '#fff', flexShrink: 0,
+            fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0,
             border: `1.5px solid ${border}`,
             boxSizing: 'border-box',
 
