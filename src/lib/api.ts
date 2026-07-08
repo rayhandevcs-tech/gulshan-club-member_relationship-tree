@@ -24,3 +24,19 @@ export const updateMemberApi = (id: string, data: Partial<Member>): Promise<Memb
 
 export const deleteMemberApi = (id: string): Promise<{ deletedIds: string[] }> =>
   fetch(`/api/members/${id}`, { method: 'DELETE' }).then(handle<{ deletedIds: string[] }>);
+
+export const uploadPhoto = (blob: Blob): Promise<{ url: string; key: string }> => {
+  const formData = new FormData();
+  formData.append('file', blob, 'photo.jpg');
+  return fetch('/api/upload', { method: 'POST', body: formData }).then(handle<{ url: string; key: string }>);
+};
+
+// Only our own Storage URLs (member-photos bucket) have a deletable key —
+// anything else (an old inline base64 photo, an external URL) is left alone.
+export const photoStorageKey = (url?: string | null): string | null => {
+  if (!url || !url.includes('/storage/v1/object/public/member-photos/')) return null;
+  return url.split('/').pop() ?? null;
+};
+
+export const deletePhoto = (key: string): Promise<{ ok: true }> =>
+  fetch(`/api/upload?key=${encodeURIComponent(key)}`, { method: 'DELETE' }).then(handle<{ ok: true }>);

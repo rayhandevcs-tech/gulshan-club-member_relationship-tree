@@ -78,15 +78,15 @@
 }
 
 .previewAvatar {
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 4.5rem;
+  height: 4.5rem;
   border-radius: 9999px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 600;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  box-shadow: 0 3px 10px -2px rgb(0 0 0 / 0.18);
   margin-bottom: 0.5rem;
 }
 
@@ -229,23 +229,29 @@
   padding: 0.5rem;
   border-radius: 0.75rem;
   cursor: pointer;
-  transition: background-color 150ms;
+  transition: background-color 180ms, transform 180ms;
 }
 
 .memberRow:hover {
   background-color: #f9fafb;
+  transform: translateX(2px);
 }
 
 .memberRowAvatar {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: 9999px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 500;
   flex-shrink: 0;
+  transition: transform 180ms;
+}
+
+.memberRow:hover .memberRowAvatar {
+  transform: scale(1.05);
 }
 
 .memberRowInfo {
@@ -387,16 +393,16 @@
 }
 
 .panelAvatar {
-  width: 4rem;
-  height: 4rem;
+  width: 5.25rem;
+  height: 5.25rem;
   border-radius: 9999px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 600;
   margin: 0 auto 0.75rem;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  box-shadow: 0 4px 14px -3px rgb(0 0 0 / 0.2);
 }
 
 .panelName {

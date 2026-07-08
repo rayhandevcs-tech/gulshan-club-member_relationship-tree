@@ -225,13 +225,13 @@ export interface FocusedView {
   membershipRef: { label: string; detail: string } | null;
 }
 
-const parseMembershipRef = (text?: string) => {
+const parseMembershipRef = (text?: string | null) => {
   if (!text) return null;
   const match = text.match(/([A-Z]{1,3}-\d+)\s*(?:\(([^)]+)\))?/);
   return match ? { label: match[1], detail: match[2] ?? '' } : null;
 };
 
-const extractArticleRef = (text?: string) => {
+const extractArticleRef = (text?: string | null) => {
   const m = text?.match(/Article\s+[\d()a-zA-Z]+/);
   return m ? m[0] : undefined;
 };

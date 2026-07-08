@@ -10,7 +10,6 @@ import {
   getSiblings,
 } from '@/lib/memberUtils';
 // getType: prefix থেকে type derive করে (P→Permanent, AFD→A4D, D→Donor, L→Life)
-// TEST_PHOTO_URL: dev/test-এ সব avatar-এ demo ছবি দেখানোর জন্য
 import { getType, getRef, photoOf } from '@/components/Quotatreelayout';
 import { Member } from '@/lib/types';
 import { X, ChevronRight, Users, ArrowRight, Pencil } from 'lucide-react';
@@ -22,8 +21,8 @@ function cfgOf(m: Member) {
 }
 
 // ── photo system ──────────────────────────────────────────────────────────────
-// photoOf layout module থেকে আসে: নিজের photoUrl > TEST_PHOTO_URL (demo.jpg)।
-// সব component এক জায়গা থেকে নেয়, তাই পরে বদলাতে হলে এক লাইন।
+// photoOf layout module থেকে আসে: নিজের photoUrl থাকলে সেটাই, না থাকলে undefined
+// (initials fallback)। সব component এক জায়গা থেকে নেয়, তাই পরে বদলাতে হলে এক লাইন।
 function avatarStyle(m: Member, cfg: { bg: string; dark: string; color?: string }) {
   const url = photoOf(m);
   return {
@@ -55,10 +54,10 @@ function MemberPreviewModal({
   const fatherDisplay = fatherMember?.name ?? member.fatherName ?? member.father;
   const motherDisplay = motherMember?.name ?? member.motherName ?? member.mother;
 
-  const spouseMember =
+  const spouseMembers: Member[] =
     member.rel === 'spouse' && member.pid
-      ? getMember(members, member.pid)
-      : (members.find(c => c.pid === member.id && c.rel === 'spouse') ?? null);
+      ? [getMember(members, member.pid)].filter((x): x is Member => !!x)
+      : members.filter(c => c.pid === member.id && c.rel === 'spouse');
 
   const bioChildren = members.filter(c => c.fatherId === member.id || c.motherId === member.id);
 
@@ -124,11 +123,12 @@ function MemberPreviewModal({
             </div>
           )}
 
-          {spouseMember && (
+          {spouseMembers.length > 0 && (
             <div className={s.previewSectionRow}>
-              <span className={s.previewFieldLabel}>Spouse</span>
-              <span className={s.previewSpouseName}>{spouseMember.name}</span>
-              <span className={s.previewSpouseId}>{spouseMember.id}</span>
+              <span className={s.previewFieldLabel}>{spouseMembers.length > 1 ? 'Spouses' : 'Spouse'}</span>
+              <span className={s.previewParentValue}>
+                {spouseMembers.map(sp => `${sp.name} (${sp.id})`).join(', ')}
+              </span>
             </div>
           )}
 
@@ -243,9 +243,10 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
   const isSponsorType = m.via === 'core' || m.via === 'succession';
   const quota = getA4DQuota(members, m.id);
 
-  const spouseMember = m.rel === 'spouse' && parent
-    ? parent
-    : (members.find(c => c.pid === m.id && c.rel === 'spouse') ?? null);
+  const spouseMembers: Member[] = m.rel === 'spouse' && parent
+    ? [parent]
+    : members.filter(c => c.pid === m.id && c.rel === 'spouse');
+  const spouseIds = new Set(spouseMembers.map(sp => sp.id));
 
   // Primary Member (quota holder) দেখাই dependent slot-দের জন্য; dependent
   // spouse-এর ক্ষেত্রে pid-ওয়ালা মানুষটা এমনিতেই Spouse section-এ আছে।
@@ -253,10 +254,11 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
 
   const bioChildren = members.filter(c => c.fatherId === m.id || c.motherId === m.id);
 
-  // access route (via) দিয়ে ভাগ — rel এখন খাঁটি সম্পর্ক (spouse/child)
-  const a4dMembers = sortSlots(children.filter(c => c.via === 'a4d'));
+  // access route (via) দিয়ে ভাগ — rel এখন খাঁটি সম্পর্ক (spouse/child); dependent
+  // spouse-রা (via a4d/associate কিন্তু rel spouse) এখানে না, Spouse section-এই থাকবে
+  const a4dMembers = sortSlots(children.filter(c => c.via === 'a4d' && !spouseIds.has(c.id)));
   const associateMembers = sortSlots(
-    children.filter(c => c.via === 'associate'),
+    children.filter(c => c.via === 'associate' && !spouseIds.has(c.id)),
   );
   const siblings = getSiblings(members, m);
 
@@ -324,7 +326,7 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
             </div>
           ))}
 
-        {(showPrimary || spouseMember || fatherDisplay || motherDisplay || siblings.length > 0 || bioChildren.length > 0 || a4dMembers.length > 0 || associateMembers.length > 0) && (
+        {(showPrimary || spouseMembers.length > 0 || fatherDisplay || motherDisplay || siblings.length > 0 || bioChildren.length > 0 || a4dMembers.length > 0 || associateMembers.length > 0) && (
           <div className={s.panelRelSection}>
 
             {(fatherDisplay || motherDisplay) && (
@@ -364,10 +366,14 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
               </div>
             )}
 
-            {spouseMember && (
+            {spouseMembers.length > 0 && (
               <div className={s.sectionBlock}>
-                <div className={s.panelSectionLabel}>Spouse</div>
-                <MemberRow member={spouseMember} onPreview={setPreviewId} />
+                <div className={s.panelSectionLabel}>
+                  {spouseMembers.length > 1 ? `Spouses (${spouseMembers.length})` : 'Spouse'}
+                </div>
+                {spouseMembers.map(sp => (
+                  <MemberRow key={sp.id} member={sp} onPreview={setPreviewId} />
+                ))}
               </div>
             )}
 

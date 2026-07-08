@@ -34,11 +34,11 @@ interface Props {
 
 // ─── Family Relationship tab: owner + spouse + direct children (React Flow) ──
 
-const FAM_CARD_W = 210;
-const FAM_CARD_H = 205;
-const FAM_HGAP   = 40;
-const FAM_SGAP   = 90;
-const FAM_VGAP   = 130;
+const FAM_CARD_W = 260;
+const FAM_CARD_H = 250;
+const FAM_HGAP   = 50;
+const FAM_SGAP   = 110;
+const FAM_VGAP   = 150;
 
 type FamRole = 'owner' | 'spouse' | 'child';
 
@@ -76,54 +76,56 @@ function FamCard({ data }: { data: FamCardData }) {
         onMouseLeave={() => setHovered(false)}
         className={highlighted ? 'search-highlight-card' : undefined}
         style={{
-          border: `1.5px solid ${border}`, borderRadius: 14, background: bg,
-          padding: '18px 14px', width: '100%',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
+          border: `1.5px solid ${border}`, borderRadius: 16, background: bg,
+          padding: '20px 16px', width: '100%',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
           cursor: 'pointer',
-          boxShadow: hovered ? `0 10px 22px rgba(0,0,0,0.16), 0 0 0 1px ${border}55` : '0 1px 4px rgba(0,0,0,0.06)',
-          transform: hovered ? 'translateY(-3px)' : 'none',
-          transition: 'box-shadow 150ms ease, transform 150ms ease, border-color 150ms ease',
+          boxShadow: hovered ? `0 14px 28px -4px rgba(0,0,0,0.2), 0 0 0 3px ${border}2e` : '0 1px 4px rgba(0,0,0,0.06)',
+          transform: hovered ? 'translateY(-4px) scale(1.015)' : 'none',
+          transition: 'box-shadow 180ms ease, transform 180ms ease, border-color 180ms ease',
         }}
       >
         <div style={{
-          width: 60, height: 60, borderRadius: '50%', backgroundColor: border,
+          width: 82, height: 82, borderRadius: '50%', backgroundColor: border,
           backgroundImage: photo ? `url(${photo})` : undefined,
           backgroundSize: 'cover', backgroundPosition: 'center',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 15, fontWeight: 700, color: '#fff', flexShrink: 0,
-          border: `1.5px solid ${border}`,
+          fontSize: 19, fontWeight: 700, color: '#fff', flexShrink: 0,
+          border: `2.5px solid ${border}`,
           boxSizing: 'border-box',
+          boxShadow: hovered ? '0 3px 10px rgba(0,0,0,0.18)' : 'none',
+          transition: 'box-shadow 180ms ease',
         }}>
           {!photo && getInitials(name)}
         </div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', textAlign: 'center', lineHeight: 1.3 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: '#111827', textAlign: 'center', lineHeight: 1.3 }}>
           {name}
         </div>
         <div style={{
-          fontSize: 11, fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.02em',
-          color: border, background: `${border}1a`, padding: '1px 9px', borderRadius: 999,
+          fontSize: 13.5, fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.02em',
+          color: border, background: `${border}1a`, padding: '2px 11px', borderRadius: 999,
         }}>
           {m.id}
         </div>
         {m.since && (
-          <div style={{ fontSize: 9.5, color: '#9CA3AF' }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: '#6B7280', marginTop: 1 }}>
             Joined {m.since}
           </div>
         )}
         {isDead(m) && (
-          <span style={{ fontSize: 9, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '1px 7px', borderRadius: 999 }}>
+          <span style={{ fontSize: 10.5, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '2px 9px', borderRadius: 999 }}>
             Deceased
           </span>
         )}
       </button>
 
       {caption && (
-        <div style={{ textAlign: 'center', marginTop: 6, fontSize: 11, fontWeight: 600, color: border }}>
+        <div style={{ textAlign: 'center', marginTop: 7, fontSize: 13, fontWeight: 600, color: border }}>
           {caption}
         </div>
       )}
       {quotaRef && (
-        <div style={{ textAlign: 'center', marginTop: 2, fontSize: 9.5, fontStyle: 'italic', color: '#9CA3AF' }}>
+        <div style={{ textAlign: 'center', marginTop: 2, fontSize: 11, fontStyle: 'italic', color: '#9CA3AF' }}>
           {quotaRef}
         </div>
       )}
@@ -137,7 +139,7 @@ function FamUnion({ data }: { data: { labelOffsetY?: number } }) {
       <Handle id="bottom" type="source" position={Position.Bottom} isConnectable={false} style={{ width: 1, height: 1, opacity: 0 }} />
       <span style={{
         position: 'absolute', top: data.labelOffsetY ?? 40, left: 8, whiteSpace: 'nowrap',
-        fontSize: 10.5, fontWeight: 600, color: '#94A3B8',
+        fontSize: 11.5, fontWeight: 600, color: '#94A3B8',
         background: '#fff', padding: '1px 6px', borderRadius: 4,
       }}>
         Children
@@ -155,15 +157,16 @@ function buildFocusedGraph(focusId: string, members: Member[]): { nodes: Node[];
   const owner = members.find(m => m.id === focusId);
   if (!owner) return { nodes: [], edges: [] };
 
-  // Spouse: if owner is registered as a spouse, find their partner;
-  // otherwise find who registered as spouse under owner
-  const spouse = owner.rel === 'spouse' && owner.pid
-    ? (members.find(m => m.id === owner.pid) ?? null)
-    : (members.find(m => m.pid === focusId && m.rel === 'spouse') ?? null);
+  // Spouse(s): if owner is registered as a spouse, they have exactly one
+  // partner (their own pid); otherwise collect EVERY member registered as a
+  // spouse under owner — a member can have more than one.
+  const spouses = owner.rel === 'spouse' && owner.pid
+    ? [members.find(m => m.id === owner.pid)].filter((x): x is Member => !!x)
+    : members.filter(m => m.pid === focusId && m.rel === 'spouse');
 
   // Bio children via fatherId/motherId; structural rel=child as fallback
-  const parentIds = new Set([owner.id, ...(spouse ? [spouse.id] : [])]);
-  const seenIds = new Set<string>([owner.id, ...(spouse ? [spouse.id] : [])]);
+  const parentIds = new Set([owner.id, ...spouses.map(s => s.id)]);
+  const seenIds = new Set<string>([owner.id, ...spouses.map(s => s.id)]);
   const bioChildren = members.filter(m => {
     if (seenIds.has(m.id)) return false;
     const linked = (m.fatherId && parentIds.has(m.fatherId)) ||
@@ -174,14 +177,15 @@ function buildFocusedGraph(focusId: string, members: Member[]): { nodes: Node[];
     return false;
   });
 
-  const topW = spouse ? 2 * FAM_CARD_W + FAM_SGAP : FAM_CARD_W;
+  const topRowW = FAM_CARD_W + spouses.length * (FAM_CARD_W + FAM_SGAP);
   const botW = bioChildren.length > 0
     ? bioChildren.length * FAM_CARD_W + (bioChildren.length - 1) * FAM_HGAP : 0;
-  const totalW = Math.max(topW, botW);
+  const totalW = Math.max(topRowW, botW);
   const mid = totalW / 2;
 
-  const ownerX  = spouse ? mid - FAM_CARD_W - FAM_SGAP / 2 : mid - FAM_CARD_W / 2;
-  const spouseX = mid + FAM_SGAP / 2;
+  const topStartX = mid - topRowW / 2;
+  const ownerX  = topStartX;
+  const spouseXs = spouses.map((_, i) => topStartX + (i + 1) * (FAM_CARD_W + FAM_SGAP));
   const row1Y   = 0;
   const row2Y   = row1Y + FAM_CARD_H + FAM_VGAP;
   const childX0 = mid - botW / 2;
@@ -194,9 +198,9 @@ function buildFocusedGraph(focusId: string, members: Member[]): { nodes: Node[];
     data: { member: owner, role: 'owner' as FamRole, onPick: undefined },
   });
 
-  if (spouse) {
+  spouses.forEach((spouse, i) => {
     nodes.push({
-      id: spouse.id, type: 'card', position: { x: spouseX, y: row1Y },
+      id: spouse.id, type: 'card', position: { x: spouseXs[i], y: row1Y },
       data: { member: spouse, role: 'spouse' as FamRole, onPick: undefined },
     });
     edges.push({
@@ -205,17 +209,17 @@ function buildFocusedGraph(focusId: string, members: Member[]): { nodes: Node[];
       target: spouse.id, targetHandle: 'left-in',
       type: 'straight', label: 'SPOUSE',
       style: { stroke: '#CBD5E1', strokeWidth: 1.5 },
-      labelStyle: { fontSize: 9, fill: '#94A3B8', fontWeight: 600, letterSpacing: 0.6 },
+      labelStyle: { fontSize: 10, fill: '#94A3B8', fontWeight: 600, letterSpacing: 0.6 },
       labelBgStyle: { fill: '#F9FAFB', fillOpacity: 1 },
       labelBgPadding: [6, 3],
       labelBgBorderRadius: 5,
     });
-  }
+  });
 
   if (bioChildren.length > 0) {
     const unionId = `union-${owner.id}`;
-    const unionX = spouse ? mid : ownerX + FAM_CARD_W / 2;
-    const unionY = spouse ? row1Y + FAM_CARD_H / 2 : row1Y + FAM_CARD_H;
+    const unionX = spouses.length > 0 ? mid : ownerX + FAM_CARD_W / 2;
+    const unionY = spouses.length > 0 ? row1Y + FAM_CARD_H / 2 : row1Y + FAM_CARD_H;
     const labelOffsetY = (row2Y - unionY) * 0.4;
     nodes.push({
       id: unionId, type: 'union', position: { x: unionX, y: unionY },

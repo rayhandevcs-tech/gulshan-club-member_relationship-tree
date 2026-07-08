@@ -1,16 +1,50 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMemberStore } from '@/store/memberStore';
 import { getMember, getInitials, TYPE_CONFIG } from '@/lib/memberUtils';
+import { uploadPhoto, deletePhoto, photoStorageKey } from '@/lib/api';
 import { Member, Rel, Via } from '@/lib/types';
-import { X, Search, Check, User, IdCard, Users, Phone, ArrowRightLeft, type LucideIcon } from 'lucide-react';
+import { X, Search, Check, User, IdCard, Users, Phone, ArrowRightLeft, Camera, type LucideIcon } from 'lucide-react';
 import styles from './MemberForm.module.css';
 
 interface Props {
   onClose: () => void;
   editId?: string;
   defaultPid?: string;
+}
+
+// Downscale + compress client-side before it ever leaves the browser — a
+// phone photo shouldn't turn into a multi-MB upload. 200px/JPEG-0.75 is
+// plenty for an avatar that never renders larger than ~90px. The result is
+// uploaded to Supabase Storage (not embedded in the DB row) so /api/members
+// stays light no matter how many thousands of members have photos.
+function fileToAvatarBlob(file: File, maxSize = 200, quality = 0.75): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('Canvas not supported')); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(
+          blob => (blob ? resolve(blob) : reject(new Error('Failed to encode image'))),
+          'image/jpeg', quality,
+        );
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function Field({
@@ -67,7 +101,7 @@ function ParentPicker({
   members: Member[];
   excludeId?: string;
   valueId?: string | null;
-  valueName?: string;
+  valueName?: string | null;
   onSelect: (m: Member) => void;
   onTextChange: (v: string) => void;
   onClear: () => void;
@@ -161,6 +195,7 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
     fatherName: editing?.fatherName ?? editing?.father ?? '',
     motherName: editing?.motherName ?? editing?.mother ?? '',
     succession: editing?.succession ?? undefined,
+    photoUrl: editing?.photoUrl ?? undefined,
     note: editing?.note ?? '',
   });
 
@@ -168,8 +203,39 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
     setForm(f => ({ ...f, [k]: v || undefined }));
 
   const [saving, setSaving] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert('Please choose an image file.');
+      return;
+    }
+    setPhotoBusy(true);
+    try {
+      const blob = await fileToAvatarBlob(file);
+      const { url } = await uploadPhoto(blob);
+      const oldKey = photoStorageKey(form.photoUrl);
+      setForm(f => ({ ...f, photoUrl: url }));
+      if (oldKey) deletePhoto(oldKey).catch(() => {});
+    } catch {
+      alert('Could not upload that image. Please try another file.');
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    const oldKey = photoStorageKey(form.photoUrl);
+    setForm(f => ({ ...f, photoUrl: undefined }));
+    if (oldKey) deletePhoto(oldKey).catch(() => {});
+  };
 
   const handleSave = async () => {
+    if (photoBusy) {
+      alert('Please wait for the photo to finish uploading.');
+      return;
+    }
     if (!form.id || !form.name) {
       alert('Name and A/C number are required');
       return;
@@ -180,24 +246,28 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
       return;
     }
 
+    // `?? null` everywhere a field can be cleared: an `undefined` value gets
+    // dropped entirely by JSON.stringify, so PATCH would silently leave the
+    // OLD value in place instead of clearing it (bit us for photo removal).
     const member: Member = {
       ...(editing ?? {}),
       id: form.id!,
       name: form.name!,
       type: form.type || 'Permanent',
       via: (form.via as Via) || 'core',
-      gender: form.gender as 'M' | 'F' | undefined,
+      gender: (form.gender as 'M' | 'F' | undefined) ?? null,
       since: form.since || '',
-      email: form.email,
-      phone: form.phone,
+      email: form.email ?? null,
+      phone: form.phone ?? null,
       pid: form.pid || null,
       rel: (form.rel as Rel) || null,
-      fatherId: form.fatherId,
-      motherId: form.motherId,
-      fatherName: form.fatherId ? undefined : form.fatherName,
-      motherName: form.motherId ? undefined : form.motherName,
-      succession: form.succession,
-      note: form.note,
+      fatherId: form.fatherId ?? null,
+      motherId: form.motherId ?? null,
+      fatherName: (form.fatherId ? undefined : form.fatherName) ?? null,
+      motherName: (form.motherId ? undefined : form.motherName) ?? null,
+      succession: form.succession ?? null,
+      photoUrl: form.photoUrl ?? null,
+      note: form.note ?? null,
     };
 
     setSaving(true);
@@ -250,11 +320,46 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
         )}
 
         <div className={styles.avatarPreviewWrap}>
-          <div
-            className={styles.avatarPreview}
-            style={{ backgroundColor: (TYPE_CONFIG[(form.type as keyof typeof TYPE_CONFIG)] ?? TYPE_CONFIG.Permanent).color }}
-          >
-            {getInitials(form.name || '?')}
+          <div className={styles.avatarPreviewOuter}>
+            <div
+              className={styles.avatarPreview}
+              style={{
+                backgroundColor: (TYPE_CONFIG[(form.type as keyof typeof TYPE_CONFIG)] ?? TYPE_CONFIG.Permanent).color,
+                backgroundImage: form.photoUrl ? `url(${form.photoUrl})` : undefined,
+              }}
+            >
+              {!form.photoUrl && getInitials(form.name || '?')}
+              {photoBusy && <div className={styles.avatarPreviewBusy}>…</div>}
+            </div>
+            <button
+              type="button"
+              className={styles.avatarUploadBtn}
+              onClick={() => fileInputRef.current?.click()}
+              title={form.photoUrl ? 'Change photo' : 'Upload photo'}
+            >
+              <Camera size={13} />
+            </button>
+            {form.photoUrl && (
+              <button
+                type="button"
+                className={styles.avatarRemoveBtn}
+                onClick={handleRemovePhoto}
+                title="Remove photo"
+              >
+                <X size={11} />
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className={styles.avatarFileInput}
+              onChange={e => {
+                const file = e.target.files?.[0];
+                if (file) handlePhotoFile(file);
+                e.target.value = '';
+              }}
+            />
           </div>
         </div>
 
@@ -291,7 +396,7 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
             <div className={styles.field}>
               <label className={styles.label}>Membership Type</label>
               <select
-                value={form.type}
+                value={form.type ?? ''}
                 onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
                 className={styles.select}
               >
@@ -422,8 +527,8 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
             </button>
           )}
           <button onClick={onClose} className={styles.cancelBtn} disabled={saving}>Cancel</button>
-          <button onClick={handleSave} className={styles.saveBtn} disabled={saving}>
-            {saving ? 'Saving…' : editing ? 'Update' : 'Save'}
+          <button onClick={handleSave} className={styles.saveBtn} disabled={saving || photoBusy}>
+            {photoBusy ? 'Uploading photo…' : saving ? 'Saving…' : editing ? 'Update' : 'Save'}
           </button>
         </div>
       </div>

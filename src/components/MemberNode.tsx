@@ -1,7 +1,7 @@
 'use client';
 import { Member } from '@/lib/types';
 import { getInitials, TYPE_CONFIG, getRelLabel } from '@/lib/memberUtils';
-import { getType } from '@/components/Quotatreelayout';
+import { getType, photoOf } from '@/components/Quotatreelayout';
 import { useMemberStore } from '@/store/memberStore';
 import styles from './MemberNode.module.css';
 
@@ -51,9 +51,13 @@ export default function MemberNode({ member, showRel, small, dashed, fixed }: Pr
       )}
       <div
         className={avatarClass}
-        style={{ background: cfg.bg, color: cfg.dark }}
+        style={{
+          background: cfg.bg, color: cfg.dark,
+          backgroundImage: photoOf(member) ? `url(${photoOf(member)})` : undefined,
+          backgroundSize: 'cover', backgroundPosition: 'center',
+        }}
       >
-        {getInitials(member.name)}
+        {!photoOf(member) && getInitials(member.name)}
       </div>
       <div className={nameClass}>
         {member.name}

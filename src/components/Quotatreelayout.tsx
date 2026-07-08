@@ -9,23 +9,20 @@ import type { Member } from '@/lib/types';
 export const CONN_COLOR = '#CBD5E1';
 
 
-export const TEST_PHOTO_URL = '/demo.jpg';
-
-
 export const photoOf = (m: Member): string | undefined =>
-  m.photoUrl || TEST_PHOTO_URL || undefined;
+  m.photoUrl || undefined;
 
 // Two-tier sizing: one size for ALL member cards (incl. successors), one size
 // for ALL slot cards (incl. nested). Same width keeps columns aligned.
-export const CARD_W = 185;
-export const CARD_H = 170;
-export const SLOT_W = 180;
-export const SLOT_H = 130;
+export const CARD_W = 240;
+export const CARD_H = 225;
+export const SLOT_W = 230;
+export const SLOT_H = 170;
 
-export const BESIDE_GAP = 110;  
-export const GROUP_GAP  = 34;   
-export const RANK_SEP   = 100;  
-export const NODE_SEP   = 20;  
+export const BESIDE_GAP = 130;
+export const GROUP_GAP  = 42;
+export const RANK_SEP   = 125;
+export const NODE_SEP   = 26;
 
 
 export function getType(m: Member): string {

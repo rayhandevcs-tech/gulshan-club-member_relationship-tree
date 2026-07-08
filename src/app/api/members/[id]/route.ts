@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { supabaseAdmin, PHOTOS_BUCKET, photoKeyFromUrl } from '@/lib/supabaseAdmin';
 
 export async function PATCH(
   request: Request,
@@ -18,7 +19,8 @@ export async function DELETE(
   const { id } = await params;
 
   // cascade: same recursive pid-walk the store used to do client-side
-  const all = await prisma.member.findMany({ select: { id: true, pid: true } });
+  const all = await prisma.member.findMany({ select: { id: true, pid: true, photoUrl: true } });
+  const byId = new Map(all.map(m => [m.id, m]));
   const toDelete = new Set<string>();
   const collect = (pid: string) => {
     toDelete.add(pid);
@@ -39,5 +41,15 @@ export async function DELETE(
   ]);
 
   await prisma.member.deleteMany({ where: { id: { in: deletedIds } } });
+
+  // Clean up their uploaded photos too, so Storage doesn't accumulate
+  // orphaned files as members get deleted over time.
+  const photoKeys = deletedIds
+    .map(did => photoKeyFromUrl(byId.get(did)?.photoUrl))
+    .filter((k): k is string => !!k);
+  if (photoKeys.length) {
+    await supabaseAdmin.storage.from(PHOTOS_BUCKET).remove(photoKeys);
+  }
+
   return NextResponse.json({ deletedIds });
 }

@@ -98,23 +98,91 @@
 .avatarPreviewWrap {
   display: flex;
   justify-content: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+
+.avatarPreviewOuter {
+  position: relative;
+  width: 4.5rem;
+  height: 4.5rem;
 }
 
 .avatarPreview {
-  width: 3rem;
-  height: 3rem;
+  width: 100%;
+  height: 100%;
   border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 19px;
   font-weight: 700;
-  box-shadow: 0 4px 10px -2px rgb(0 0 0 / 0.25);
+  box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.25);
   border: 3px solid #ffffff;
   outline: 1px solid #f3f4f6;
+  background-size: cover;
+  background-position: center;
   transition: background-color 150ms;
+}
+
+.avatarPreviewBusy {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(0 0 0 / 0.35);
+  color: #fff;
+  font-size: 18px;
+}
+
+.avatarUploadBtn {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: 999px;
+  background-color: #3b82f6;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px -1px rgb(0 0 0 / 0.3);
+  transition: background-color 150ms, transform 150ms;
+}
+
+.avatarUploadBtn:hover {
+  background-color: #2563eb;
+  transform: scale(1.08);
+}
+
+.avatarRemoveBtn {
+  position: absolute;
+  left: -2px;
+  top: -2px;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background-color: #ef4444;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px -1px rgb(0 0 0 / 0.3);
+  transition: background-color 150ms, transform 150ms;
+}
+
+.avatarRemoveBtn:hover {
+  background-color: #dc2626;
+  transform: scale(1.08);
+}
+
+.avatarFileInput {
+  display: none;
 }
 
 .pickerHint {

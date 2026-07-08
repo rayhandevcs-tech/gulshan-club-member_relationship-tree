@@ -6,7 +6,7 @@ import {
   getRoots, getSpouse, getNonSpouseChildren, getAssociates,
   getAllDescendants, getQuotaSourceCaption, TYPE_CONFIG
 } from '@/lib/memberUtils';
-import { getType } from '@/components/Quotatreelayout';
+import { getType, photoOf } from '@/components/Quotatreelayout';
 import MemberNode from './MemberNode';
 import { FocusedDiagram, WholeMapDiagram, BioFamilyDiagram } from './RelationshipDiagram';
 import { Search, GitBranch, Users, ArrowLeft } from 'lucide-react';
@@ -155,8 +155,15 @@ export default function MemberTree() {
               onClick={() => useMemberStore.getState().navigateTo(m.id)}
               className={s.gridCard}
             >
-              <div className={s.gridAvatar} style={{ background: cfg.bg, color: cfg.dark }}>
-                {m.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}
+              <div
+                className={s.gridAvatar}
+                style={{
+                  background: cfg.bg, color: cfg.dark,
+                  backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
+                  backgroundSize: 'cover', backgroundPosition: 'center',
+                }}
+              >
+                {!photoOf(m) && m.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}
                 <div className={s.gridAvatarBadge} style={{ background: cfg.color }}>{cfg.short}</div>
               </div>
               <div className={s.gridName}>{m.name}</div>
