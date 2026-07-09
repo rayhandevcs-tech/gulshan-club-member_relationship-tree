@@ -303,13 +303,12 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
         )} */}
 
         {[
-          ['Member ID',      m.memberId],
-          ['Type',           getType(m)],
+          ['Joined',         m.since],
           ['Access',         m.via === 'core' ? 'Own membership'
                              : m.via === 'a4d' ? 'via 4(d) quota'
                              : m.via === 'succession' ? 'Received via succession'
                              : 'Associate access'],
-          ['Joined',         m.since],
+          ['Member ID',      m.memberId],
           ['Birth Date',     m.birthDate],
           ['Email',          m.email],
           ['Phone',          m.phone ?? m.phoneRes ?? m.phoneOff],
