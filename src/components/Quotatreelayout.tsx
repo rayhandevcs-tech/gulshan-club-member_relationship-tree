@@ -14,15 +14,15 @@ export const photoOf = (m: Member): string | undefined =>
 
 // Two-tier sizing: one size for ALL member cards (incl. successors), one size
 // for ALL slot cards (incl. nested). Same width keeps columns aligned.
-export const CARD_W = 240;
-export const CARD_H = 225;
-export const SLOT_W = 230;
-export const SLOT_H = 170;
+export const CARD_W = 270;
+export const CARD_H = 250;
+export const SLOT_W = 260;
+export const SLOT_H = 190;
 
-export const BESIDE_GAP = 130;
-export const GROUP_GAP  = 42;
-export const RANK_SEP   = 125;
-export const NODE_SEP   = 26;
+export const BESIDE_GAP = 140;
+export const GROUP_GAP  = 46;
+export const RANK_SEP   = 135;
+export const NODE_SEP   = 30;
 
 
 export function getType(m: Member): string {
@@ -158,7 +158,7 @@ export function buildGraph(
         type: 'smoothstep',
         style: {
           stroke: role === 'A4D' ? '#9333ea55' : '#ea580c55',
-          strokeWidth: 1.5, strokeDasharray: '5 3',
+          strokeWidth: 2.5, strokeDasharray: '5 3',
         },
       });
 
@@ -178,7 +178,7 @@ export function buildGraph(
           source: sid, target: subId,
           sourceHandle: 'bottom', targetHandle: 'top',
           type: 'smoothstep',
-          style: { stroke: '#CBD5E1', strokeWidth: 1, strokeDasharray: '4 2' },
+          style: { stroke: '#CBD5E1', strokeWidth: 2, strokeDasharray: '4 2' },
         });
       });
     });
@@ -214,7 +214,7 @@ export function buildGraph(
         source: parentId, target: m.id,
         sourceHandle: 'bottom', targetHandle: 'top',
         type: 'smoothstep',
-        style: { stroke: '#94A3B8', strokeWidth: 1.5 },
+        style: { stroke: '#94A3B8', strokeWidth: 2.5 },
       });
     }
 
@@ -233,8 +233,8 @@ export function buildGraph(
         type: 'straight',
         label: isTransferToSpouse ? 'Spouse · A/C transferred' : 'Spouse',
         style: isTransferToSpouse
-          ? { stroke: '#F59E0B', strokeWidth: 1.5, strokeDasharray: '5 3' }
-          : { stroke: '#9CA3AF', strokeWidth: 1.5 },
+          ? { stroke: '#F59E0B', strokeWidth: 2.5, strokeDasharray: '5 3' }
+          : { stroke: '#9CA3AF', strokeWidth: 2.5 },
         labelStyle: isTransferToSpouse
           ? { fontSize: 8.5, fill: '#92400e', fontWeight: 600 }
           : { fontSize: 8.5, fill: '#9CA3AF', fontWeight: 500 },
@@ -258,7 +258,7 @@ export function buildGraph(
         source: m.id, target: succession.id,
         type: 'straight',
         label: 'A/C transferred',
-        style: { stroke: '#F59E0B', strokeWidth: 1.5, strokeDasharray: '5 3' },
+        style: { stroke: '#F59E0B', strokeWidth: 2.5, strokeDasharray: '5 3' },
         labelStyle: { fontSize: 8.5, fill: '#92400e', fontWeight: 600 },
         labelBgStyle: { fill: '#fffbeb', fillOpacity: 0.95, borderRadius: 4 },
         data: { kind: 'succession' },

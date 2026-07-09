@@ -83,12 +83,12 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
         }}
       >
         <div style={{
-          width: 108, height: 108, borderRadius: '50%', backgroundColor: avatarBg,
+          width: 128, height: 128, borderRadius: '50%', backgroundColor: avatarBg,
           backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
           backgroundSize: 'cover', backgroundPosition: 'center 22%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 20, fontWeight: 700, color: '#fff', flexShrink: 0,
-          border: `2.5px solid ${border}`,
+          fontSize: 23, fontWeight: 700, color: '#fff', flexShrink: 0,
+          border: `3px solid ${border}`,
           boxSizing: 'border-box',
           boxShadow: hovered ? '0 3px 10px rgba(0,0,0,0.18)' : 'none',
           transition: 'box-shadow 180ms ease',
@@ -100,25 +100,25 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
         </div>
 
         <div style={{
-          fontSize: 20, fontWeight: 650, color: '#111827', textAlign: 'center',
+          fontSize: 23, fontWeight: 650, color: '#111827', textAlign: 'center',
           lineHeight: 1.3, width: CARD_W - 30, overflowWrap: 'break-word',
         }}>
           {name}
         </div>
 
         <div style={{
-          fontSize: 14.5, fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.02em',
-          color: border, background: `${border}1a`, padding: '2px 9px', borderRadius: 999,
+          fontSize: 16.5, fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.02em',
+          color: border, background: `${border}1a`, padding: '3px 10px', borderRadius: 999,
         }}>{m.id}</div>
 
         {isDead(m) && (
-          <span style={{ fontSize: 10.5, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '2px 8px', borderRadius: 999 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '2px 9px', borderRadius: 999 }}>
             Deceased
           </span>
         )}
 
         {m.since && (
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', marginTop: 1 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: '#6B7280', marginTop: 1 }}>
             Joined {m.since}
           </div>
         )}
@@ -159,8 +159,8 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
       <Handle id="bottom-in" type="target" position={Position.Bottom} isConnectable={false} style={slotHandleStyle} />
 
       <div style={{
-        fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
-        padding: '2px 10px', borderRadius: 999, background: roleBg, color: roleColor,
+        fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
+        padding: '3px 11px', borderRadius: 999, background: roleBg, color: roleColor,
       }}>
         {role}
       </div>
@@ -171,8 +171,8 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
         onMouseLeave={() => setHovered(false)}
         className={highlighted ? 'search-highlight-card' : undefined}
         style={{
-          border: `${nested ? 1.5 : 2}px solid ${border}`, borderRadius: 13, background: hovered ? cardBgHover : cardBg,
-          padding: '10px 12px',
+          border: `${nested ? 2 : 2.5}px solid ${border}`, borderRadius: 13, background: hovered ? cardBgHover : cardBg,
+          padding: '12px 14px',
           display: 'flex', flexDirection: 'column', gap: 4,
           cursor: 'pointer', width: SLOT_W, textAlign: 'left',
           boxShadow: hovered ? `0 8px 18px -3px rgba(0,0,0,0.18), 0 0 0 2px ${border}26` : '0 1px 3px rgba(0,0,0,0.06)',
@@ -180,15 +180,15 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
           transition: 'box-shadow 180ms ease, transform 180ms ease, background 180ms ease',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
 
           <div style={{
-            width: 58, height: 58, borderRadius: '50%', backgroundColor: avatarBg,
+            width: 68, height: 68, borderRadius: '50%', backgroundColor: avatarBg,
             backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
             backgroundSize: 'cover', backgroundPosition: 'center 22%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0,
-            border: `1.5px solid ${border}`,
+            fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0,
+            border: `2px solid ${border}`,
             boxSizing: 'border-box',
 
           }}>
@@ -197,19 +197,19 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
 
           <div style={{ minWidth: 0, flex: 1 }}>
 
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#111827', lineHeight: 1.3, overflowWrap: 'break-word' }}>
+            <div style={{ fontSize: 18, fontWeight: 600, color: '#111827', lineHeight: 1.3, overflowWrap: 'break-word' }}>
               {name}
             </div>
 
             <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 2, flexWrap: 'wrap' }}>
               <span style={{
-                fontSize: 12.5, fontWeight: 700, fontFamily: 'monospace',
-                color: border, background: `${border}1a`, padding: '0 6px', borderRadius: 999,
+                fontSize: 14, fontWeight: 700, fontFamily: 'monospace',
+                color: border, background: `${border}1a`, padding: '1px 7px', borderRadius: 999,
               }}>{m.id}</span>
             </div>
 
             {m.since && (
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', marginTop: 2 }}>
+              <div style={{ fontSize: 14.5, fontWeight: 600, color: '#6B7280', marginTop: 2 }}>
                 Joined {m.since}
               </div>
             )}
@@ -217,7 +217,7 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
           </div>
         </div>
         {reference && (
-          <div style={{ fontSize: 9.5, color: '#6B7280', fontStyle: 'italic', paddingLeft: 44, lineHeight: 1.3 }}>
+          <div style={{ fontSize: 11, color: '#6B7280', fontStyle: 'italic', paddingLeft: 78, lineHeight: 1.3 }}>
             {reference}
           </div>
         )}

@@ -34,11 +34,11 @@ interface Props {
 
 // ─── Family Relationship tab: owner + spouse + direct children (React Flow) ──
 
-const FAM_CARD_W = 260;
-const FAM_CARD_H = 250;
-const FAM_HGAP   = 50;
-const FAM_SGAP   = 110;
-const FAM_VGAP   = 150;
+const FAM_CARD_W = 290;
+const FAM_CARD_H = 275;
+const FAM_HGAP   = 55;
+const FAM_SGAP   = 120;
+const FAM_VGAP   = 160;
 
 type FamRole = 'owner' | 'spouse' | 'child';
 
@@ -76,9 +76,9 @@ function FamCard({ data }: { data: FamCardData }) {
         onMouseLeave={() => setHovered(false)}
         className={highlighted ? 'search-highlight-card' : undefined}
         style={{
-          border: `1.5px solid ${border}`, borderRadius: 16, background: hovered ? bgHover : bg,
-          padding: '20px 16px', width: '100%',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+          border: `2px solid ${border}`, borderRadius: 16, background: hovered ? bgHover : bg,
+          padding: '22px 18px', width: '100%',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9,
           cursor: 'pointer',
           boxShadow: hovered ? `0 14px 28px -4px rgba(0,0,0,0.2), 0 0 0 3px ${border}2e` : '0 1px 4px rgba(0,0,0,0.06)',
           transform: hovered ? 'translateY(-4px) scale(1.015)' : 'none',
@@ -86,46 +86,46 @@ function FamCard({ data }: { data: FamCardData }) {
         }}
       >
         <div style={{
-          width: 100, height: 100, borderRadius: '50%', backgroundColor: border,
+          width: 118, height: 118, borderRadius: '50%', backgroundColor: border,
           backgroundImage: photo ? `url(${photo})` : undefined,
           backgroundSize: 'cover', backgroundPosition: 'center 22%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 21, fontWeight: 700, color: '#fff', flexShrink: 0,
-          border: `2.5px solid ${border}`,
+          fontSize: 24, fontWeight: 700, color: '#fff', flexShrink: 0,
+          border: `3px solid ${border}`,
           boxSizing: 'border-box',
           boxShadow: hovered ? '0 3px 10px rgba(0,0,0,0.18)' : 'none',
           transition: 'box-shadow 180ms ease',
         }}>
           {!photo && getInitials(name)}
         </div>
-        <div style={{ fontSize: 20, fontWeight: 700, color: '#111827', textAlign: 'center', lineHeight: 1.3 }}>
+        <div style={{ fontSize: 23, fontWeight: 700, color: '#111827', textAlign: 'center', lineHeight: 1.3 }}>
           {name}
         </div>
         <div style={{
-          fontSize: 15, fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.02em',
-          color: border, background: `${border}1a`, padding: '2px 11px', borderRadius: 999,
+          fontSize: 17, fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.02em',
+          color: border, background: `${border}1a`, padding: '3px 12px', borderRadius: 999,
         }}>
           {m.id}
         </div>
         {m.since && (
-          <div style={{ fontSize: 14, fontWeight: 600, color: '#6B7280', marginTop: 1 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: '#6B7280', marginTop: 1 }}>
             Joined {m.since}
           </div>
         )}
         {isDead(m) && (
-          <span style={{ fontSize: 10.5, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '2px 9px', borderRadius: 999 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '2px 9px', borderRadius: 999 }}>
             Deceased
           </span>
         )}
       </button>
 
       {caption && (
-        <div style={{ textAlign: 'center', marginTop: 7, fontSize: 14, fontWeight: 600, color: border }}>
+        <div style={{ textAlign: 'center', marginTop: 7, fontSize: 16, fontWeight: 600, color: border }}>
           {caption}
         </div>
       )}
       {quotaRef && (
-        <div style={{ textAlign: 'center', marginTop: 2, fontSize: 12, fontStyle: 'italic', color: '#9CA3AF' }}>
+        <div style={{ textAlign: 'center', marginTop: 2, fontSize: 13.5, fontStyle: 'italic', color: '#9CA3AF' }}>
           {quotaRef}
         </div>
       )}
@@ -208,7 +208,7 @@ function buildFocusedGraph(focusId: string, members: Member[]): { nodes: Node[];
       source: owner.id, sourceHandle: 'right-out',
       target: spouse.id, targetHandle: 'left-in',
       type: 'straight', label: 'SPOUSE',
-      style: { stroke: '#CBD5E1', strokeWidth: 1.5 },
+      style: { stroke: '#CBD5E1', strokeWidth: 2.5 },
       labelStyle: { fontSize: 10, fill: '#94A3B8', fontWeight: 600, letterSpacing: 0.6 },
       labelBgStyle: { fill: '#F9FAFB', fillOpacity: 1 },
       labelBgPadding: [6, 3],
@@ -240,7 +240,7 @@ function buildFocusedGraph(focusId: string, members: Member[]): { nodes: Node[];
         id: `e-child-${owner.id}-${c.id}`,
         source: unionId, sourceHandle: 'bottom', target: c.id,
         type: 'smoothstep',
-        style: { stroke: '#CBD5E1', strokeWidth: 1.5 },
+        style: { stroke: '#CBD5E1', strokeWidth: 2.5 },
       });
     });
   }
