@@ -34,11 +34,11 @@ interface Props {
 
 // ─── Family Relationship tab: owner + spouse + direct children (React Flow) ──
 
-const FAM_CARD_W = 290;
-const FAM_CARD_H = 275;
-const FAM_HGAP   = 55;
-const FAM_SGAP   = 120;
-const FAM_VGAP   = 160;
+const FAM_CARD_W = 325;
+const FAM_CARD_H = 305;
+const FAM_HGAP   = 60;
+const FAM_SGAP   = 130;
+const FAM_VGAP   = 175;
 
 type FamRole = 'owner' | 'spouse' | 'child';
 
@@ -86,46 +86,47 @@ function FamCard({ data }: { data: FamCardData }) {
         }}
       >
         <div style={{
-          width: 118, height: 118, borderRadius: '50%', backgroundColor: border,
+          width: 138, height: 138, borderRadius: '50%', backgroundColor: border,
           backgroundImage: photo ? `url(${photo})` : undefined,
           backgroundSize: 'cover', backgroundPosition: 'center 22%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 24, fontWeight: 700, color: '#fff', flexShrink: 0,
-          border: `3px solid ${border}`,
+          fontSize: 27, fontWeight: 700, color: '#fff', flexShrink: 0,
+          border: `3.5px solid ${border}`,
           boxSizing: 'border-box',
           boxShadow: hovered ? '0 3px 10px rgba(0,0,0,0.18)' : 'none',
           transition: 'box-shadow 180ms ease',
         }}>
           {!photo && getInitials(name)}
         </div>
-        <div style={{ fontSize: 23, fontWeight: 700, color: '#111827', textAlign: 'center', lineHeight: 1.3 }}>
+        <div style={{ fontSize: 26, fontWeight: 700, color: '#111827', textAlign: 'center', lineHeight: 1.3 }}>
           {name}
         </div>
         <div style={{
-          fontSize: 17, fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.02em',
-          color: border, background: `${border}1a`, padding: '3px 12px', borderRadius: 999,
+          fontSize: 21, fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.03em',
+          color: border, background: `${border}2e`, border: `1.5px solid ${border}55`,
+          padding: '4px 14px', borderRadius: 999,
         }}>
           {m.id}
         </div>
         {m.since && (
-          <div style={{ fontSize: 16, fontWeight: 600, color: '#6B7280', marginTop: 1 }}>
+          <div style={{ fontSize: 18, fontWeight: 600, color: '#6B7280', marginTop: 1 }}>
             Joined {m.since}
           </div>
         )}
         {isDead(m) && (
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '2px 9px', borderRadius: 999 }}>
+          <span style={{ fontSize: 13.5, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '2px 10px', borderRadius: 999 }}>
             Deceased
           </span>
         )}
       </button>
 
       {caption && (
-        <div style={{ textAlign: 'center', marginTop: 7, fontSize: 16, fontWeight: 600, color: border }}>
+        <div style={{ textAlign: 'center', marginTop: 7, fontSize: 18, fontWeight: 600, color: border }}>
           {caption}
         </div>
       )}
       {quotaRef && (
-        <div style={{ textAlign: 'center', marginTop: 2, fontSize: 13.5, fontStyle: 'italic', color: '#9CA3AF' }}>
+        <div style={{ textAlign: 'center', marginTop: 2, fontSize: 15, fontStyle: 'italic', color: '#9CA3AF' }}>
           {quotaRef}
         </div>
       )}
@@ -139,8 +140,8 @@ function FamUnion({ data }: { data: { labelOffsetY?: number } }) {
       <Handle id="bottom" type="source" position={Position.Bottom} isConnectable={false} style={{ width: 1, height: 1, opacity: 0 }} />
       <span style={{
         position: 'absolute', top: data.labelOffsetY ?? 40, left: 8, whiteSpace: 'nowrap',
-        fontSize: 11.5, fontWeight: 600, color: '#94A3B8',
-        background: '#fff', padding: '1px 6px', borderRadius: 4,
+        fontSize: 14, fontWeight: 700, color: '#4B5563',
+        background: '#F3F4F6', padding: '3px 9px', borderRadius: 6,
       }}>
         Children
       </span>
@@ -208,11 +209,11 @@ function buildFocusedGraph(focusId: string, members: Member[]): { nodes: Node[];
       source: owner.id, sourceHandle: 'right-out',
       target: spouse.id, targetHandle: 'left-in',
       type: 'straight', label: 'SPOUSE',
-      style: { stroke: '#CBD5E1', strokeWidth: 2.5 },
-      labelStyle: { fontSize: 10, fill: '#94A3B8', fontWeight: 600, letterSpacing: 0.6 },
-      labelBgStyle: { fill: '#F9FAFB', fillOpacity: 1 },
-      labelBgPadding: [6, 3],
-      labelBgBorderRadius: 5,
+      style: { stroke: '#9CA3AF', strokeWidth: 3.5 },
+      labelStyle: { fontSize: 13, fill: '#374151', fontWeight: 800, letterSpacing: 0.6 },
+      labelBgStyle: { fill: '#F3F4F6', fillOpacity: 1 },
+      labelBgPadding: [8, 5],
+      labelBgBorderRadius: 6,
     });
   });
 
@@ -240,7 +241,7 @@ function buildFocusedGraph(focusId: string, members: Member[]): { nodes: Node[];
         id: `e-child-${owner.id}-${c.id}`,
         source: unionId, sourceHandle: 'bottom', target: c.id,
         type: 'smoothstep',
-        style: { stroke: '#CBD5E1', strokeWidth: 2.5 },
+        style: { stroke: '#9CA3AF', strokeWidth: 3.5 },
       });
     });
   }
