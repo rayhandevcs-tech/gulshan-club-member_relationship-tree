@@ -75,6 +75,45 @@ function Field({
   );
 }
 
+// Dates are stored as plain "DD/MM/YYYY" strings throughout the app (that's
+// what every existing record uses), but a native <input type="date">
+// calendar picker only speaks ISO "YYYY-MM-DD" — convert at the edges so
+// the stored format never changes.
+function ddmmyyyyToIso(v: string): string {
+  const m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return '';
+  const [, d, mo, y] = m;
+  return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+}
+function isoToDdmmyyyy(v: string): string {
+  const m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return '';
+  const [, y, mo, d] = m;
+  return `${d}/${mo}/${y}`;
+}
+
+function DateField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className={styles.field}>
+      <label className={styles.label}>{label}</label>
+      <input
+        type="date"
+        value={ddmmyyyyToIso(value)}
+        onChange={e => onChange(e.target.value ? isoToDdmmyyyy(e.target.value) : '')}
+        className={styles.input}
+      />
+    </div>
+  );
+}
+
 function SectionLabel({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
   return (
     <div className={styles.sectionLabel}>
@@ -424,7 +463,7 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
             <>
               <div className={styles.row2}>
                 <ParentPicker
-                  label="Primary Member A/C, if any"
+                  label={form.rel === 'spouse' ? 'Spouse (A/C Number)' : 'Primary Member A/C, if any'}
                   members={members}
                   excludeId={form.id}
                   valueId={form.pid}
@@ -433,7 +472,7 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
                   onTextChange={() => {}}
                   onClear={() => setForm(f => ({ ...f, pid: undefined }))}
                 />
-                <Field
+                <DateField
                   label="Membership Date"
                   value={form.since ?? ''}
                   onChange={v => set('since', v)}
@@ -452,6 +491,11 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
                   <option value="grandchild">Grandchild</option>
                   <option value="other">Other</option>
                 </select>
+                {form.rel === 'spouse' && (
+                  <div className={styles.pickerHint}>
+                    Search and pick their partner&apos;s A/C above to link them as spouse.
+                  </div>
+                )}
               </div>
             </>
           ) : (
@@ -470,7 +514,7 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
                   <option value="other">Other</option>
                 </select>
               </div>
-              <Field
+              <DateField
                 label="Membership Date"
                 value={form.since ?? ''}
                 onChange={v => set('since', v)}

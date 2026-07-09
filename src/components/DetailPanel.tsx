@@ -54,13 +54,6 @@ function MemberPreviewModal({
   const fatherDisplay = fatherMember?.name ?? member.fatherName ?? member.father;
   const motherDisplay = motherMember?.name ?? member.motherName ?? member.mother;
 
-  const spouseMembers: Member[] =
-    member.rel === 'spouse' && member.pid
-      ? [getMember(members, member.pid)].filter((x): x is Member => !!x)
-      : members.filter(c => c.pid === member.id && c.rel === 'spouse');
-
-  const bioChildren = members.filter(c => c.fatherId === member.id || c.motherId === member.id);
-
   return (
     <>
       <div className={s.backdrop} onClick={onClose} />
@@ -114,22 +107,6 @@ function MemberPreviewModal({
                   <span className={s.previewParentValue}>{motherDisplay}</span>
                 </div>
               )}
-            </div>
-          )}
-
-          {spouseMembers.length > 0 && (
-            <div className={s.previewSectionRow}>
-              <span className={s.previewFieldLabel}>{spouseMembers.length > 1 ? 'Spouses' : 'Spouse'}</span>
-              <span className={s.previewParentValue}>
-                {spouseMembers.map(sp => `${sp.name} (${sp.id})`).join(', ')}
-              </span>
-            </div>
-          )}
-
-          {bioChildren.length > 0 && (
-            <div className={s.previewSectionRow}>
-              <span className={s.previewFieldLabel}>Children</span>
-              <span className={s.previewParentValue}>{bioChildren.map(c => c.name).join(', ')}</span>
             </div>
           )}
 
