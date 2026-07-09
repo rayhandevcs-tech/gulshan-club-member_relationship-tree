@@ -19,7 +19,18 @@ export const CARD_H = 400;
 export const SLOT_W = 310;
 export const SLOT_H = 290;
 
-export const BESIDE_GAP = 175;
+// CARD_H above is deliberately padded well past the common-case rendered
+// card height, so dagre never lets a rank overlap a tall (2-line name +
+// Deceased tag) card. That padding is wrong to reuse for a *visual* anchor
+// though — e.g. the single-parent "Children" stem used to drop the full
+// CARD_H below the card top, landing ~70px past where the card actually
+// ends. This tracks the common-case rendered height instead.
+export const CARD_VISUAL_H = 345;
+
+// Wide enough to fit the longest connector label ("Spouse · A/C
+// transferred", ~25 chars at 16px/800 weight) without spilling into
+// either neighboring card.
+export const BESIDE_GAP = 260;
 export const GROUP_GAP  = 60;
 export const RANK_SEP   = 220;
 export const NODE_SEP   = 42;
@@ -402,7 +413,7 @@ export function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edge
     groups.forEach(gr => {
       const b = groupBox(gr.ids);
       const oPos = posMap.get(gr.ownerId)!;
-      const shift = oPos.x + nodeW('member') / 2 - (b.minX + b.maxX) / 2;
+      const shift = oPos.x + CARD_W / 2 - (b.minX + b.maxX) / 2;
       if (Math.abs(shift) > 0.5) shiftIds(gr.ids, shift);
     });
 
@@ -463,7 +474,7 @@ export function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edge
         minY = Math.min(minY, b.minY); maxY = Math.max(maxY, b.maxY);
       });
 
-      const ownerCenter = oPos.x + nodeW('member') / 2;
+      const ownerCenter = oPos.x + CARD_W / 2;
       let desired = ownerCenter - (minX + maxX) / 2;
       if (Math.abs(desired) < 1) return;
 
@@ -535,13 +546,17 @@ export function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edge
           : undefined;
       if (spousePos) {
         // couple: branch off the midpoint of the spousal line
-        const rootCenterX   = rootPos.x   + nodeW('member') / 2;
-        const spouseCenterX = spousePos.x + nodeW('member') / 2;
-        unionPos = { x: (rootCenterX + spouseCenterX) / 2, y: rootPos.y + nodeH('member') / 2 };
+        const rootCenterX   = rootPos.x   + CARD_W / 2;
+        const spouseCenterX = spousePos.x + CARD_W / 2;
+        unionPos = { x: (rootCenterX + spouseCenterX) / 2, y: rootPos.y + CARD_VISUAL_H / 2 };
       } else {
         // single root parent: drop the same labeled stem straight from the
-        // card's bottom handle, so the "Children" caption shows here too
-        unionPos = { x: rootPos.x + nodeW('member') / 2, y: rootPos.y + nodeH('member') };
+        // card's bottom handle, so the "Children" caption shows here too.
+        // CARD_W/CARD_VISUAL_H (not nodeW/CARD_H, which are padded for
+        // dagre's collision math) so this actually lines up with the card's
+        // real rendered center and bottom edge instead of drifting ~10px
+        // right and ~70px past it.
+        unionPos = { x: rootPos.x + CARD_W / 2, y: rootPos.y + CARD_VISUAL_H };
       }
       unionId = `union-${rootId}`;
       posMap.set(unionId, unionPos);

@@ -237,7 +237,8 @@ function UnionNodeComp({ data }: { data: { labelOffsetY?: number } }) {
     <div style={{ width: 1, height: 1, position: 'relative' }}>
       <Handle id="bottom" type="source" position={Position.Bottom} isConnectable={false} style={{ width: 1, height: 1, opacity: 0 }} />
       <span style={{
-        position: 'absolute', top: data.labelOffsetY ?? 40, left: 8, whiteSpace: 'nowrap',
+        position: 'absolute', top: data.labelOffsetY ?? 40, left: -10, whiteSpace: 'nowrap',
+        transform: 'translateX(-100%)',
         fontSize: 16, fontWeight: 800, color: '#374151',
         background: '#E5E7EB', padding: '4px 11px', borderRadius: 7,
       }}>
