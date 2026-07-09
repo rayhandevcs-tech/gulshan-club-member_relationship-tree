@@ -128,8 +128,12 @@ export function buildGraph(
 
   // All slots hanging off `owner`'s quota, always seated below the owner —
   // besideSpouseId = the one spouse already seated beside — excluded here
-  // so she isn't rendered twice.
-  function addSlots(owner: Member, bioChildIds: Set<string>, besideSpouseId?: string) {
+  // so she isn't rendered twice. rootLevel picks a distinct connector color
+  // for the tree's main member (and their beside spouse) only, so their
+  // direct A4D/Associate dependents read differently from every deeper
+  // (second-layer-and-below) owner's dependents, which keep the usual
+  // role-colored (purple/orange) lines.
+  function addSlots(owner: Member, bioChildIds: Set<string>, besideSpouseId?: string, rootLevel = false) {
     const slots = members.filter(x =>
       x.pid === owner.id &&
       x.via !== 'core' && x.via !== 'succession' &&
@@ -156,10 +160,9 @@ export function buildGraph(
         source: owner.id, target: sid,
         sourceHandle: 'bottom', targetHandle: 'top',
         type: 'smoothstep',
-        style: {
-          stroke: role === 'A4D' ? '#9333ea77' : '#ea580c77',
-          strokeWidth: 3.5, strokeDasharray: '6 3',
-        },
+        style: rootLevel
+          ? { stroke: '#2563EB99', strokeWidth: 3.5, strokeDasharray: '6 3' }
+          : { stroke: role === 'A4D' ? '#9333ea77' : '#ea580c77', strokeWidth: 3.5, strokeDasharray: '6 3' },
       });
 
       // nested slots (a slot member granting further quota/associate access)
@@ -268,8 +271,8 @@ export function buildGraph(
       addSlots(succession, new Set());
     }
 
-    addSlots(m, childIds, spouse?.id);
-    if (spouse) addSlots(spouse, childIds);
+    addSlots(m, childIds, spouse?.id, isRoot);
+    if (spouse) addSlots(spouse, childIds, undefined, isRoot);
     children.forEach(child => traverse(child, m.id));
   }
 
