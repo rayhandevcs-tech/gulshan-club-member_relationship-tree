@@ -231,7 +231,6 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
 
   const cfg = cfgOf(m);                            // ← crash-এর লাইন fixed
   const parent = m.pid ? getMember(members, m.pid) : null;
-  const children = members.filter(c => c.pid === m.id);
 
   const fatherMember = m.fatherId ? getMember(members, m.fatherId) : null;
   const motherMember = m.motherId ? getMember(members, m.motherId) : null;
@@ -247,6 +246,12 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
     ? [parent]
     : members.filter(c => c.pid === m.id && c.rel === 'spouse');
   const spouseIds = new Set(spouseMembers.map(sp => sp.id));
+
+  // A4D/Associate dependents can hang off EITHER partner's own quota — a
+  // spouse's own A4D grants were being dropped entirely since this only
+  // ever looked at m.id's own dependents.
+  const dependentOwnerIds = new Set([m.id, ...spouseIds]);
+  const children = members.filter(c => c.pid != null && dependentOwnerIds.has(c.pid));
 
   // Primary Member (quota holder) দেখাই dependent slot-দের জন্য; dependent
   // spouse-এর ক্ষেত্রে pid-ওয়ালা মানুষটা এমনিতেই Spouse section-এ আছে।
