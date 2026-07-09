@@ -72,9 +72,9 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
         onMouseLeave={() => setHovered(false)}
         className={highlighted ? 'search-highlight-card' : undefined}
         style={{
-          border: `2px solid ${border}`, borderRadius: 18, background: bg,
-          padding: '17px 18px',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+          border: `2.5px solid ${border}`, borderRadius: 18, background: bg,
+          padding: '22px 22px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
           cursor: 'pointer', width: CARD_W,
           boxShadow: hovered ? `0 12px 26px -4px rgba(0,0,0,0.2), 0 0 0 3px ${border}2e` : '0 2px 6px rgba(0,0,0,0.08)',
           transform: hovered ? 'translateY(-3px) scale(1.015)' : 'none',
@@ -83,12 +83,12 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
         }}
       >
         <div style={{
-          width: 146, height: 146, borderRadius: '50%', backgroundColor: avatarBg,
+          width: 160, height: 160, borderRadius: '50%', backgroundColor: avatarBg,
           backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
           backgroundSize: 'cover', backgroundPosition: 'center 22%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 26, fontWeight: 700, color: '#fff', flexShrink: 0,
-          border: `3.5px solid ${border}`,
+          fontSize: 28, fontWeight: 700, color: '#fff', flexShrink: 0,
+          border: `4px solid ${border}`,
           boxSizing: 'border-box',
           boxShadow: hovered ? '0 3px 10px rgba(0,0,0,0.18)' : 'none',
           transition: 'box-shadow 180ms ease',
@@ -100,26 +100,27 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
         </div>
 
         <div style={{
-          fontSize: 26, fontWeight: 700, color: '#111827', textAlign: 'center',
+          fontSize: 28, fontWeight: 700, color: '#111827', textAlign: 'center',
           lineHeight: 1.3, width: CARD_W - 30, overflowWrap: 'break-word',
         }}>
           {name}
         </div>
 
         <div style={{
-          fontSize: 19, fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.03em',
-          color: border, background: `${border}2e`, border: `1.5px solid ${border}55`,
-          padding: '4px 13px', borderRadius: 999,
+          fontSize: 23, fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.03em',
+          color: border, background: `${border}3d`, border: `2.5px solid ${border}`,
+          padding: '6px 18px', borderRadius: 999,
+          boxShadow: `0 0 0 3px ${border}22`,
         }}>{m.id}</div>
 
         {isDead(m) && (
-          <span style={{ fontSize: 13.5, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '2px 10px', borderRadius: 999 }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '3px 11px', borderRadius: 999 }}>
             Deceased
           </span>
         )}
 
         {m.since && (
-          <div style={{ fontSize: 17, fontWeight: 600, color: '#6B7280', marginTop: 1 }}>
+          <div style={{ fontSize: 19, fontWeight: 700, color: '#6B7280', marginTop: 1 }}>
             Joined {m.since}
           </div>
         )}
@@ -160,8 +161,8 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
       <Handle id="bottom-in" type="target" position={Position.Bottom} isConnectable={false} style={slotHandleStyle} />
 
       <div style={{
-        fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
-        padding: '4px 12px', borderRadius: 999, background: roleBg, color: roleColor,
+        fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
+        padding: '5px 14px', borderRadius: 999, background: roleBg, color: roleColor,
       }}>
         {role}
       </div>
@@ -172,24 +173,24 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
         onMouseLeave={() => setHovered(false)}
         className={highlighted ? 'search-highlight-card' : undefined}
         style={{
-          border: `${nested ? 2.5 : 3}px solid ${border}`, borderRadius: 13, background: hovered ? cardBgHover : cardBg,
-          padding: '14px 16px',
-          display: 'flex', flexDirection: 'column', gap: 4,
+          border: `${nested ? 3 : 3.5}px solid ${border}`, borderRadius: 13, background: hovered ? cardBgHover : cardBg,
+          padding: '18px 20px',
+          display: 'flex', flexDirection: 'column', gap: 8,
           cursor: 'pointer', width: SLOT_W, textAlign: 'left',
           boxShadow: hovered ? `0 8px 18px -3px rgba(0,0,0,0.18), 0 0 0 2px ${border}26` : '0 1px 3px rgba(0,0,0,0.06)',
           transform: hovered ? 'translateY(-2px)' : 'none',
           transition: 'box-shadow 180ms ease, transform 180ms ease, background 180ms ease',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
 
           <div style={{
-            width: 80, height: 80, borderRadius: '50%', backgroundColor: avatarBg,
+            width: 94, height: 94, borderRadius: '50%', backgroundColor: avatarBg,
             backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
             backgroundSize: 'cover', backgroundPosition: 'center 22%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 16, fontWeight: 700, color: '#fff', flexShrink: 0,
-            border: `2.5px solid ${border}`,
+            fontSize: 18, fontWeight: 700, color: '#fff', flexShrink: 0,
+            border: `3px solid ${border}`,
             boxSizing: 'border-box',
 
           }}>
@@ -198,20 +199,21 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
 
           <div style={{ minWidth: 0, flex: 1 }}>
 
-            <div style={{ fontSize: 21, fontWeight: 600, color: '#111827', lineHeight: 1.3, overflowWrap: 'break-word' }}>
+            <div style={{ fontSize: 23, fontWeight: 600, color: '#111827', lineHeight: 1.3, overflowWrap: 'break-word' }}>
               {name}
             </div>
 
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 3, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 5, flexWrap: 'wrap' }}>
               <span style={{
-                fontSize: 16.5, fontWeight: 800, fontFamily: 'monospace',
-                color: border, background: `${border}2e`, border: `1.5px solid ${border}55`,
-                padding: '2px 9px', borderRadius: 999,
+                fontSize: 18.5, fontWeight: 800, fontFamily: 'monospace',
+                color: border, background: `${border}3d`, border: `2px solid ${border}`,
+                padding: '3px 11px', borderRadius: 999,
+                boxShadow: `0 0 0 2.5px ${border}22`,
               }}>{m.id}</span>
             </div>
 
             {m.since && (
-              <div style={{ fontSize: 16, fontWeight: 600, color: '#6B7280', marginTop: 3 }}>
+              <div style={{ fontSize: 17, fontWeight: 700, color: '#6B7280', marginTop: 4 }}>
                 Joined {m.since}
               </div>
             )}
@@ -219,7 +221,7 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
           </div>
         </div>
         {reference && (
-          <div style={{ fontSize: 12.5, color: '#6B7280', fontStyle: 'italic', paddingLeft: 92, lineHeight: 1.3 }}>
+          <div style={{ fontSize: 14, color: '#6B7280', fontStyle: 'italic', paddingLeft: 108, lineHeight: 1.3 }}>
             {reference}
           </div>
         )}
@@ -236,8 +238,8 @@ function UnionNodeComp({ data }: { data: { labelOffsetY?: number } }) {
       <Handle id="bottom" type="source" position={Position.Bottom} isConnectable={false} style={{ width: 1, height: 1, opacity: 0 }} />
       <span style={{
         position: 'absolute', top: data.labelOffsetY ?? 40, left: 8, whiteSpace: 'nowrap',
-        fontSize: 13, fontWeight: 700, color: '#4B5563',
-        background: '#F3F4F6', padding: '3px 9px', borderRadius: 6,
+        fontSize: 16, fontWeight: 800, color: '#374151',
+        background: '#E5E7EB', padding: '4px 11px', borderRadius: 7,
       }}>
         Children
       </span>

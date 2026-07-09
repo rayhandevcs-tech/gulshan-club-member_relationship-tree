@@ -34,11 +34,11 @@ interface Props {
 
 // ─── Family Relationship tab: owner + spouse + direct children (React Flow) ──
 
-const FAM_CARD_W = 325;
-const FAM_CARD_H = 305;
-const FAM_HGAP   = 60;
-const FAM_SGAP   = 130;
-const FAM_VGAP   = 175;
+const FAM_CARD_W = 345;
+const FAM_CARD_H = 365;
+const FAM_HGAP   = 75;
+const FAM_SGAP   = 155;
+const FAM_VGAP   = 220;
 
 type FamRole = 'owner' | 'spouse' | 'child';
 
@@ -140,8 +140,8 @@ function FamUnion({ data }: { data: { labelOffsetY?: number } }) {
       <Handle id="bottom" type="source" position={Position.Bottom} isConnectable={false} style={{ width: 1, height: 1, opacity: 0 }} />
       <span style={{
         position: 'absolute', top: data.labelOffsetY ?? 40, left: 8, whiteSpace: 'nowrap',
-        fontSize: 14, fontWeight: 700, color: '#4B5563',
-        background: '#F3F4F6', padding: '3px 9px', borderRadius: 6,
+        fontSize: 16, fontWeight: 800, color: '#374151',
+        background: '#E5E7EB', padding: '4px 11px', borderRadius: 7,
       }}>
         Children
       </span>
@@ -210,10 +210,10 @@ function buildFocusedGraph(focusId: string, members: Member[]): { nodes: Node[];
       target: spouse.id, targetHandle: 'left-in',
       type: 'straight', label: 'SPOUSE',
       style: { stroke: '#9CA3AF', strokeWidth: 3.5 },
-      labelStyle: { fontSize: 13, fill: '#374151', fontWeight: 800, letterSpacing: 0.6 },
-      labelBgStyle: { fill: '#F3F4F6', fillOpacity: 1 },
-      labelBgPadding: [8, 5],
-      labelBgBorderRadius: 6,
+      labelStyle: { fontSize: 16, fill: '#374151', fontWeight: 800, letterSpacing: 0.6 },
+      labelBgStyle: { fill: '#E5E7EB', fillOpacity: 1 },
+      labelBgPadding: [10, 6],
+      labelBgBorderRadius: 7,
     });
   });
 

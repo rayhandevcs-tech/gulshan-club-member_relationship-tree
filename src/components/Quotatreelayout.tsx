@@ -14,15 +14,15 @@ export const photoOf = (m: Member): string | undefined =>
 
 // Two-tier sizing: one size for ALL member cards (incl. successors), one size
 // for ALL slot cards (incl. nested). Same width keeps columns aligned.
-export const CARD_W = 305;
-export const CARD_H = 280;
-export const SLOT_W = 290;
-export const SLOT_H = 210;
+export const CARD_W = 325;
+export const CARD_H = 400;
+export const SLOT_W = 310;
+export const SLOT_H = 290;
 
-export const BESIDE_GAP = 150;
-export const GROUP_GAP  = 50;
-export const RANK_SEP   = 150;
-export const NODE_SEP   = 34;
+export const BESIDE_GAP = 175;
+export const GROUP_GAP  = 60;
+export const RANK_SEP   = 220;
+export const NODE_SEP   = 42;
 
 
 export function getType(m: Member): string {
@@ -239,12 +239,12 @@ export function buildGraph(
           ? { stroke: '#F59E0B', strokeWidth: 3.5, strokeDasharray: '6 3' }
           : { stroke: '#9CA3AF', strokeWidth: 3.5 },
         labelStyle: isTransferToSpouse
-          ? { fontSize: 13, fill: '#92400e', fontWeight: 800 }
-          : { fontSize: 13, fill: '#4B5563', fontWeight: 700 },
+          ? { fontSize: 16, fill: '#92400e', fontWeight: 800 }
+          : { fontSize: 16, fill: '#374151', fontWeight: 800 },
         labelBgStyle: isTransferToSpouse
-          ? { fill: '#fef3c7', fillOpacity: 1, borderRadius: 6 }
-          : { fill: '#F3F4F6', fillOpacity: 1, borderRadius: 6 },
-        labelBgPadding: [8, 5],
+          ? { fill: '#fef3c7', fillOpacity: 1, borderRadius: 7 }
+          : { fill: '#E5E7EB', fillOpacity: 1, borderRadius: 7 },
+        labelBgPadding: [10, 6],
         data: { kind: 'spouse', rootPair: isRoot },
       });
     }
@@ -263,9 +263,9 @@ export function buildGraph(
         type: 'straight',
         label: 'A/C transferred',
         style: { stroke: '#F59E0B', strokeWidth: 3.5, strokeDasharray: '6 3' },
-        labelStyle: { fontSize: 13, fill: '#92400e', fontWeight: 800 },
-        labelBgStyle: { fill: '#fef3c7', fillOpacity: 1, borderRadius: 6 },
-        labelBgPadding: [8, 5],
+        labelStyle: { fontSize: 16, fill: '#92400e', fontWeight: 800 },
+        labelBgStyle: { fill: '#fef3c7', fillOpacity: 1, borderRadius: 7 },
+        labelBgPadding: [10, 6],
         data: { kind: 'succession' },
       });
       addSlots(succession, new Set());
