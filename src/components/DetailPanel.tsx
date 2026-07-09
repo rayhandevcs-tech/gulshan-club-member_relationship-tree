@@ -247,17 +247,7 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
     : members.filter(c => c.pid === m.id && c.rel === 'spouse');
   const spouseIds = new Set(spouseMembers.map(sp => sp.id));
 
-  // A4D/Associate dependents can hang off a spouse's own quota too — but
-  // only a spouse who is DEPENDENT ON m (pid === m.id) shares a combined
-  // list with m. When m is itself the dependent spouse, spouseMembers
-  // resolves to "parent" (whoever granted m's own account, often the root
-  // member) — folding in *their* full dependent list pulled in every
-  // unrelated A4D/Associate member in the whole family, not just this pair.
-  const dependentSpouseIds = new Set(
-    members.filter(c => c.pid === m.id && c.rel === 'spouse').map(sp => sp.id),
-  );
-  const dependentOwnerIds = new Set([m.id, ...dependentSpouseIds]);
-  const children = members.filter(c => c.pid != null && dependentOwnerIds.has(c.pid));
+  const children = members.filter(c => c.pid === m.id);
 
   // Primary Member (quota holder) দেখাই dependent slot-দের জন্য; dependent
   // spouse-এর ক্ষেত্রে pid-ওয়ালা মানুষটা এমনিতেই Spouse section-এ আছে।
@@ -265,12 +255,12 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
 
   const bioChildren = members.filter(c => c.fatherId === m.id || c.motherId === m.id);
 
-  // access route (via) দিয়ে ভাগ — rel এখন খাঁটি সম্পর্ক (spouse/child); dependent
-  // spouse-রা (via a4d/associate কিন্তু rel spouse) এখানে না, Spouse section-এই থাকবে
-  const a4dMembers = sortSlots(children.filter(c => c.via === 'a4d' && !spouseIds.has(c.id)));
-  const associateMembers = sortSlots(
-    children.filter(c => c.via === 'associate' && !spouseIds.has(c.id)),
-  );
+  // A dependent spouse who is herself via a4d/associate (not via='core')
+  // shows in BOTH the Spouse section (who she is) and here (how her own
+  // account was granted) — she was being filtered out of this list
+  // entirely before, so a member's A4D-registered spouse never showed up.
+  const a4dMembers = sortSlots(children.filter(c => c.via === 'a4d'));
+  const associateMembers = sortSlots(children.filter(c => c.via === 'associate'));
   const siblings = getSiblings(members, m);
 
   const previewMember = previewId ? getMember(members, previewId) : null;
