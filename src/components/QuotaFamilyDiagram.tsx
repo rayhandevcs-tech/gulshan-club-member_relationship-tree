@@ -63,6 +63,9 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
       <Handle id="left-in"   type="target" position={Position.Left}   isConnectable={false} style={handleStyle} />
       <Handle id="right-in"  type="target" position={Position.Right}  isConnectable={false} style={handleStyle} />
       <Handle id="bottom"    type="source" position={Position.Bottom} isConnectable={false} style={handleStyle} />
+      {/* offset from "bottom" so a root's own A4D/Associate line doesn't
+          run down the exact same column as the "Children" stem below it */}
+      <Handle id="bottom-slots" type="source" position={Position.Bottom} isConnectable={false} style={{ ...handleStyle, left: '78%' }} />
       <Handle id="left-out"  type="source" position={Position.Left}   isConnectable={false} style={handleStyle} />
       <Handle id="right-out" type="source" position={Position.Right}  isConnectable={false} style={handleStyle} />
 

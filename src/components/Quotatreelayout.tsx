@@ -169,7 +169,10 @@ export function buildGraph(
       edges.push({
         id: `e-${owner.id}-${sid}`,
         source: owner.id, target: sid,
-        sourceHandle: 'bottom', targetHandle: 'top',
+        // rootLevel dependents branch off an offset handle instead of dead
+        // center, so their line doesn't run down the same column as the
+        // "Children" stem (also centered) before the two diverge.
+        sourceHandle: rootLevel ? 'bottom-slots' : 'bottom', targetHandle: 'top',
         type: 'smoothstep',
         style: rootLevel
           ? { stroke: '#2563EB99', strokeWidth: 3.5, strokeDasharray: '6 3' }
