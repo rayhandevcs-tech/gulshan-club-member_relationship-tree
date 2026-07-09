@@ -108,7 +108,7 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
 
         <div style={{
           fontSize: 23, fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.03em',
-          color: border, background: `${border}3d`, border: `2.5px solid ${border}`,
+          color: '#000000', background: `${border}3d`, border: `2.5px solid ${border}`,
           padding: '6px 18px', borderRadius: 999,
           boxShadow: `0 0 0 3px ${border}22`,
         }}>{m.id}</div>
@@ -206,7 +206,7 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
             <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 5, flexWrap: 'wrap' }}>
               <span style={{
                 fontSize: 18.5, fontWeight: 800, fontFamily: 'monospace',
-                color: border, background: `${border}3d`, border: `2px solid ${border}`,
+                color: '#000000', background: `${border}3d`, border: `2px solid ${border}`,
                 padding: '3px 11px', borderRadius: 999,
                 boxShadow: `0 0 0 2.5px ${border}22`,
               }}>{m.id}</span>

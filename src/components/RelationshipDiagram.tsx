@@ -103,7 +103,7 @@ function FamCard({ data }: { data: FamCardData }) {
         </div>
         <div style={{
           fontSize: 21, fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.03em',
-          color: border, background: `${border}2e`, border: `1.5px solid ${border}55`,
+          color: '#000000', background: `${border}2e`, border: `1.5px solid ${border}55`,
           padding: '4px 14px', borderRadius: 999,
         }}>
           {m.id}

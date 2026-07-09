@@ -182,7 +182,8 @@
 
 .gridId {
   font-size: 12.5px;
-  color: #9ca3af;
+  font-weight: 700;
+  color: #000000;
 }
 
 /* FilterType view */

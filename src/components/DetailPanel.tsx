@@ -79,7 +79,7 @@ function MemberPreviewModal({
               {!photoOf(member) && getInitials(member.name)}
             </div>
             <div className={s.previewName}>{member.name}</div>
-            <div className={s.previewId} style={{ background: cfg.bg, color: cfg.dark }}>{member.id}</div>
+            <div className={s.previewId} style={{ background: cfg.bg, color: '#000000' }}>{member.id}</div>
             <div className={s.previewTypeBadge} style={{ background: cfg.bg, color: cfg.dark }}>
               {getType(member)}                             {/* ← derived type */}
               {member.via === 'a4d' && ' · 4(d)'}           {/* access hints */}
@@ -184,7 +184,7 @@ function MemberRow({
             </span>
           ))}
         </div>
-        <div className={s.memberRowId} style={{ background: cfg.bg, color: cfg.dark }}>{member.id}</div>
+        <div className={s.memberRowId} style={{ background: cfg.bg, color: '#000000' }}>{member.id}</div>
         {subtitle && (
           <div style={{ fontSize: 10, color: '#6B7280', fontStyle: 'italic', marginTop: 2, lineHeight: 1.3 }}>
             {subtitle}
@@ -292,7 +292,7 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
         </div>
 
         <div className={s.panelName}>{m.name}</div>
-        <div className={s.panelId} style={{ background: cfg.bg, color: cfg.dark }}>{m.id}</div>
+        <div className={s.panelId} style={{ background: cfg.bg, color: '#000000' }}>{m.id}</div>
 
         {/* {isSponsorType ? (
           // <div className={s.panelQuota}>
