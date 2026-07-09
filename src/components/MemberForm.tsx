@@ -420,13 +420,18 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
             </div>
           </div>
 
-          {!defaultPid && !editing ? (
+          {!defaultPid ? (
             <>
               <div className={styles.row2}>
-                <Field
+                <ParentPicker
                   label="Primary Member A/C, if any"
-                  value={form.pid ?? ''}
-                  onChange={v => set('pid', v)}
+                  members={members}
+                  excludeId={form.id}
+                  valueId={form.pid}
+                  valueName={undefined}
+                  onSelect={m => setForm(f => ({ ...f, pid: m.id }))}
+                  onTextChange={() => {}}
+                  onClear={() => setForm(f => ({ ...f, pid: undefined }))}
                 />
                 <Field
                   label="Membership Date"
