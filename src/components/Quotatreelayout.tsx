@@ -110,7 +110,7 @@ export function nodeH(kind: 'member' | 'slot'): number {
 const kindOfNode = (n: Node | undefined): 'member' | 'slot' =>
   n?.type === 'slot' ? 'slot' : 'member';
 
-type EdgeData = { kind?: 'spouse' | 'succession' | 'slot-top'; rootPair?: boolean };
+type EdgeData = { kind?: 'spouse' | 'succession'; rootPair?: boolean };
 const edgeKind = (e: Edge) => (e.data as EdgeData | undefined)?.kind;
 
 // ── Graph builder ─────────────────────────────────────────────────────────────
@@ -126,10 +126,10 @@ export function buildGraph(
   const seen = new Set<string>();
   const slotNodeId = (id: string) => `slot-${id}`;
 
-  // All slots hanging off `owner`'s quota. placeAbove=true only for the root
-  // couple (their slots stack upward). besideSpouseId = the one spouse already
-  // seated beside — excluded here so she isn't rendered twice.
-  function addSlots(owner: Member, bioChildIds: Set<string>, placeAbove: boolean, besideSpouseId?: string) {
+  // All slots hanging off `owner`'s quota, always seated below the owner —
+  // besideSpouseId = the one spouse already seated beside — excluded here
+  // so she isn't rendered twice.
+  function addSlots(owner: Member, bioChildIds: Set<string>, besideSpouseId?: string) {
     const slots = members.filter(x =>
       x.pid === owner.id &&
       x.via !== 'core' && x.via !== 'succession' &&
@@ -140,10 +140,6 @@ export function buildGraph(
       !(bioMode && (x.fatherId != null || x.motherId != null)) &&
       !seen.has(x.id) && !seen.has(slotNodeId(x.id))
     );
-
-    const srcHandle = placeAbove ? 'top-out'   : 'bottom';
-    const tgtHandle = placeAbove ? 'bottom-in' : 'top';
-    const eKind     = placeAbove ? ('slot-top' as const) : undefined;
 
     slots.forEach(slot => {
       const sid = slotNodeId(slot.id);
@@ -158,13 +154,12 @@ export function buildGraph(
       edges.push({
         id: `e-${owner.id}-${sid}`,
         source: owner.id, target: sid,
-        sourceHandle: srcHandle, targetHandle: tgtHandle,
+        sourceHandle: 'bottom', targetHandle: 'top',
         type: 'smoothstep',
         style: {
           stroke: role === 'A4D' ? '#9333ea55' : '#ea580c55',
           strokeWidth: 1.5, strokeDasharray: '5 3',
         },
-        data: { kind: eKind },
       });
 
       // nested slots (a slot member granting further quota/associate access)
@@ -181,10 +176,9 @@ export function buildGraph(
         edges.push({
           id: `e-${sid}-${subId}`,
           source: sid, target: subId,
-          sourceHandle: srcHandle, targetHandle: tgtHandle,
+          sourceHandle: 'bottom', targetHandle: 'top',
           type: 'smoothstep',
           style: { stroke: '#CBD5E1', strokeWidth: 1, strokeDasharray: '4 2' },
-          data: { kind: eKind },
         });
       });
     });
@@ -269,11 +263,11 @@ export function buildGraph(
         labelBgStyle: { fill: '#fffbeb', fillOpacity: 0.95, borderRadius: 4 },
         data: { kind: 'succession' },
       });
-      addSlots(succession, new Set(), false);
+      addSlots(succession, new Set());
     }
 
-    addSlots(m, childIds, isRoot, spouse?.id);
-    if (spouse) addSlots(spouse, childIds, isRoot);
+    addSlots(m, childIds, spouse?.id);
+    if (spouse) addSlots(spouse, childIds);
     children.forEach(child => traverse(child, m.id));
   }
 
@@ -346,8 +340,7 @@ export function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edge
     if (k === 'spouse' || k === 'succession') return;
     const src = anchorOf(e.source); // beside card's slot edges hang from the anchor in dagre
     if (!mainIds.has(src) || !mainIds.has(e.target)) return;
-    if (k === 'slot-top') g.setEdge(e.target, src, { minlen: 1, weight: 1 });
-    else                  g.setEdge(src, e.target, { minlen: 1, weight: 1 });
+    g.setEdge(src, e.target, { minlen: 1, weight: 1 });
   });
 
   layout(g);
