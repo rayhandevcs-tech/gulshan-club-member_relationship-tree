@@ -47,7 +47,7 @@ export default function SearchBar() {
   return (
     <div ref={wrapRef} className={styles.wrapper}>
       <div className={styles.inputRow}>
-        <Search size={14} className={styles.icon} />
+        <Search size={16} className={styles.icon} />
         <input
           value={searchQuery}
           onChange={e => { setSearch(e.target.value); setOpen(true); }}

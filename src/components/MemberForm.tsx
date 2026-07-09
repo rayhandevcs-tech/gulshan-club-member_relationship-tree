@@ -420,34 +420,57 @@ export default function MemberForm({ onClose, editId, defaultPid }: Props) {
             </div>
           </div>
 
-          <div className={styles.row2}>
-            <div className={styles.field}>
-              <label className={styles.label}>Relationship</label>
-              <select
-                value={form.rel ?? ''}
-                onChange={e => setForm(f => ({ ...f, rel: (e.target.value as Rel) || null }))}
-                className={styles.select}
-              >
-                <option value="">Primary Member</option>
-                <option value="spouse">Spouse</option>
-                <option value="child">Child</option>
-                <option value="grandchild">Grandchild</option>
-                <option value="other">Other</option>
-              </select>
+          {!defaultPid && !editing ? (
+            <>
+              <div className={styles.row2}>
+                <Field
+                  label="Primary Member A/C, if any"
+                  value={form.pid ?? ''}
+                  onChange={v => set('pid', v)}
+                />
+                <Field
+                  label="Membership Date"
+                  value={form.since ?? ''}
+                  onChange={v => set('since', v)}
+                />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Relationship</label>
+                <select
+                  value={form.rel ?? ''}
+                  onChange={e => setForm(f => ({ ...f, rel: (e.target.value as Rel) || null }))}
+                  className={styles.select}
+                >
+                  <option value="">Primary Member</option>
+                  <option value="spouse">Spouse</option>
+                  <option value="child">Child</option>
+                  <option value="grandchild">Grandchild</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </>
+          ) : (
+            <div className={styles.row2}>
+              <div className={styles.field}>
+                <label className={styles.label}>Relationship</label>
+                <select
+                  value={form.rel ?? ''}
+                  onChange={e => setForm(f => ({ ...f, rel: (e.target.value as Rel) || null }))}
+                  className={styles.select}
+                >
+                  <option value="">Primary Member</option>
+                  <option value="spouse">Spouse</option>
+                  <option value="child">Child</option>
+                  <option value="grandchild">Grandchild</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <Field
+                label="Membership Date"
+                value={form.since ?? ''}
+                onChange={v => set('since', v)}
+              />
             </div>
-            <Field
-              label="Membership Date"
-              value={form.since ?? ''}
-              onChange={v => set('since', v)}
-            />
-          </div>
-
-          {!defaultPid && !editing && (
-            <Field
-              label="Primary Member A/C, if any"
-              value={form.pid ?? ''}
-              onChange={v => set('pid', v)}
-            />
           )}
 
           {editing && (

@@ -13,6 +13,7 @@ import s from './page.module.css';
 
 export default function Home() {
   const { view, setView, selectedId, setMembers } = useMemberStore();
+
   const { data, isLoading, isError } = useQuery({ queryKey: ['members'], queryFn: fetchMembers });
 
   useEffect(() => {
@@ -39,9 +40,12 @@ export default function Home() {
       <div className={s.header}>
         {/* Row 1: Title + mobile action buttons */}
         <div className={s.titleRow}>
-          <div>
-            <div className={s.title}>Gulshan Club Limited</div>
-            <div className={s.subtitle}>Membership Relationship Tree</div>
+          <div className={s.brand}>
+            <div className={s.logo}>GC</div>
+            <div>
+              <div className={s.title}>Gulshan Club Limited</div>
+              <div className={s.subtitle}>Membership Relationship Tree</div>
+            </div>
           </div>
 
           {/* Mobile-only: view toggle + new member */}
