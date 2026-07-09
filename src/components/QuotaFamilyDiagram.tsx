@@ -203,13 +203,18 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
               {name}
             </div>
 
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 5, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 5, flexWrap: 'wrap' }}>
               <span style={{
                 fontSize: 18.5, fontWeight: 800, fontFamily: 'monospace',
                 color: border, background: `${border}3d`, border: `2px solid ${border}`,
                 padding: '3px 11px', borderRadius: 999,
                 boxShadow: `0 0 0 2.5px ${border}22`,
               }}>{m.id}</span>
+              {isDead(m) && (
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '2px 9px', borderRadius: 999 }}>
+                  Deceased
+                </span>
+              )}
             </div>
 
             {m.since && (
