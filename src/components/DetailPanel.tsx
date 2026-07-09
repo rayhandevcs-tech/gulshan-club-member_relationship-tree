@@ -247,10 +247,16 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
     : members.filter(c => c.pid === m.id && c.rel === 'spouse');
   const spouseIds = new Set(spouseMembers.map(sp => sp.id));
 
-  // A4D/Associate dependents can hang off EITHER partner's own quota — a
-  // spouse's own A4D grants were being dropped entirely since this only
-  // ever looked at m.id's own dependents.
-  const dependentOwnerIds = new Set([m.id, ...spouseIds]);
+  // A4D/Associate dependents can hang off a spouse's own quota too — but
+  // only a spouse who is DEPENDENT ON m (pid === m.id) shares a combined
+  // list with m. When m is itself the dependent spouse, spouseMembers
+  // resolves to "parent" (whoever granted m's own account, often the root
+  // member) — folding in *their* full dependent list pulled in every
+  // unrelated A4D/Associate member in the whole family, not just this pair.
+  const dependentSpouseIds = new Set(
+    members.filter(c => c.pid === m.id && c.rel === 'spouse').map(sp => sp.id),
+  );
+  const dependentOwnerIds = new Set([m.id, ...dependentSpouseIds]);
   const children = members.filter(c => c.pid != null && dependentOwnerIds.has(c.pid));
 
   // Primary Member (quota holder) দেখাই dependent slot-দের জন্য; dependent
