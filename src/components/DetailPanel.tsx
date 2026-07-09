@@ -80,12 +80,6 @@ function MemberPreviewModal({
             </div>
             <div className={s.previewName}>{member.name}</div>
             <div className={s.previewId} style={{ background: cfg.bg, color: '#000000' }}>{member.id}</div>
-            <div className={s.previewTypeBadge} style={{ background: cfg.bg, color: cfg.dark }}>
-              {getType(member)}                             {/* ← derived type */}
-              {member.via === 'a4d' && ' · 4(d)'}           {/* access hints */}
-              {member.via === 'associate' && ' · Assoc'}
-              {member.via === 'succession' && ' · Succession'}
-            </div>
           </div>
 
           <div className={s.previewFields}>
