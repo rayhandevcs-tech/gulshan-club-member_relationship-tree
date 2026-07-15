@@ -120,6 +120,18 @@ export async function GET() {
         );
         const a4dSpouseAcnos = new Set([...spouseAcnos].filter(a => a4dAcnos.has(a)));
 
+        // Stable id for "this core member's registered spouse", resolved
+        // once up front so PASS 2 can link children to her (motherId)
+        // regardless of whether her own card is created in PASS 1 (real,
+        // independent A/C) or PASS 2 (also an A4D dependent) or not created
+        // as a real card at all (no A/C — see the PENDING placeholder
+        // below). Only used for plain "Son"/"Daughter" children — never for
+        // the "of X" grandchild case, whose real mother is elsewhere.
+        const spouseRow = tree.find(i => clean(i.Node) === 'Spouse');
+        const spouseRowAcno = spouseRow ? clean(spouseRow.Acno) : '';
+        const spouseRowName = spouseRow ? clean(spouseRow.Name) : '';
+        const effectiveSpouseId = spouseRowAcno || (spouseRowName ? `PENDING-${clubAcno}-spouse` : null);
+
         // ── PASS 1: Parent + independent ("core") spouse ─────────────────
         for (const item of tree) {
           const node = clean(item.Node);
@@ -141,21 +153,37 @@ export async function GET() {
             continue;
           }
 
-          // This tree only plots club MEMBERSHIP relations — a spouse with
-          // no club A/C isn't a member, so there's no card to show for her.
-          if (node === 'Spouse' && itemAcno) {
-            if (a4dSpouseAcnos.has(itemAcno)) continue; // handled in PASS 2
-            if (seen.has(itemAcno)) continue;
-            seen.add(itemAcno);
-            members.push({
-              id: itemAcno,
-              name: itemName || itemAcno,
-              via: 'core',
-              pid: clubAcno,
-              rel: 'spouse',
-              gender: null,
-              since: null,
-            });
+          if (node === 'Spouse') {
+            if (itemAcno) {
+              if (a4dSpouseAcnos.has(itemAcno)) continue; // handled in PASS 2
+              if (seen.has(itemAcno)) continue;
+              seen.add(itemAcno);
+              members.push({
+                id: itemAcno,
+                name: itemName || itemAcno,
+                via: 'core',
+                pid: clubAcno,
+                rel: 'spouse',
+                gender: null,
+                since: null,
+              });
+            } else if (itemName && !seen.has(effectiveSpouseId!)) {
+              // No club A/C — not a member, so she never appears in the
+              // Member Relationship tab (isBesideSpouse excludes PENDING
+              // ids). She still needs a record so the Family Relationship
+              // tab can seat her beside the root and resolve her own
+              // spouse/children when clicked.
+              seen.add(effectiveSpouseId!);
+              members.push({
+                id: effectiveSpouseId!,
+                name: itemName,
+                via: 'core',
+                pid: clubAcno,
+                rel: 'spouse',
+                gender: null,
+                since: null,
+              });
+            }
           }
         }
 
@@ -180,31 +208,20 @@ export async function GET() {
           if (isSpouse) {
             rel = 'spouse';
             if (!gender) gender = relationLower === 'wife' ? 'F' : relationLower === 'husband' ? 'M' : null;
-          } else if (relationLower === 'father') {
-            // Relation "Father" here means this Associate/A4D entry's OWN
-            // dependent is the core member's father — but on real data this
-            // occasionally names someone different from (and inconsistent
-            // with) the dedicated Parent-node record for the same core
-            // member. Only the Parent node is trustworthy enough to set
-            // rootMember.fatherId/fatherName from — this just tags this
-            // dependent's own gender/relation, no cross-linking.
-            rel = 'other';
-            gender = 'M';
-          } else if (relationLower === 'mother') {
-            rel = 'other';
-            gender = 'F';
           } else {
-            // Default to "child" even when the relation text doesn't parse
-            // cleanly to Son/Daughter (blank, or a wording variant this
-            // source uses inconsistently, seen more often on Associate
-            // entries than A4D). The overwhelming majority of A4D/
-            // Associate dependents who aren't the registered spouse or a
-            // tagged parent ARE the core member's own children — treating
-            // anything ambiguous as "other" was silently dropping real
-            // children (and their fatherId) from the side panel's Children
-            // list and the Family Relationship tree.
+            // Default to "child" for everything that isn't the registered
+            // spouse — including relation text like "Father"/"Mother",
+            // which on real data doesn't mean this dependent IS a parent
+            // figure; it's just inconsistent labeling for what is actually
+            // one of the core member's own children (confirmed against
+            // PS-90, whose third child is registered this way under an
+            // Associate quota). The dedicated Parent node (handled above)
+            // is the only source ever used for the core member's own
+            // father/mother — this branch never cross-links into that.
             rel = 'child';
           }
+
+          const isPlainChild = rel === 'child' && !sponsorAcno;
 
           members.push({
             id: itemAcno,
@@ -225,6 +242,13 @@ export async function GET() {
             // what makes them show up in the side panel's Children list,
             // which matches on fatherId/motherId, not pid.
             fatherId: rel === 'child' ? (sponsorAcno ?? clubAcno) : null,
+            // Only linked to the registered spouse for plain children (real
+            // parent is this couple) — never for the "of X" grandchild
+            // case, whose mother is someone else entirely. Lets both the
+            // root's AND the spouse's own Children list (and the Family
+            // Relationship tree's bio-child matching) find these kids from
+            // either parent.
+            motherId: isPlainChild && effectiveSpouseId ? effectiveSpouseId : null,
             quotaNote: node === 'A4D' ? `4(d) via ${clubAcno}` : `Associate via ${clubAcno}`,
           });
         }

@@ -82,6 +82,10 @@ export function findRoot(startId: string, members: Member[]): string {
 
 
 export function isBesideSpouse(sp: Member, holder: Member): boolean {
+  // Non-member spouse (no club A/C): only the Family Relationship tab seats
+  // her beside the root — the Member Relationship tab tracks quota lineage
+  // only, so she has no card here at all.
+  if (isPendingAcno(sp.id)) return false;
   if (sp.via === 'core' || sp.via === 'succession') return true; // own membership → beside
   return holder.succession === sp.id;               // dependent, but received the A/C
 }
