@@ -141,38 +141,21 @@ export async function GET() {
             continue;
           }
 
-          if (node === 'Spouse') {
-            if (!itemName && !itemAcno) continue; // fully empty row
-
-            if (itemAcno) {
-              if (a4dSpouseAcnos.has(itemAcno)) continue; // handled in PASS 2
-              if (seen.has(itemAcno)) continue;
-              seen.add(itemAcno);
-              members.push({
-                id: itemAcno,
-                name: itemName || itemAcno,
-                via: 'core',
-                pid: clubAcno,
-                rel: 'spouse',
-                gender: null,
-                since: null,
-              });
-            } else {
-              // No A/C on file for this spouse yet — still show them.
-              const pendingId = `PENDING-${clubAcno}-spouse`;
-              if (seen.has(pendingId)) continue;
-              seen.add(pendingId);
-              members.push({
-                id: pendingId,
-                name: itemName,
-                via: 'core',
-                pid: clubAcno,
-                rel: 'spouse',
-                gender: null,
-                since: null,
-                note: 'No club A/C registered',
-              });
-            }
+          // This tree only plots club MEMBERSHIP relations — a spouse with
+          // no club A/C isn't a member, so there's no card to show for her.
+          if (node === 'Spouse' && itemAcno) {
+            if (a4dSpouseAcnos.has(itemAcno)) continue; // handled in PASS 2
+            if (seen.has(itemAcno)) continue;
+            seen.add(itemAcno);
+            members.push({
+              id: itemAcno,
+              name: itemName || itemAcno,
+              via: 'core',
+              pid: clubAcno,
+              rel: 'spouse',
+              gender: null,
+              since: null,
+            });
           }
         }
 
@@ -229,7 +212,12 @@ export async function GET() {
             rel,
             gender,
             since: null,
-            fatherId: !isSpouse && sponsorAcno ? sponsorAcno : null,
+            // "Son"/"Daughter" (plain) means their real parent IS the core
+            // member — same as "Son of X" but with clubAcno standing in for
+            // X. Setting fatherId either way (not just the "of X" case) is
+            // what makes them show up in the side panel's Children list,
+            // which matches on fatherId/motherId, not pid.
+            fatherId: rel === 'child' ? (sponsorAcno ?? clubAcno) : null,
             quotaNote: node === 'A4D' ? `4(d) via ${clubAcno}` : `Associate via ${clubAcno}`,
           });
         }

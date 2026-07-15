@@ -108,14 +108,21 @@ export function getBioChildren(
 }
 
 
-export function getRef(slot: Member, listing: Member): string | undefined {
+export function getRef(slot: Member, listing: Member): string {
   if (slot.rel === 'spouse') return `Spouse of ${listing.id}`;
+
+  // fatherId/motherId only ever differ from listing.id for a grandchild
+  // scenario (the dependent's real parent is someone else in the tree,
+  // not the quota holder shown here) — otherwise fall back to listing.id
+  // so every dependent gets a reference, not just that special case.
   const fid = slot.fatherId ?? undefined;
   const mid = slot.motherId ?? undefined;
-  if (!fid && !mid) return undefined;
-  const parentId = fid === listing.id ? fid : mid === listing.id ? mid : fid ?? mid;
-  const label = slot.gender === 'M' ? 'Son' : slot.gender === 'F' ? 'Daughter' : 'Child';
-  return `${label} of ${parentId}`;
+  const parentId = fid === listing.id ? fid : mid === listing.id ? mid : fid ?? mid ?? listing.id;
+
+  if (slot.gender === 'M') return `Son of ${parentId}`;
+  if (slot.gender === 'F') return `Daughter of ${parentId}`;
+  if (slot.via === 'associate') return `Associate of ${parentId}`;
+  return `Dependent of ${parentId}`;
 }
 
 // dagre allocation sizes (slightly padded beyond render size for breathing room)
@@ -151,8 +158,18 @@ export function buildGraph(
   // for the tree's main member (and their beside spouse) only, so their
   // direct A4D/Associate dependents read differently from every deeper
   // (second-layer-and-below) owner's dependents, which keep the usual
-  // role-colored (purple/orange) lines.
-  function addSlots(owner: Member, bioChildIds: Set<string>, besideSpouseId?: string, rootLevel = false) {
+  // role-colored (purple/orange) lines. offsetHandle branches off-center
+  // instead of dead-center — only needed for a single (no-spouse) root who
+  // also has real children, since that's the one case where the "Children"
+  // union stem sits at the owner's own center-bottom too (a couple's union
+  // sits at the spousal midpoint instead, so it never collides).
+  function addSlots(
+    owner: Member,
+    bioChildIds: Set<string>,
+    besideSpouseId?: string,
+    rootLevel = false,
+    offsetHandle = false,
+  ) {
     const slots = members.filter(x =>
       x.pid === owner.id &&
       x.via !== 'core' && x.via !== 'succession' &&
@@ -177,10 +194,7 @@ export function buildGraph(
       edges.push({
         id: `e-${owner.id}-${sid}`,
         source: owner.id, target: sid,
-        // rootLevel dependents branch off an offset handle instead of dead
-        // center, so their line doesn't run down the same column as the
-        // "Children" stem (also centered) before the two diverge.
-        sourceHandle: rootLevel ? 'bottom-slots' : 'bottom', targetHandle: 'top',
+        sourceHandle: offsetHandle ? 'bottom-slots' : 'bottom', targetHandle: 'top',
         type: 'smoothstep',
         style: rootLevel
           ? { stroke: '#2563EB99', strokeWidth: 3.5, strokeDasharray: '6 3' }
@@ -293,7 +307,11 @@ export function buildGraph(
       addSlots(succession, new Set());
     }
 
-    addSlots(m, childIds, spouse?.id, isRoot);
+    // Only a childless-of-spouse root whose own children exist needs the
+    // offset handle — see addSlots' comment for why the couple case (and
+    // the spouse's own slots either way) never actually collide.
+    const needsHandleOffset = isRoot && !spouse && childIds.size > 0;
+    addSlots(m, childIds, spouse?.id, isRoot, needsHandleOffset);
     if (spouse) addSlots(spouse, childIds, undefined, isRoot);
     children.forEach(child => traverse(child, m.id));
   }
