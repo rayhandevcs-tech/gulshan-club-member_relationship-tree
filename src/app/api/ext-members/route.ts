@@ -193,10 +193,17 @@ export async function GET() {
           } else if (relationLower === 'mother') {
             rel = 'other';
             gender = 'F';
-          } else if (gender) {
-            rel = 'child';
           } else {
-            rel = 'other';
+            // Default to "child" even when the relation text doesn't parse
+            // cleanly to Son/Daughter (blank, or a wording variant this
+            // source uses inconsistently, seen more often on Associate
+            // entries than A4D). The overwhelming majority of A4D/
+            // Associate dependents who aren't the registered spouse or a
+            // tagged parent ARE the core member's own children — treating
+            // anything ambiguous as "other" was silently dropping real
+            // children (and their fatherId) from the side panel's Children
+            // list and the Family Relationship tree.
+            rel = 'child';
           }
 
           members.push({
