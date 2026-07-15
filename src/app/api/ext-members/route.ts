@@ -218,7 +218,13 @@ export async function GET() {
             // Associate quota). The dedicated Parent node (handled above)
             // is the only source ever used for the core member's own
             // father/mother — this branch never cross-links into that.
+            // The "Father"/"Mother" tag is still a useful (if mislabeled)
+            // gender signal for this child, so keep using it for that.
             rel = 'child';
+            if (!gender) {
+              if (relationLower === 'father') gender = 'M';
+              else if (relationLower === 'mother') gender = 'F';
+            }
           }
 
           const isPlainChild = rel === 'child' && !sponsorAcno;

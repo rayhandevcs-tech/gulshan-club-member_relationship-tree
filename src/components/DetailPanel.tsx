@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { useMemberStore } from '@/store/memberStore';
 import {
   getMember,
@@ -130,7 +131,7 @@ function MemberRow({
 }: {
   member: Member;
   onPreview: (id: string) => void;
-  subtitle?: string;                 // e.g. "Spouse of PA-41" / "Son of PW-6"
+  subtitle?: ReactNode;               // e.g. "Son" / "Associate" or "Son of PW-6" (cross-ref bolded)
   badges?: { text: string; color: string; bg: string }[];
 }) {
   const cfg = cfgOf(member);                       // ← getType + fallback
@@ -157,7 +158,7 @@ function MemberRow({
         </div>
         <div className={s.memberRowId} style={{ background: cfg.bg, color: '#000000' }}>{displayAcno(member.id)}</div>
         {subtitle && (
-          <div style={{ fontSize: 10, color: '#6B7280', fontStyle: 'italic', marginTop: 2, lineHeight: 1.3 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', fontStyle: 'italic', marginTop: 2, lineHeight: 1.3 }}>
             {subtitle}
           </div>
         )}

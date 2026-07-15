@@ -4,6 +4,7 @@
 import { Graph, layout } from '@dagrejs/dagre';
 import type { Node, Edge } from 'reactflow';
 import type { Member } from '@/lib/types';
+import type { ReactNode } from 'react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 export const CONN_COLOR = '#CBD5E1';
@@ -112,21 +113,33 @@ export function getBioChildren(
 }
 
 
-export function getRef(slot: Member, listing: Member): string {
-  if (slot.rel === 'spouse') return `Spouse of ${listing.id}`;
+export function getRef(slot: Member, listing: Member): ReactNode {
+  // A slot always sits directly under `listing`'s own quota (pid ===
+  // listing.id) — so a plain "Spouse"/"Son"/"Daughter" is always accurate
+  // with no account number needed. Only when fatherId/motherId names a
+  // DIFFERENT member (the grandchild scenario: this dependent's real
+  // parent isn't the quota holder shown here) does the reference need to
+  // point elsewhere — that account number is called out in bold so it
+  // reads as a cross-reference, not just relationship text.
+  if (slot.rel === 'spouse') return 'Spouse';
 
-  // fatherId/motherId only ever differ from listing.id for a grandchild
-  // scenario (the dependent's real parent is someone else in the tree,
-  // not the quota holder shown here) — otherwise fall back to listing.id
-  // so every dependent gets a reference, not just that special case.
   const fid = slot.fatherId ?? undefined;
   const mid = slot.motherId ?? undefined;
-  const parentId = fid === listing.id ? fid : mid === listing.id ? mid : fid ?? mid ?? listing.id;
+  const isOwn = fid === listing.id || mid === listing.id;
 
-  if (slot.gender === 'M') return `Son of ${parentId}`;
-  if (slot.gender === 'F') return `Daughter of ${parentId}`;
-  if (slot.via === 'associate') return `Associate of ${parentId}`;
-  return `Dependent of ${parentId}`;
+  // "Associate"/"A4D" quota is already shown as its own badge above this
+  // caption — when it's a child with unresolved gender, say "Child" rather
+  // than repeating the quota type here.
+  const label = slot.gender === 'M' ? 'Son'
+    : slot.gender === 'F' ? 'Daughter'
+    : slot.rel === 'child' ? 'Child'
+    : slot.via === 'associate' ? 'Associate'
+    : 'Dependent';
+
+  if (isOwn) return label;
+
+  const parentId = fid ?? mid ?? listing.id;
+  return <>{label} of <strong>{parentId}</strong></>;
 }
 
 // dagre allocation sizes (slightly padded beyond render size for breathing room)

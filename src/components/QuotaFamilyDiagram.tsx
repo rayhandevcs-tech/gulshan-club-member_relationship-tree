@@ -1,5 +1,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
   Background,
@@ -141,7 +142,7 @@ interface SlotNodeData {
   member: Member;
   role: 'A4D' | 'Assoc';
   nested?: boolean;
-  reference?: string;
+  reference?: ReactNode;
   onPick: (id: string) => void;
   highlighted?: boolean;
 }
@@ -229,7 +230,7 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
           </div>
         </div>
         {reference && (
-          <div style={{ fontSize: 14, color: '#6B7280', fontStyle: 'italic', paddingLeft: 108, lineHeight: 1.3 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#6B7280', fontStyle: 'italic', paddingLeft: 108, lineHeight: 1.3 }}>
             {reference}
           </div>
         )}
