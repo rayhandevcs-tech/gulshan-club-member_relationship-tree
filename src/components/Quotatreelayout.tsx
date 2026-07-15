@@ -12,6 +12,14 @@ export const CONN_COLOR = '#CBD5E1';
 export const photoOf = (m: Member): string | undefined =>
   m.photoUrl || undefined;
 
+// A synthetic id (e.g. "PENDING-PS-90-spouse") for someone with no real club
+// A/C yet.
+export const isPendingAcno = (id: string): boolean => id.startsWith('PENDING-');
+
+// Shown in the id badge instead of the raw internal placeholder string.
+export const displayAcno = (id: string): string =>
+  isPendingAcno(id) ? 'No A/C' : id;
+
 // Two-tier sizing: one size for ALL member cards (incl. successors), one size
 // for ALL slot cards (incl. nested). Same width keeps columns aligned.
 export const CARD_W = 325;

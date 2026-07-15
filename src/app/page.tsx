@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemberStore } from '@/store/memberStore';
-import { fetchMembers } from '@/lib/api';
+//import { fetchMembers } from '@/lib/api';
 import MemberTree from '@/components/MemberTree';
 import DetailPanel from '@/components/DetailPanel';
 import MemberForm from '@/components/MemberForm';
@@ -14,7 +14,11 @@ import s from './page.module.css';
 export default function Home() {
   const { view, setView, selectedId, setMembers } = useMemberStore();
 
-  const { data, isLoading, isError } = useQuery({ queryKey: ['members'], queryFn: fetchMembers });
+ // const { data, isLoading, isError } = useQuery({ queryKey: ['members'], queryFn: fetchMembers });
+ const { data, isLoading, isError } = useQuery({
+  queryKey: ['members'],
+  queryFn: () => fetch('/api/ext-members').then(r => r.json()),  // ← তাদের API
+});
 
   useEffect(() => {
     if (data) setMembers(data);

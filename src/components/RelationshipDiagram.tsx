@@ -22,7 +22,7 @@ import {
   getInitials,
 } from '@/lib/memberUtils';
 import { Member } from '@/lib/types';
-import { getType, photoOf, dispName, isDead } from '@/components/Quotatreelayout';
+import { getType, photoOf, dispName, isDead, displayAcno } from '@/components/Quotatreelayout';
 import { QuotaFamilyDiagram } from './QuotaFamilyDiagram';
 
 interface Props {
@@ -106,7 +106,7 @@ function FamCard({ data }: { data: FamCardData }) {
           color: '#000000', background: `${border}2e`, border: `1.5px solid ${border}55`,
           padding: '4px 14px', borderRadius: 999,
         }}>
-          {m.id}
+          {displayAcno(m.id)}
         </div>
         {m.since && (
           <div style={{ fontSize: 18, fontWeight: 600, color: '#6B7280', marginTop: 1 }}>

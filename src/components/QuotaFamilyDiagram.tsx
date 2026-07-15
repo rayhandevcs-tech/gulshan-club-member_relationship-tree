@@ -15,7 +15,7 @@ import { TYPE_CONFIG, getInitials } from '@/lib/memberUtils';
 import type { Member } from '@/lib/types';
 import {
   buildGraph, applyLayout, findRoot,
-  getType, isDead, dispName, photoOf,
+  getType, isDead, dispName, photoOf, displayAcno,
   CARD_W, CARD_H, SLOT_W, SLOT_H, CONN_COLOR,
 } from './Quotatreelayout';
 
@@ -114,7 +114,7 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
           color: '#000000', background: `${border}3d`, border: `2.5px solid ${border}`,
           padding: '6px 18px', borderRadius: 999,
           boxShadow: `0 0 0 3px ${border}22`,
-        }}>{m.id}</div>
+        }}>{displayAcno(m.id)}</div>
 
         {isDead(m) && (
           <span style={{ fontSize: 15, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '3px 11px', borderRadius: 999 }}>
@@ -212,7 +212,7 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
                 color: '#000000', background: `${border}3d`, border: `2px solid ${border}`,
                 padding: '3px 11px', borderRadius: 999,
                 boxShadow: `0 0 0 2.5px ${border}22`,
-              }}>{m.id}</span>
+              }}>{displayAcno(m.id)}</span>
               {isDead(m) && (
                 <span style={{ fontSize: 13, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '2px 9px', borderRadius: 999 }}>
                   Deceased

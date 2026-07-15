@@ -6,7 +6,7 @@ import {
   getRoots, getSpouse, getNonSpouseChildren, getAssociates,
   getAllDescendants, getQuotaSourceCaption, TYPE_CONFIG
 } from '@/lib/memberUtils';
-import { getType, photoOf } from '@/components/Quotatreelayout';
+import { getType, photoOf, displayAcno } from '@/components/Quotatreelayout';
 import MemberNode from './MemberNode';
 import { FocusedDiagram, WholeMapDiagram, BioFamilyDiagram } from './RelationshipDiagram';
 import { Search, GitBranch, Users, ArrowLeft } from 'lucide-react';
@@ -34,7 +34,7 @@ function GridCard({ member: m }: { member: Member }) {
         {!photoOf(m) && m.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}
       </div>
       <div className={s.gridName}>{m.name}</div>
-      <div className={s.gridId}>{m.id}</div>
+      <div className={s.gridId}>{displayAcno(m.id)}</div>
     </div>
   );
 }
