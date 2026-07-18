@@ -164,11 +164,32 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
       <Handle id="top-out"   type="source" position={Position.Top}    isConnectable={false} style={slotHandleStyle} />
       <Handle id="bottom-in" type="target" position={Position.Bottom} isConnectable={false} style={slotHandleStyle} />
 
-      <div style={{
-        fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
-        padding: '5px 14px', borderRadius: 999, background: roleBg, color: roleColor,
-      }}>
-        {role}
+      {/* Split exactly at the card's horizontal center (where the top
+          connector dot sits) so the two pills sit either side of it,
+          leaving the connector point itself clear instead of covering it. */}
+      <div style={{ display: 'flex', alignItems: 'center', width: SLOT_W }}>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{
+            fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
+            padding: '5px 14px', borderRadius: 999, background: roleBg, color: roleColor,
+          }}>
+            {role}
+          </div>
+        </div>
+
+        <div style={{ width: 16, flexShrink: 0 }} />
+
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+          {reference && (
+            <div style={{
+              fontSize: 13, fontWeight: 700,
+              padding: '5px 14px', borderRadius: 999,
+              background: '#E0E7FF', color: '#3730A3',
+            }}>
+              {reference}
+            </div>
+          )}
+        </div>
       </div>
 
       <button
@@ -229,11 +250,6 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
 
           </div>
         </div>
-        {reference && (
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#6B7280', fontStyle: 'italic', paddingLeft: 108, lineHeight: 1.3 }}>
-            {reference}
-          </div>
-        )}
       </button>
     </div>
   );
