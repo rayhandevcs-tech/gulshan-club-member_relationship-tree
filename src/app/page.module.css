@@ -2,14 +2,14 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #ffffff;
+  background-color: var(--bg);
   font-family: sans-serif;
 }
 
 /* Header */
 .header {
-  background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
-  border-bottom: 1px solid #e9ecf5;
+  background: linear-gradient(180deg, var(--header-bg-1) 0%, var(--header-bg-2) 100%);
+  border-bottom: 1px solid var(--header-border);
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02), 0 4px 14px -10px rgba(15, 23, 42, 0.12);
   padding: 0.875rem 1rem;
   display: flex;
@@ -74,7 +74,7 @@
 .title {
   font-size: 15px;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-strong);
   letter-spacing: -0.01em;
 }
 
@@ -86,7 +86,7 @@
 
 .subtitle {
   font-size: 10px;
-  color: #8b93a7;
+  color: var(--text-muted);
   font-weight: 500;
   letter-spacing: 0.02em;
 }
@@ -128,9 +128,11 @@
   display: flex;
   align-items: center;
   gap: 0.125rem;
-  background-color: #eef0f6;
+  background-color: var(--tab-bg);
+  border: 1px solid var(--border);
   border-radius: 0.625rem;
   padding: 0.25rem;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .tabBtnSm {
@@ -144,13 +146,13 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #8b93a7;
+  color: var(--text-muted);
 }
 
 .tabBtnSmActive {
-  background-color: #ffffff;
-  color: #4f6df5;
-  box-shadow: 0 1px 3px 0 rgb(15 23 42 / 0.12);
+  background: linear-gradient(135deg, #4f6df5 0%, #6d5bf0 100%);
+  color: #ffffff;
+  box-shadow: 0 3px 10px -2px rgba(79, 109, 245, 0.5);
 }
 
 .tabBtnLg {
@@ -165,13 +167,33 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #8b93a7;
+  color: var(--text-muted);
 }
 
 .tabBtnLgActive {
-  background-color: #ffffff;
+  background: linear-gradient(135deg, #4f6df5 0%, #6d5bf0 100%);
+  color: #ffffff;
+  box-shadow: 0 3px 10px -2px rgba(79, 109, 245, 0.5);
+}
+
+/* Theme toggle */
+.themeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.625rem;
+  background-color: var(--tab-bg);
+  color: var(--text-faint);
+  border: none;
+  cursor: pointer;
+  transition: background-color 150ms, color 150ms, transform 150ms;
+}
+
+.themeBtn:hover {
   color: #4f6df5;
-  box-shadow: 0 1px 3px 0 rgb(15 23 42 / 0.12);
+  transform: translateY(-1px);
 }
 
 /* New member button */
@@ -223,7 +245,7 @@
   flex: 1;
   overflow: hidden;
   position: relative;
-  background-color: #fcfcfe;
+  background-color: var(--bg);
 }
 
 .treeArea {

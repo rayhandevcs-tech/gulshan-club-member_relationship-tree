@@ -6,7 +6,7 @@ import { getMember, getInitials, TYPE_CONFIG } from '@/lib/memberUtils';
 import { uploadPhoto, deletePhoto, photoStorageKey } from '@/lib/api';
 import { Member, Rel, Via } from '@/lib/types';
 import { X, Search, Check, User, IdCard, Users, Phone, ArrowRightLeft, Camera, type LucideIcon } from 'lucide-react';
-import styles from './MemberForm.module.css';
+import styles from './styles/MemberForm.module.css';
 
 interface Props {
   onClose: () => void;

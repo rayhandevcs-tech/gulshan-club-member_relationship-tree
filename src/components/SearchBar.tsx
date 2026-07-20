@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useMemberStore } from '@/store/memberStore';
-import { getRootMember, getInitials, TYPE_CONFIG } from '@/lib/memberUtils';
-import { getType } from '@/components/Quotatreelayout'; // ← path তোমার structure অনুযায়ী
+import { getRootMember, getInitials, TYPE_CONFIG, typeBg, typeText } from '@/lib/memberUtils';
+import { getType } from '@/lib/quotaTreeLayout';
 import { Search } from 'lucide-react';
-import styles from './SearchBar.module.css';
+import styles from './styles/SearchBar.module.css';
 
 export default function SearchBar() {
-  const { members, searchQuery, setSearch, setActiveRoot, setFocusView, setHighlighted } = useMemberStore();
+  const { members, searchQuery, setSearch, setActiveRoot, setFocusView, setHighlighted, theme } = useMemberStore();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -70,7 +70,7 @@ export default function SearchBar() {
               >
                 <div
                   className={styles.avatar}
-                  style={{ background: cfg.bg, color: cfg.dark }}
+                  style={{ background: typeBg(cfg, theme), color: typeText(cfg, theme) }}
                 >
                   {getInitials(m.name)}
                 </div>

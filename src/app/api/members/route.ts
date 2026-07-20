@@ -1,3 +1,6 @@
+// 'database' data-source mode (see src/lib/dataSource.ts): reads/writes this
+// app's own Postgres via Prisma. Also the endpoint MemberForm's Add always
+// hits, regardless of which mode is feeding the tree.
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 

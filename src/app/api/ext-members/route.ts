@@ -1,6 +1,7 @@
 // src/app/api/ext-members/route.ts
 //
-// Converts the club's external membership system (two REST endpoints, a
+// 'api' data-source mode (see src/lib/dataSource.ts) — the club's own
+// system. Converts the club's external membership system (two REST endpoints, a
 // different JSON shape) into this app's flat Member[] shape. See the
 // per-section comments below — the source data has several real-world
 // quirks (padded blank strings, relation text that sometimes encodes a
@@ -218,13 +219,12 @@ export async function GET() {
             // Associate quota). The dedicated Parent node (handled above)
             // is the only source ever used for the core member's own
             // father/mother — this branch never cross-links into that.
-            // The "Father"/"Mother" tag is still a useful (if mislabeled)
-            // gender signal for this child, so keep using it for that.
+            // Unlike "Son"/"Daughter" (handled in parseChildRelation), the
+            // "Father"/"Mother" tag carries no reliable gender signal — it's
+            // just mislabeled data entry, not a naming convention — so gender
+            // stays null here and getRef() renders the neutral "Child" pill
+            // instead of guessing Son/Daughter.
             rel = 'child';
-            if (!gender) {
-              if (relationLower === 'father') gender = 'M';
-              else if (relationLower === 'mother') gender = 'F';
-            }
           }
 
           const isPlainChild = rel === 'child' && !sponsorAcno;

@@ -1,3 +1,5 @@
+// Edit/Delete counterpart to /api/members — see the comment there. Also
+// hit directly by MemberForm regardless of the active dataSource mode.
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSupabaseAdmin, PHOTOS_BUCKET, photoKeyFromUrl } from '@/lib/supabaseAdmin';

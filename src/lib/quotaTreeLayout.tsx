@@ -23,10 +23,12 @@ export const displayAcno = (id: string): string =>
 
 // Two-tier sizing: one size for ALL member cards (incl. successors), one size
 // for ALL slot cards (incl. nested). Same width keeps columns aligned.
-export const CARD_W = 325;
-export const CARD_H = 400;
-export const SLOT_W = 310;
-export const SLOT_H = 290;
+// Height grows proportionally more than width (taller than it is wide, from
+// the bigger avatar + 2-line name reservation + roomier padding).
+export const CARD_W = 380;
+export const CARD_H = 480;
+export const SLOT_W = 420;
+export const SLOT_H = 400;
 
 // CARD_H above is deliberately padded well past the common-case rendered
 // card height, so dagre never lets a rank overlap a tall (2-line name +
@@ -34,30 +36,38 @@ export const SLOT_H = 290;
 // though — e.g. the single-parent "Children" stem used to drop the full
 // CARD_H below the card top, landing ~70px past where the card actually
 // ends. This tracks the common-case rendered height instead.
-export const CARD_VISUAL_H = 345;
+export const CARD_VISUAL_H = 420;
 
 // Wide enough to fit the longest connector label ("Spouse · A/C
 // transferred", ~25 chars at 16px/800 weight) without spilling into
 // either neighboring card.
-export const BESIDE_GAP = 260;
-export const GROUP_GAP  = 60;
-export const RANK_SEP   = 220;
-export const NODE_SEP   = 42;
+export const BESIDE_GAP = 280;
+export const GROUP_GAP  = 66;
+export const RANK_SEP   = 240;
+export const NODE_SEP   = 48;
 
 
 export function getType(m: Member): string {
+
   if (m.type) return m.type; // explicit override wins
+
   const prefix = (m.id.split('-')[0] ?? '').trim().toUpperCase();
+
   if (prefix === 'AFD') return 'A4D';
+
   if (prefix === 'AS')  return 'Associate';
+
   switch (prefix.charAt(0)) {
+
     case 'P': return 'Permanent';
     case 'D': return 'Donor';
     case 'L': return 'Life';
     case 'C': return 'Corporate';
     case 'H': return 'Honorary';
     default:  return 'Permanent';
+
   }
+
 }
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
@@ -83,27 +93,34 @@ export function findRoot(startId: string, members: Member[]): string {
 
 
 export function isBesideSpouse(sp: Member, holder: Member): boolean {
+
   // Non-member spouse (no club A/C): only the Family Relationship tab seats
   // her beside the root — the Member Relationship tab tracks quota lineage
   // only, so she has no card here at all.
   if (isPendingAcno(sp.id)) return false;
   if (sp.via === 'core' || sp.via === 'succession') return true; // own membership → beside
   return holder.succession === sp.id;               // dependent, but received the A/C
+
 }
 
 export function getBioChildren(
   m: Member, spouse: Member | null, members: Member[], bioMode: boolean,
 ): Member[] {
+
   const ids = new Set([m.id, ...(spouse ? [spouse.id] : [])]);
+
   if (bioMode) {
     // blood tree: father/mother links win; quota (pid) is ignored
     return members.filter(x => {
+
       if (ids.has(x.id)) return false;
+
       return (
         (x.fatherId != null && ids.has(x.fatherId)) ||
         (x.motherId != null && ids.has(x.motherId)) ||
         (x.rel === 'child' && x.via === 'core' && ids.has(x.pid ?? ''))
       );
+
     });
   }
   // quota tree: only independently-held children hang as full cards
@@ -111,6 +128,8 @@ export function getBioChildren(
     x.rel === 'child' && x.via === 'core' && (x.pid === m.id || (spouse != null && x.pid === spouse.id)),
   );
 }
+
+
 
 
 export function getRef(slot: Member, listing: Member): ReactNode {
@@ -159,11 +178,19 @@ const edgeKind = (e: Edge) => (e.data as EdgeData | undefined)?.kind;
 // ── Graph builder ─────────────────────────────────────────────────────────────
 
 export function buildGraph(
+
   rootMember: Member,
   members: Member[],
   onPick: (id: string) => void,
   bioMode: boolean,
+  dark = false,
 ) {
+
+  const neutralLabelBg  = dark ? '#2a2e39' : '#E5E7EB';
+  const neutralLabelFg  = dark ? '#e5e7eb' : '#374151';
+  const amberLabelBg    = dark ? '#3a2e12' : '#fef3c7';
+  const amberLabelFg    = dark ? '#f0c975' : '#92400e';
+
   const nodes: Node[] = [];
   const edges: Edge[] = [];
   const seen = new Set<string>();
@@ -180,6 +207,7 @@ export function buildGraph(
   // also has real children, since that's the one case where the "Children"
   // union stem sits at the owner's own center-bottom too (a couple's union
   // sits at the spousal midpoint instead, so it never collides).
+
   function addSlots(
     owner: Member,
     bioChildIds: Set<string>,
@@ -292,11 +320,11 @@ export function buildGraph(
           ? { stroke: '#F59E0B', strokeWidth: 3.5, strokeDasharray: '6 3' }
           : { stroke: '#9CA3AF', strokeWidth: 3.5 },
         labelStyle: isTransferToSpouse
-          ? { fontSize: 16, fill: '#92400e', fontWeight: 800 }
-          : { fontSize: 16, fill: '#374151', fontWeight: 800 },
+          ? { fontSize: 16, fill: amberLabelFg, fontWeight: 800 }
+          : { fontSize: 16, fill: neutralLabelFg, fontWeight: 800 },
         labelBgStyle: isTransferToSpouse
-          ? { fill: '#fef3c7', fillOpacity: 1, borderRadius: 7 }
-          : { fill: '#E5E7EB', fillOpacity: 1, borderRadius: 7 },
+          ? { fill: amberLabelBg, fillOpacity: 1, borderRadius: 7 }
+          : { fill: neutralLabelBg, fillOpacity: 1, borderRadius: 7 },
         labelBgPadding: [10, 6],
         data: { kind: 'spouse', rootPair: isRoot },
       });
@@ -316,8 +344,8 @@ export function buildGraph(
         type: 'straight',
         label: 'A/C transferred',
         style: { stroke: '#F59E0B', strokeWidth: 3.5, strokeDasharray: '6 3' },
-        labelStyle: { fontSize: 16, fill: '#92400e', fontWeight: 800 },
-        labelBgStyle: { fill: '#fef3c7', fillOpacity: 1, borderRadius: 7 },
+        labelStyle: { fontSize: 16, fill: amberLabelFg, fontWeight: 800 },
+        labelBgStyle: { fill: amberLabelBg, fillOpacity: 1, borderRadius: 7 },
         labelBgPadding: [10, 6],
         data: { kind: 'succession' },
       });
@@ -435,7 +463,7 @@ export function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edge
   const shiftIds = (ids: string[], dx: number) =>
     ids.forEach(id => { const p = posMap.get(id); if (p) posMap.set(id, { x: p.x + dx, y: p.y }); });
 
- 
+
   const groupBox = (ids: string[]) => {
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     ids.forEach(id => {
@@ -502,7 +530,7 @@ export function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edge
       });
   }
 
- 
+
   const owners = nodes.filter(n => n.type === 'member' && (slotKids.get(n.id)?.length ?? 0) > 0);
 
   for (let pass = 0; pass < 2; pass++) {
@@ -524,7 +552,7 @@ export function applyLayout(nodes: Node[], edges: Edge[]): { nodes: Node[]; edge
       let desired = ownerCenter - (minX + maxX) / 2;
       if (Math.abs(desired) < 1) return;
 
-  
+
       const memberBoxes = ids.map(id => boxOf(id));
       nodes.forEach(other => {
         if (idSet.has(other.id) || !posMap.has(other.id)) return;

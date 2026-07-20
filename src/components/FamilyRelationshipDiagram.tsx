@@ -14,16 +14,10 @@ import ReactFlow, {
   type Node,
   type Edge,
 } from 'reactflow';
-import {
-  buildRelationshipDiagram,
-  DIAGRAM_BOX_W,
-  DIAGRAM_BOX_H,
-  TYPE_CONFIG,
-  getInitials,
-} from '@/lib/memberUtils';
+import { getInitials } from '@/lib/memberUtils';
 import { Member } from '@/lib/types';
-import { getType, photoOf, dispName, isDead, displayAcno } from '@/components/Quotatreelayout';
-import { QuotaFamilyDiagram } from './QuotaFamilyDiagram';
+import { photoOf, dispName, isDead, displayAcno } from '@/lib/quotaTreeLayout';
+import { useMemberStore } from '@/store/memberStore';
 
 interface Props {
   focusId: string;
@@ -42,10 +36,10 @@ const FAM_VGAP   = 220;
 
 type FamRole = 'owner' | 'spouse' | 'child';
 
-const FAM_ROLE_STYLE: Record<FamRole, { border: string; bg: string; bgHover: string }> = {
-  owner:  { border: '#0F766E', bg: '#F0FDFA', bgHover: '#CCFBF1' },
-  spouse: { border: '#BE185D', bg: '#FDF2F8', bgHover: '#FCE7F3' },
-  child:  { border: '#6D28D9', bg: '#F5F3FF', bgHover: '#EDE9FE' },
+const FAM_ROLE_STYLE: Record<FamRole, { border: string; bg: string; bgHover: string; bgNight: string; bgNightHover: string }> = {
+  owner:  { border: '#0F766E', bg: '#F0FDFA', bgHover: '#CCFBF1', bgNight: '#0D211E', bgNightHover: '#123830' },
+  spouse: { border: '#BE185D', bg: '#FDF2F8', bgHover: '#FCE7F3', bgNight: '#2B131F', bgNightHover: '#3A1A2A' },
+  child:  { border: '#6D28D9', bg: '#F5F3FF', bgHover: '#EDE9FE', bgNight: '#211A3D', bgNightHover: '#2D2454' },
 };
 
 interface FamCardData {
@@ -59,7 +53,12 @@ interface FamCardData {
 
 function FamCard({ data }: { data: FamCardData }) {
   const { member: m, role, caption, quotaRef, onPick, highlighted } = data;
-  const { border, bg, bgHover } = FAM_ROLE_STYLE[role];
+  const theme = useMemberStore(state => state.theme);
+  const dark = theme === 'dark';
+  const roleStyle = FAM_ROLE_STYLE[role];
+  const border  = roleStyle.border;
+  const bg      = dark ? roleStyle.bgNight : roleStyle.bg;
+  const bgHover = dark ? roleStyle.bgNightHover : roleStyle.bgHover;
   const name = dispName(m);
   const photo = photoOf(m);
   const [hovered, setHovered] = useState(false);
@@ -98,23 +97,23 @@ function FamCard({ data }: { data: FamCardData }) {
         }}>
           {!photo && getInitials(name)}
         </div>
-        <div style={{ fontSize: 26, fontWeight: 700, color: '#111827', textAlign: 'center', lineHeight: 1.3 }}>
+        <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-strong)', textAlign: 'center', lineHeight: 1.3 }}>
           {name}
         </div>
         <div style={{
           fontSize: 21, fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.03em',
-          color: '#000000', background: `${border}2e`, border: `1.5px solid ${border}55`,
+          color: 'var(--text-strong)', background: `${border}2e`, border: `1.5px solid ${border}55`,
           padding: '4px 14px', borderRadius: 999,
         }}>
           {displayAcno(m.id)}
         </div>
         {m.since && (
-          <div style={{ fontSize: 18, fontWeight: 600, color: '#6B7280', marginTop: 1 }}>
+          <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-muted)', marginTop: 1 }}>
             Joined {m.since}
           </div>
         )}
         {isDead(m) && (
-          <span style={{ fontSize: 13.5, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '2px 10px', borderRadius: 999 }}>
+          <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-faint)', background: 'var(--border-subtle)', padding: '2px 10px', borderRadius: 999 }}>
             Deceased
           </span>
         )}
@@ -126,7 +125,7 @@ function FamCard({ data }: { data: FamCardData }) {
         </div>
       )}
       {quotaRef && (
-        <div style={{ textAlign: 'center', marginTop: 2, fontSize: 15, fontStyle: 'italic', color: '#9CA3AF' }}>
+        <div style={{ textAlign: 'center', marginTop: 2, fontSize: 15, fontStyle: 'italic', color: 'var(--text-muted)' }}>
           {quotaRef}
         </div>
       )}
@@ -140,8 +139,8 @@ function FamUnion({ data }: { data: { labelOffsetY?: number } }) {
       <Handle id="bottom" type="source" position={Position.Bottom} isConnectable={false} style={{ width: 1, height: 1, opacity: 0 }} />
       <span style={{
         position: 'absolute', top: data.labelOffsetY ?? 40, left: 8, whiteSpace: 'nowrap',
-        fontSize: 16, fontWeight: 800, color: '#374151',
-        background: '#E5E7EB', padding: '4px 11px', borderRadius: 7,
+        fontSize: 16, fontWeight: 800, color: 'var(--text)',
+        background: 'var(--border-subtle)', padding: '4px 11px', borderRadius: 7,
       }}>
         Children
       </span>
@@ -154,9 +153,12 @@ const famNodeTypes: NodeTypes = { card: FamCard, union: FamUnion };
 const famChildLabel = (m: Member) =>
   m.gender === 'M' ? 'Son' : m.gender === 'F' ? 'Daughter' : 'Child';
 
-function buildFocusedGraph(focusId: string, members: Member[]): { nodes: Node[]; edges: Edge[] } {
+function buildFocusedGraph(focusId: string, members: Member[], dark: boolean): { nodes: Node[]; edges: Edge[] } {
   const owner = members.find(m => m.id === focusId);
   if (!owner) return { nodes: [], edges: [] };
+
+  const labelFg = dark ? '#e5e7eb' : '#374151';
+  const labelBg = dark ? '#2a2e39' : '#E5E7EB';
 
   // Spouse(s): if owner is registered as a spouse, they have exactly one
   // partner (their own pid); otherwise collect EVERY member registered as a
@@ -210,8 +212,8 @@ function buildFocusedGraph(focusId: string, members: Member[]): { nodes: Node[];
       target: spouse.id, targetHandle: 'left-in',
       type: 'straight', label: 'SPOUSE',
       style: { stroke: '#9CA3AF', strokeWidth: 3.5 },
-      labelStyle: { fontSize: 16, fill: '#374151', fontWeight: 800, letterSpacing: 0.6 },
-      labelBgStyle: { fill: '#E5E7EB', fillOpacity: 1 },
+      labelStyle: { fontSize: 16, fill: labelFg, fontWeight: 800, letterSpacing: 0.6 },
+      labelBgStyle: { fill: labelBg, fillOpacity: 1 },
       labelBgPadding: [10, 6],
       labelBgBorderRadius: 7,
     });
@@ -250,9 +252,11 @@ function buildFocusedGraph(focusId: string, members: Member[]): { nodes: Node[];
 }
 
 function FocusedDiagramInner({ focusId, members, onPick, highlightedId }: Props) {
+  const theme = useMemberStore(state => state.theme);
+
   const { nodes: rawNodes, edges } = useMemo(
-    () => buildFocusedGraph(focusId, members),
-    [focusId, members],
+    () => buildFocusedGraph(focusId, members, theme === 'dark'),
+    [focusId, members, theme],
   );
 
   const nodes = useMemo(
@@ -297,130 +301,17 @@ function FocusedDiagramInner({ focusId, members, onPick, highlightedId }: Props)
         minZoom={0.2}
         maxZoom={2}
       >
-        <Background color="#E2E8F0" gap={22} size={1} />
+        <Background color={theme === 'dark' ? '#2a2e39' : '#E2E8F0'} gap={22} size={1} />
         <Controls showInteractive={false} style={{ bottom: 10, right: 10, left: 'auto', top: 'auto' }} />
       </ReactFlow>
     </div>
   );
 }
 
-export function FocusedDiagram(props: Props) {
+export function FamilyRelationshipDiagram(props: Props) {
   return (
     <ReactFlowProvider>
       <FocusedDiagramInner {...props} />
     </ReactFlowProvider>
   );
-}
-
-interface WholeProps {
-  rootId: string;
-  members: import('@/lib/types').Member[];
-  onPick: (id: string) => void;
-}
-
-export function WholeMapDiagram({ rootId, members, onPick }: WholeProps) {
-  const layout = buildRelationshipDiagram(members, rootId);
-  if (!layout) return null;
-
-  const { nodes, edges, refs, width, height } = layout;
-  const byId = new Map(nodes.map(n => [n.member.id, n]));
-  const minX = Math.min(...nodes.map(n => n.x)) - 80;
-  const padTop = refs.length ? 70 : 20;
-
-  const centerX = (id: string) => (byId.get(id)?.x ?? 0) + DIAGRAM_BOX_W / 2 - minX;
-  const topY = (id: string) => (byId.get(id)?.y ?? 0) + padTop;
-  const bottomY = (id: string) => topY(id) + DIAGRAM_BOX_H;
-
-  return (
-    <svg width={width} height={height + padTop} viewBox={`0 0 ${width} ${height + padTop}`} style={{ minWidth: width }}>
-      <defs>
-        <marker id="wm-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
-          <path d="M0,0 L8,4 L0,8 Z" fill="#374151" />
-        </marker>
-      </defs>
-
-      {refs.map((ref, i) => {
-        const tx = centerX(ref.targetId);
-        const ty = topY(ref.targetId);
-        const bx = tx - 220;
-        const by = ty - 10;
-        return (
-          <g key={`ref-${i}`}>
-            <rect x={bx} y={by - 36} width={140} height={44} rx={12} fill="#fff" stroke="#9CA3AF" strokeWidth={1.5} />
-            <text x={bx + 70} y={by - 10} textAnchor="middle" fontSize="13" fontWeight={600} fill="#374151">{ref.label}</text>
-            <path d={`M ${bx + 140} ${by - 14} C ${bx + 180} ${by - 14}, ${tx - 30} ${ty - 14}, ${tx} ${ty}`} fill="none" stroke="#9CA3AF" strokeWidth={1.5} markerEnd="url(#wm-arrow)" />
-            {ref.detail && <text x={(bx + 140 + tx) / 2} y={by - 22} textAnchor="middle" fontSize="10" fill="#6B7280">[{ref.detail}]</text>}
-          </g>
-        );
-      })}
-
-      {edges.map((e, i) => {
-        const from = byId.get(e.fromId);
-        const to = byId.get(e.toId);
-        if (!from || !to) return null;
-
-        if (e.kind === 'spouse' || e.kind === 'sibling') {
-          const y = topY(e.fromId) + DIAGRAM_BOX_H / 2;
-          const x1 = from.x + DIAGRAM_BOX_W - minX;
-          const x2 = to.x - minX;
-          const stroke = e.kind === 'spouse' ? '#374151' : '#9CA3AF';
-          return (
-            <g key={i}>
-              <line x1={x1} y1={y} x2={x2} y2={y} stroke={stroke} strokeWidth={1.5} />
-              <text x={(x1 + x2) / 2} y={y - 8} textAnchor="middle" fontSize="10" fill={stroke}>[{e.label}]</text>
-            </g>
-          );
-        }
-
-        const x1 = centerX(e.fromId);
-        const y1 = bottomY(e.fromId);
-        const x2 = centerX(e.toId);
-        const y2 = topY(e.toId);
-        const midY = y1 + (y2 - y1) / 2;
-        const path = `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2 - 6}`;
-        return (
-          <g key={i}>
-            <path d={path} fill="none" stroke="#374151" strokeWidth={1.5} markerEnd="url(#wm-arrow)" />
-            {e.label && <text x={(x1 + x2) / 2} y={midY - 6} textAnchor="middle" fontSize="10" fill="#6B7280">[{e.label}]</text>}
-          </g>
-        );
-      })}
-
-      {nodes.map(n => {
-        const type = getType(n.member);
-        const cfg = TYPE_CONFIG[type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
-        const x = n.x - minX;
-        const y = n.y + padTop;
-        return (
-          <g key={n.member.id} style={{ cursor: 'pointer' }} onClick={() => onPick(n.member.id)}>
-            <rect x={x} y={y} width={DIAGRAM_BOX_W} height={DIAGRAM_BOX_H} rx={12} fill="#fff" stroke={cfg.color} strokeWidth={1.5} />
-            <text x={x + 12} y={y + 22} fontSize="13" fontWeight={600} fill="#1F2937">
-              {n.member.name.length > 22 ? n.member.name.slice(0, 21) + '…' : n.member.name}
-            </text>
-            <text x={x + 12} y={y + 40} fontSize="11" fill="#9CA3AF">{n.member.id}</text>
-            {n.caption && <text x={x + 12} y={y + 56} fontSize="10" fontStyle="italic" fill="#9CA3AF">{n.caption}</text>}
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-// ─── Bio Family Tree (delegates to QuotaFamilyDiagram) ───────────────────────
-
-interface BioProps {
-  rootId: string;
-  members: Member[];
-  onPick: (id: string) => void;
-  highlightedId?: string | null;
-}
-
-// Member Relationship tab: quota/sponsorship tree only — no bio children
-export function BioFamilyDiagram({ rootId, members, onPick, highlightedId }: BioProps) {
-  return <QuotaFamilyDiagram rootId={rootId} members={members} onPick={onPick} highlightedId={highlightedId} />;
-}
-
-// Family Relationship tab: biological family tree with recursive children
-export function FamilyTreeDiagram({ rootId, members, onPick, highlightedId }: BioProps) {
-  return <QuotaFamilyDiagram rootId={rootId} members={members} onPick={onPick} highlightedId={highlightedId} bioMode />;
 }

@@ -9,12 +9,16 @@ import {
   TYPE_CONFIG,
   getA4DQuota,
   getSiblings,
+  typeBg,
+  typeText,
+  type TypeConfigEntry,
 } from '@/lib/memberUtils';
 // getType: prefix থেকে type derive করে (P→Permanent, AFD→A4D, D→Donor, L→Life)
-import { getType, getRef, photoOf, displayAcno, isPendingAcno } from '@/components/Quotatreelayout';
+import { getType, getRef, photoOf, displayAcno, isPendingAcno } from '@/lib/quotaTreeLayout';
 import { Member } from '@/lib/types';
+import type { Theme } from '@/store/memberStore';
 import { X, ChevronRight, Users, ArrowRight, Pencil } from 'lucide-react';
-import s from './DetailPanel.module.css';
+import s from './styles/DetailPanel.module.css';
 
 // এক জায়গায় safe color lookup — কোথাও আর সরাসরি TYPE_CONFIG[...] নয়
 function cfgOf(m: Member) {
@@ -24,15 +28,15 @@ function cfgOf(m: Member) {
 // ── photo system ──────────────────────────────────────────────────────────────
 // photoOf layout module থেকে আসে: নিজের photoUrl থাকলে সেটাই, না থাকলে undefined
 // (initials fallback)। সব component এক জায়গা থেকে নেয়, তাই পরে বদলাতে হলে এক লাইন।
-function avatarStyle(m: Member, cfg: { bg: string; dark: string; color?: string }) {
+function avatarStyle(m: Member, cfg: TypeConfigEntry, theme: Theme) {
   const url = photoOf(m);
   return {
-    backgroundColor: cfg.bg,
-    color: cfg.dark,
+    backgroundColor: typeBg(cfg, theme),
+    color: typeText(cfg, theme),
     backgroundImage: url ? `url(${url})` : undefined,
     backgroundSize: 'cover' as const,
     backgroundPosition: 'center 22%' as const,
-    border: `2px solid ${cfg.color ?? cfg.dark}`,
+    border: `2px solid ${cfg.color}`,
     boxSizing: 'border-box' as const,
   };
 }
@@ -49,6 +53,7 @@ function MemberPreviewModal({
   onNavigate: (id: string) => void;
 }) {
   const cfg = cfgOf(member);                       // ← getType + fallback
+  const theme = useMemberStore(state => state.theme);
 
   const fatherMember = member.fatherId ? getMember(members, member.fatherId) : null;
   const motherMember = member.motherId ? getMember(members, member.motherId) : null;
@@ -69,11 +74,11 @@ function MemberPreviewModal({
 
         <div className={s.previewModalBody}>
           <div className={s.previewAvatarWrap}>
-            <div className={s.previewAvatar} style={avatarStyle(member, cfg)}>
+            <div className={s.previewAvatar} style={avatarStyle(member, cfg, theme)}>
               {!photoOf(member) && getInitials(member.name)}
             </div>
             <div className={s.previewName}>{member.name}</div>
-            <div className={s.previewId} style={{ background: cfg.bg, color: '#000000' }}>{displayAcno(member.id)}</div>
+            <div className={s.previewId} style={{ background: typeBg(cfg, theme), color: 'var(--text-strong)' }}>{displayAcno(member.id)}</div>
           </div>
 
           <div className={s.previewFields}>
@@ -135,9 +140,10 @@ function MemberRow({
   badges?: { text: string; color: string; bg: string }[];
 }) {
   const cfg = cfgOf(member);                       // ← getType + fallback
+  const theme = useMemberStore(state => state.theme);
   return (
     <div className={s.memberRow} onClick={() => onPreview(member.id)}>
-      <div className={s.memberRowAvatar} style={avatarStyle(member, cfg)}>
+      <div className={s.memberRowAvatar} style={avatarStyle(member, cfg, theme)}>
         {!photoOf(member) && getInitials(member.name)}
       </div>
       <div className={s.memberRowInfo}>
@@ -156,9 +162,9 @@ function MemberRow({
             </span>
           ))}
         </div>
-        <div className={s.memberRowId} style={{ background: cfg.bg, color: '#000000' }}>{displayAcno(member.id)}</div>
+        <div className={s.memberRowId} style={{ background: typeBg(cfg, theme), color: 'var(--text-strong)' }}>{displayAcno(member.id)}</div>
         {subtitle && (
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', fontStyle: 'italic', marginTop: 2, lineHeight: 1.3 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-faint)', fontStyle: 'italic', marginTop: 2, lineHeight: 1.3 }}>
             {subtitle}
           </div>
         )}
@@ -169,18 +175,18 @@ function MemberRow({
 }
 
 // slot list-এর badge গুলো এক জায়গায়
-function slotBadges(c: Member): { text: string; color: string; bg: string }[] {
+function slotBadges(c: Member, theme: Theme): { text: string; color: string; bg: string }[] {
   const out: { text: string; color: string; bg: string }[] = [];
-  const t = getType(c);
+  const dark = theme === 'dark';
   out.push(
     c.via === 'a4d'
-      ? { text: 'A4D',   color: '#7c3aed', bg: '#f3e8ff' }
-      : { text: 'Assoc', color: '#c2410c', bg: '#ffedd5' },
+      ? { text: 'A4D',   color: dark ? '#c4a4f7' : '#7c3aed', bg: dark ? '#2b2143' : '#f3e8ff' }
+      : { text: 'Assoc', color: dark ? '#f0a878' : '#c2410c', bg: dark ? '#3a2413' : '#ffedd5' },
   );
   // pending = no real club A/C yet (synthetic placeholder id) — NOT "no
   // since date", which the external-API integration never provides at all
   // for otherwise perfectly real, active accounts.
-  if (isPendingAcno(c.id)) out.push({ text: 'Pending A/C', color: '#92400e', bg: '#fef3c7' });
+  if (isPendingAcno(c.id)) out.push({ text: 'Pending A/C', color: dark ? '#f0c975' : '#92400e', bg: dark ? '#3a2e12' : '#fef3c7' });
   return out;
 }
 
@@ -194,7 +200,7 @@ function sortSlots(list: Member[]): Member[] {
 }
 
 export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void }) {
-  const { members, selectedId, setSelected, navigateTo } = useMemberStore();
+  const { members, selectedId, setSelected, navigateTo, theme } = useMemberStore();
   const [previewId, setPreviewId] = useState<string | null>(null);
 
   if (!selectedId) return null;
@@ -261,12 +267,12 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
           </div>
         </div>
 
-        <div className={s.panelAvatar} style={avatarStyle(m, cfg)}>
+        <div className={s.panelAvatar} style={avatarStyle(m, cfg, theme)}>
           {!photoOf(m) && getInitials(m.name)}
         </div>
 
         <div className={s.panelName}>{m.name}</div>
-        <div className={s.panelId} style={{ background: cfg.bg, color: '#000000' }}>{displayAcno(m.id)}</div>
+        <div className={s.panelId} style={{ background: typeBg(cfg, theme), color: 'var(--text-strong)' }}>{displayAcno(m.id)}</div>
 
         {/* {isSponsorType ? (
           // <div className={s.panelQuota}>
@@ -377,7 +383,7 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
                     member={ch}
                     onPreview={setPreviewId}
                     subtitle={getRef(ch, m)}
-                    badges={slotBadges(ch)}
+                    badges={slotBadges(ch, theme)}
                   />
                 ))}
               </div>
@@ -392,7 +398,7 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
                     member={ch}
                     onPreview={setPreviewId}
                     subtitle={getRef(ch, m)}
-                    badges={slotBadges(ch)}
+                    badges={slotBadges(ch, theme)}
                   />
                 ))}
               </div>

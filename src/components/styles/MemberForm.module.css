@@ -11,9 +11,9 @@
 }
 
 .modal {
-  background-color: #ffffff;
+  background-color: var(--surface);
   border-radius: 1.25rem;
-  border: 1px solid #e9ecf5;
+  border: 1px solid var(--border);
   box-shadow: 0 32px 64px -16px rgb(15 23 42 / 0.32), 0 8px 20px -8px rgb(15 23 42 / 0.16);
   width: 100%;
   max-width: 27rem;
@@ -94,7 +94,7 @@
   letter-spacing: 0.07em;
   margin: 1.125rem 0 0.625rem;
   padding-bottom: 0.4rem;
-  border-bottom: 1px solid #eef0f6;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .sectionLabel:first-child {
@@ -130,8 +130,8 @@
   font-size: 21px;
   font-weight: 700;
   box-shadow: 0 8px 20px -4px rgb(79 109 245 / 0.35);
-  border: 3.5px solid #ffffff;
-  outline: 1px solid #eef0f6;
+  border: 3.5px solid var(--surface);
+  outline: 1px solid var(--border-subtle);
   background-size: cover;
   background-position: center 22%;
   transition: background-color 150ms;
@@ -158,7 +158,7 @@
   border-radius: 999px;
   background: linear-gradient(135deg, #4f6df5 0%, #6d5bf0 100%);
   color: #ffffff;
-  border: 2.5px solid #ffffff;
+  border: 2.5px solid var(--surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -180,7 +180,7 @@
   border-radius: 999px;
   background-color: #ef4444;
   color: #ffffff;
-  border: 2.5px solid #ffffff;
+  border: 2.5px solid var(--surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -199,7 +199,7 @@
 
 .pickerHint {
   font-size: 10.5px;
-  color: #9aa3b8;
+  color: var(--text-muted);
   font-style: italic;
   margin: -0.3rem 0 0.6rem;
   line-height: 1.4;
@@ -213,7 +213,7 @@
   display: block;
   font-size: 11px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-faint);
   margin-bottom: 0.3rem;
 }
 
@@ -223,10 +223,10 @@
   width: 100%;
   padding: 0.6rem 0.75rem;
   font-size: 13px;
-  border: 1.5px solid #e5e8f2;
+  border: 1.5px solid var(--input-border);
   border-radius: 0.625rem;
-  background-color: #fbfbfd;
-  color: #1f2937;
+  background-color: var(--input-bg);
+  color: var(--text);
   outline: none;
   box-sizing: border-box;
   transition: border-color 150ms, box-shadow 150ms, background-color 150ms;
@@ -242,7 +242,7 @@
 .select:focus,
 .textarea:focus {
   border-color: #94a5f8;
-  background-color: #ffffff;
+  background-color: var(--surface);
   box-shadow: 0 0 0 4px rgb(79 109 245 / 0.12);
 }
 
@@ -261,7 +261,7 @@
   left: 0.7rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #c3c9db;
+  color: var(--text-muted);
   pointer-events: none;
 }
 
@@ -274,8 +274,8 @@
   left: 0;
   right: 0;
   top: calc(100% + 4px);
-  background-color: #ffffff;
-  border: 1px solid #e9ecf5;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 0.75rem;
   box-shadow: 0 16px 32px -10px rgb(15 23 42 / 0.2);
   overflow: hidden;
@@ -292,7 +292,7 @@
 }
 
 .pickerOption:hover {
-  background-color: #f2f4fc;
+  background-color: var(--surface-alt);
 }
 
 .pickerOptionAvatar {
@@ -311,7 +311,7 @@
 
 .pickerOptionName {
   font-size: 12.5px;
-  color: #1f2937;
+  color: var(--text);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -320,7 +320,7 @@
 
 .pickerOptionId {
   font-size: 10px;
-  color: #9aa3b8;
+  color: var(--text-muted);
   font-family: monospace;
   flex-shrink: 0;
 }
@@ -374,7 +374,7 @@
   gap: 0.625rem;
   margin: 1.25rem 1.375rem 1.375rem;
   padding-top: 1rem;
-  border-top: 1px solid #eef0f6;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .cancelBtn {
@@ -382,17 +382,17 @@
   padding: 0.7rem 0;
   font-size: 12.5px;
   font-weight: 600;
-  border: 1.5px solid #e5e8f2;
+  border: 1.5px solid var(--input-border);
   border-radius: 0.625rem;
-  color: #6b7280;
+  color: var(--text-faint);
   background: none;
   cursor: pointer;
   transition: background-color 150ms, border-color 150ms;
 }
 
 .cancelBtn:hover {
-  background-color: #f6f7fb;
-  border-color: #d7dbe8;
+  background-color: var(--surface-alt);
+  border-color: var(--border);
 }
 
 .deleteBtn {

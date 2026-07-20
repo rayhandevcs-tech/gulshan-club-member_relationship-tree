@@ -1,11 +1,11 @@
 /* ── MemberPreviewModal ───────────────────────────────────────── */
 
 .sectionBlock {
-  background-color: #F9FAFB;
+  background-color: var(--surface-alt);
   border-radius: 0.75rem;
   padding: 0.625rem 0.75rem;
   margin-top: 0.75rem;
-  border: 1px solid #F3F4F6;
+  border: 1px solid var(--border-subtle);
 }
 
 .sectionBlock .panelSectionLabel {
@@ -27,7 +27,7 @@
   top: 50%;
   transform: translate(-50%, -50%);
   width: min(340px, calc(100vw - 32px));
-  background-color: #ffffff;
+  background-color: var(--surface);
   border-radius: 1rem;
   box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
   overflow: hidden;
@@ -43,13 +43,13 @@
 .previewModalLabel {
   font-size: 10px;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .closeBtn {
-  color: #9ca3af;
+  color: var(--text-muted);
   background: none;
   border: none;
   cursor: pointer;
@@ -62,8 +62,8 @@
 }
 
 .closeBtn:hover {
-  color: #4b5563;
-  background-color: #f3f4f6;
+  color: var(--text-faint);
+  background-color: var(--border-subtle);
 }
 
 .previewModalBody {
@@ -93,7 +93,7 @@
 .previewName {
   font-size: 14px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text);
   text-align: center;
   line-height: 1.35;
 }
@@ -129,25 +129,25 @@
   gap: 0.5rem;
   font-size: 11px;
   padding: 0.25rem 0;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .previewFieldLabel {
-  color: #9ca3af;
+  color: var(--text-muted);
   width: 3.5rem;
   flex-shrink: 0;
 }
 
 .previewFieldValue {
-  color: #374151;
+  color: var(--text);
   word-break: break-all;
 }
 
 .previewParentsBox {
-  background-color: #f9fafb;
+  background-color: var(--surface-alt);
   border-radius: 0.75rem;
   padding: 0.75rem;
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--border-subtle);
   margin-bottom: 0.75rem;
 }
 
@@ -157,7 +157,7 @@
   gap: 0.25rem;
   font-size: 10px;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 0.375rem;
@@ -171,31 +171,31 @@
 }
 
 .previewParentLabelCell {
-  color: #9ca3af;
+  color: var(--text-muted);
   width: 3rem;
   flex-shrink: 0;
 }
 
 .previewParentValue {
-  color: #374151;
+  color: var(--text);
 }
 
 .previewSectionRow {
   font-size: 11px;
   padding: 0.375rem 0;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
 .previewSpouseName {
-  color: #374151;
+  color: var(--text);
   font-weight: 500;
 }
 
 .previewSpouseId {
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 
 .previewNavBtn {
@@ -233,7 +233,7 @@
 }
 
 .memberRow:hover {
-  background-color: #f9fafb;
+  background-color: var(--surface-alt);
   transform: translateX(2px);
 }
 
@@ -262,7 +262,7 @@
 .memberRowName {
   font-size: 12px;
   font-weight: 500;
-  color: #1f2937;
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -280,7 +280,7 @@
 }
 
 .memberRowChevron {
-  color: #d1d5db;
+  color: var(--border);
   flex-shrink: 0;
 }
 
@@ -307,8 +307,8 @@
   z-index: 40;
   max-height: 62vh;
   border-radius: 1rem;
-  border: 1px solid #e5e7eb;
-  background-color: #ffffff;
+  border: 1px solid var(--border);
+  background-color: var(--surface);
   overflow-y: auto;
   flex-shrink: 0;
   padding: 1rem;
@@ -327,7 +327,7 @@
     border-top: none;
     border-right: none;
     border-bottom: none;
-    border-left: 1px solid #e5e7eb;
+    border-left: 1px solid var(--border);
     width: 20rem;
     box-shadow: -6px 0 16px -8px rgba(0, 0, 0, 0.06);
   }
@@ -348,7 +348,7 @@
 .dragHandle {
   width: 2.5rem;
   height: 0.25rem;
-  background-color: #d1d5db;
+  background-color: var(--border);
   border-radius: 9999px;
 }
 
@@ -387,7 +387,7 @@
 .panelHeaderLabel {
   font-size: 10px;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -409,7 +409,7 @@
   font-size: 15px;
   font-weight: 600;
   text-align: center;
-  color: #1f2937;
+  color: var(--text);
   line-height: 1.35;
 }
 
@@ -426,13 +426,13 @@
 
 .panelQuota {
   font-size: 10px;
-  color: #9ca3af;
+  color: var(--text-muted);
   text-align: center;
   margin-bottom: 1rem;
 }
 
 .panelQuotaValue {
-  color: #4b5563;
+  color: var(--text-faint);
   font-weight: 500;
 }
 
@@ -444,19 +444,19 @@
   display: flex;
   gap: 0.5rem;
   padding: 0.375rem 0;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--border-subtle);
   font-size: 12px;
 }
 
 .panelFieldLabel {
-  color: #9ca3af;
+  color: var(--text-muted);
   width: 5rem;
   flex-shrink: 0;
   font-size: 11px;
 }
 
 .panelFieldValue {
-  color: #374151;
+  color: var(--text);
   word-break: break-all;
   line-height: 1.35;
 }
@@ -464,15 +464,15 @@
 .panelRelSection {
   margin-top: 0.75rem;
   padding-top: 0.75rem;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .panelParentsBox {
   margin-top: 0.75rem;
-  background-color: #f9fafb;
+  background-color: var(--surface-alt);
   border-radius: 0.75rem;
   padding: 0.75rem;
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--border-subtle);
 }
 
 .panelParentsLabel {
@@ -481,7 +481,7 @@
   gap: 0.375rem;
   font-size: 10px;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 0.375rem;
@@ -504,20 +504,20 @@
 }
 
 .panelParentLabelCell {
-  color: #9ca3af;
+  color: var(--text-muted);
   width: 3rem;
   flex-shrink: 0;
 }
 
 .panelParentValue {
-  color: #374151;
+  color: var(--text);
 }
 
 .panelParentAcNo {
   font-size: 9px;
   font-family: monospace;
-  color: #9ca3af;
-  background-color: #f3f4f6;
+  color: var(--text-muted);
+  background-color: var(--border-subtle);
   border-radius: 9999px;
   padding: 0.0625rem 0.375rem;
   margin-left: 0.25rem;
@@ -525,13 +525,13 @@
 }
 
 .panelChevronSm {
-  color: #d1d5db;
+  color: var(--border);
 }
 
 .panelSectionLabel {
   font-size: 10px;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 0.375rem;

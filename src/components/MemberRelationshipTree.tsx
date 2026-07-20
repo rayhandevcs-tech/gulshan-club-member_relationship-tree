@@ -12,29 +12,32 @@ import ReactFlow, {
   useReactFlow,
   useNodesInitialized,
 } from 'reactflow';
-import { TYPE_CONFIG, getInitials } from '@/lib/memberUtils';
+import { TYPE_CONFIG, getInitials, typeBg, typeBgHover } from '@/lib/memberUtils';
 import type { Member } from '@/lib/types';
 import {
   buildGraph, applyLayout, findRoot,
   getType, isDead, dispName, photoOf, displayAcno,
   CARD_W, CARD_H, SLOT_W, SLOT_H, CONN_COLOR,
-} from './Quotatreelayout';
+} from '@/lib/quotaTreeLayout';
+import { useMemberStore, type Theme } from '@/store/memberStore';
 
 
-function cardColors(m: Member) {
+function cardColors(m: Member, theme: Theme) {
   if (isDead(m)) {
-
-    return { border: '#9CA3AF', avatarBg: '#6B7280', cardBg: '#F3F4F6', cardBgHover: '#E5E7EB' };
+    return theme === 'dark'
+      ? { border: '#9CA3AF', avatarBg: '#6B7280', cardBg: '#23262b', cardBgHover: '#2b2f36' }
+      : { border: '#9CA3AF', avatarBg: '#6B7280', cardBg: '#F3F4F6', cardBgHover: '#E5E7EB' };
   }
   if (m.succession) {
-
-    return { border: '#EAB308', avatarBg: '#CA8A04', cardBg: '#FEFCE8', cardBgHover: '#FDF3C7' };
+    return theme === 'dark'
+      ? { border: '#EAB308', avatarBg: '#CA8A04', cardBg: '#2b2410', cardBgHover: '#382e15' }
+      : { border: '#EAB308', avatarBg: '#CA8A04', cardBg: '#FEFCE8', cardBgHover: '#FDF3C7' };
   }
   const c = TYPE_CONFIG[getType(m) as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
-  // A light tint of the member's type color instead of flat white — keeps
-  // cards from blending into the page background — with a deeper tint of
-  // the same hue on hover instead of just a shadow/lift.
-  return { border: c.color, avatarBg: c.color, cardBg: c.bg, cardBgHover: `${c.color}29` };
+  // A tint of the member's type color instead of flat white/black — keeps
+  // cards from blending into the page background in either theme — with a
+  // deeper tint of the same hue on hover instead of just a shadow/lift.
+  return { border: c.color, avatarBg: c.color, cardBg: typeBg(c, theme), cardBgHover: typeBgHover(c, theme) };
 }
 
 const handleStyle = { background: CONN_COLOR, width: 8, height: 8, border: 'none' } as const;
@@ -51,9 +54,13 @@ interface MemberNodeData {
 function MemberNodeComp({ data }: { data: MemberNodeData }) {
   const { member: m, isSuccessor, onPick, highlighted } = data;
   const [hovered, setHovered] = useState(false);
-  const { border, avatarBg, cardBg, cardBgHover } = cardColors(m);
+  const theme = useMemberStore(state => state.theme);
+  const { border, avatarBg, cardBg, cardBgHover } = cardColors(m, theme);
   const name = dispName(m);
-  const bg   = isSuccessor ? (hovered ? '#fef3c7' : '#fffbeb') : (hovered ? cardBgHover : cardBg);
+  const successorBg = theme === 'dark'
+    ? (hovered ? '#332711' : '#241d0e')
+    : (hovered ? '#fef3c7' : '#fffbeb');
+  const bg = isSuccessor ? successorBg : (hovered ? cardBgHover : cardBg);
 
   return (
     // no fixed node width: the container hugs the card, so the left/right
@@ -76,9 +83,9 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
         onMouseLeave={() => setHovered(false)}
         className={highlighted ? 'search-highlight-card' : undefined}
         style={{
-          border: `2.5px solid ${border}`, borderRadius: 18, background: bg,
-          padding: '22px 22px',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+          border: `2.5px solid ${border}`, borderRadius: 20, background: bg,
+          padding: '32px 28px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
           cursor: 'pointer', width: CARD_W,
           boxShadow: hovered ? `0 12px 26px -4px rgba(0,0,0,0.2), 0 0 0 3px ${border}2e` : '0 2px 6px rgba(0,0,0,0.08)',
           transform: hovered ? 'translateY(-3px) scale(1.015)' : 'none',
@@ -87,12 +94,12 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
         }}
       >
         <div style={{
-          width: 160, height: 160, borderRadius: '50%', backgroundColor: avatarBg,
+          width: 200, height: 200, borderRadius: '50%', backgroundColor: avatarBg,
           backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
           backgroundSize: 'cover', backgroundPosition: 'center 22%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 28, fontWeight: 700, color: '#fff', flexShrink: 0,
-          border: `4px solid ${border}`,
+          fontSize: 34, fontWeight: 700, color: '#fff', flexShrink: 0,
+          border: `5px solid ${border}`,
           boxSizing: 'border-box',
           boxShadow: hovered ? '0 3px 10px rgba(0,0,0,0.18)' : 'none',
           transition: 'box-shadow 180ms ease',
@@ -104,27 +111,28 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
         </div>
 
         <div style={{
-          fontSize: 28, fontWeight: 700, color: '#111827', textAlign: 'center',
-          lineHeight: 1.3, width: CARD_W - 30, overflowWrap: 'break-word',
+          fontSize: 30, fontWeight: 700, color: 'var(--text-strong)', textAlign: 'center',
+          lineHeight: 1.28, width: CARD_W - 44, overflowWrap: 'break-word',
+          minHeight: 30 * 1.28 * 2,
         }}>
           {name}
         </div>
 
         <div style={{
-          fontSize: 23, fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.03em',
-          color: '#000000', background: `${border}3d`, border: `2.5px solid ${border}`,
-          padding: '6px 18px', borderRadius: 999,
+          fontSize: 25, fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.03em',
+          color: 'var(--text-strong)', background: `${border}3d`, border: `2.5px solid ${border}`,
+          padding: '8px 22px', borderRadius: 999,
           boxShadow: `0 0 0 3px ${border}22`,
         }}>{displayAcno(m.id)}</div>
 
         {isDead(m) && (
-          <span style={{ fontSize: 15, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '3px 11px', borderRadius: 999 }}>
+          <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-faint)', background: 'var(--border-subtle)', padding: '4px 13px', borderRadius: 999 }}>
             Deceased
           </span>
         )}
 
         {m.since && (
-          <div style={{ fontSize: 19, fontWeight: 700, color: '#6B7280', marginTop: 1 }}>
+          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-muted)', marginTop: 2 }}>
             Joined {m.since}
           </div>
         )}
@@ -150,10 +158,14 @@ interface SlotNodeData {
 function SlotNodeComp({ data }: { data: SlotNodeData }) {
   const { member: m, role, nested, reference, onPick, highlighted } = data;
   const [hovered, setHovered] = useState(false);
-  const { border, avatarBg, cardBg, cardBgHover } = cardColors(m);
+  const theme = useMemberStore(state => state.theme);
+  const { border, avatarBg, cardBg, cardBgHover } = cardColors(m, theme);
   const name      = dispName(m);
-  const roleColor = role === 'A4D' ? '#7c3aed' : '#c2410c';
-  const roleBg    = role === 'A4D' ? '#f3e8ff' : '#ffedd5';
+  const dark      = theme === 'dark';
+  const roleColor = dark ? (role === 'A4D' ? '#c4a4f7' : '#f0a878') : (role === 'A4D' ? '#7c3aed' : '#c2410c');
+  const roleBg    = dark ? (role === 'A4D' ? '#2b2143' : '#3a2413') : (role === 'A4D' ? '#f3e8ff' : '#ffedd5');
+  const refBg     = dark ? '#232a4d' : '#E0E7FF';
+  const refColor  = dark ? '#a9b6f5' : '#3730A3';
   const slotHandleStyle = { background: CONN_COLOR, width: 7, height: 7, border: 'none' } as const;
 
   return (
@@ -170,21 +182,21 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
       <div style={{ display: 'flex', alignItems: 'center', width: SLOT_W }}>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
           <div style={{
-            fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
-            padding: '5px 14px', borderRadius: 999, background: roleBg, color: roleColor,
+            fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
+            padding: '6px 16px', borderRadius: 999, background: roleBg, color: roleColor,
           }}>
             {role}
           </div>
         </div>
 
-        <div style={{ width: 16, flexShrink: 0 }} />
+        <div style={{ width: 20, flexShrink: 0 }} />
 
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
           {reference && (
             <div style={{
-              fontSize: 13, fontWeight: 700,
-              padding: '5px 14px', borderRadius: 999,
-              background: '#E0E7FF', color: '#3730A3',
+              fontSize: 14, fontWeight: 700,
+              padding: '6px 16px', borderRadius: 999,
+              background: refBg, color: refColor,
             }}>
               {reference}
             </div>
@@ -198,24 +210,24 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
         onMouseLeave={() => setHovered(false)}
         className={highlighted ? 'search-highlight-card' : undefined}
         style={{
-          border: `${nested ? 3 : 3.5}px solid ${border}`, borderRadius: 13, background: hovered ? cardBgHover : cardBg,
-          padding: '18px 20px',
-          display: 'flex', flexDirection: 'column', gap: 8,
+          border: `${nested ? 3 : 3.5}px solid ${border}`, borderRadius: 15, background: hovered ? cardBgHover : cardBg,
+          padding: '26px 26px',
+          display: 'flex', flexDirection: 'column', gap: 12,
           cursor: 'pointer', width: SLOT_W, textAlign: 'left',
           boxShadow: hovered ? `0 8px 18px -3px rgba(0,0,0,0.18), 0 0 0 2px ${border}26` : '0 1px 3px rgba(0,0,0,0.06)',
           transform: hovered ? 'translateY(-2px)' : 'none',
           transition: 'box-shadow 180ms ease, transform 180ms ease, background 180ms ease',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
 
           <div style={{
-            width: 94, height: 94, borderRadius: '50%', backgroundColor: avatarBg,
+            width: 122, height: 122, borderRadius: '50%', backgroundColor: avatarBg,
             backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
             backgroundSize: 'cover', backgroundPosition: 'center 22%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 18, fontWeight: 700, color: '#fff', flexShrink: 0,
-            border: `3px solid ${border}`,
+            fontSize: 22, fontWeight: 700, color: '#fff', flexShrink: 0,
+            border: `4px solid ${border}`,
             boxSizing: 'border-box',
 
           }}>
@@ -224,26 +236,29 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
 
           <div style={{ minWidth: 0, flex: 1 }}>
 
-            <div style={{ fontSize: 23, fontWeight: 600, color: '#111827', lineHeight: 1.3, overflowWrap: 'break-word' }}>
+            <div style={{
+              fontSize: 24, fontWeight: 600, color: 'var(--text-strong)', lineHeight: 1.28, overflowWrap: 'break-word',
+              minHeight: 24 * 1.28 * 2,
+            }}>
               {name}
             </div>
 
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 5, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 7, flexWrap: 'wrap' }}>
               <span style={{
-                fontSize: 18.5, fontWeight: 800, fontFamily: 'monospace',
-                color: '#000000', background: `${border}3d`, border: `2px solid ${border}`,
-                padding: '3px 11px', borderRadius: 999,
+                fontSize: 19, fontWeight: 800, fontFamily: 'monospace',
+                color: 'var(--text-strong)', background: `${border}3d`, border: `2px solid ${border}`,
+                padding: '4px 13px', borderRadius: 999,
                 boxShadow: `0 0 0 2.5px ${border}22`,
               }}>{displayAcno(m.id)}</span>
               {isDead(m) && (
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#4B5563', background: '#E5E7EB', padding: '2px 9px', borderRadius: 999 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-faint)', background: 'var(--border-subtle)', padding: '2px 9px', borderRadius: 999 }}>
                   Deceased
                 </span>
               )}
             </div>
 
             {m.since && (
-              <div style={{ fontSize: 17, fontWeight: 700, color: '#6B7280', marginTop: 4 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-muted)', marginTop: 6 }}>
                 Joined {m.since}
               </div>
             )}
@@ -264,8 +279,8 @@ function UnionNodeComp({ data }: { data: { labelOffsetY?: number } }) {
       <span style={{
         position: 'absolute', top: data.labelOffsetY ?? 40, left: -10, whiteSpace: 'nowrap',
         transform: 'translateX(-100%)',
-        fontSize: 16, fontWeight: 800, color: '#374151',
-        background: '#E5E7EB', padding: '4px 11px', borderRadius: 7,
+        fontSize: 16, fontWeight: 800, color: 'var(--text)',
+        background: 'var(--border-subtle)', padding: '4px 11px', borderRadius: 7,
       }}>
         Children
       </span>
@@ -286,6 +301,7 @@ interface Props {
 }
 
 function FlowInner({ rootId, members, onPick, bioMode, highlightedId }: Props) {
+  const theme = useMemberStore(state => state.theme);
   const rootMember = useMemo(
     () => members.find(m => m.id === findRoot(rootId, members)),
     [rootId, members],
@@ -293,9 +309,9 @@ function FlowInner({ rootId, members, onPick, bioMode, highlightedId }: Props) {
 
   const { nodes: rawNodes, edges } = useMemo(() => {
     if (!rootMember) return { nodes: [], edges: [] };
-    const raw = buildGraph(rootMember, members, onPick, bioMode ?? false);
+    const raw = buildGraph(rootMember, members, onPick, bioMode ?? false, theme === 'dark');
     return applyLayout(raw.nodes, raw.edges);
-  }, [rootMember, members, onPick, bioMode]);
+  }, [rootMember, members, onPick, bioMode, theme]);
 
   const nodes = useMemo(
     () => rawNodes.map(n => (n.type === 'member' || n.type === 'slot')
@@ -341,7 +357,7 @@ function FlowInner({ rootId, members, onPick, bioMode, highlightedId }: Props) {
         minZoom={0.1}
         maxZoom={2.5}
       >
-        <Background color="#E2E8F0" gap={22} size={1} />
+        <Background color={theme === 'dark' ? '#2a2e39' : '#E2E8F0'} gap={22} size={1} />
         <Controls
           showInteractive={false}
           style={{ bottom: 10, right: 10, left: 'auto', top: 'auto' }}
@@ -351,7 +367,7 @@ function FlowInner({ rootId, members, onPick, bioMode, highlightedId }: Props) {
   );
 }
 
-export function QuotaFamilyDiagram(props: Props) {
+export function MemberRelationshipTree(props: Props) {
   return (
     <ReactFlowProvider>
       <FlowInner {...props} />
