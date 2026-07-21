@@ -13,4 +13,4 @@
 // write endpoint. In 'static' and 'api' mode, treat the tree as read-only.
 export type DataSourceMode = 'static' | 'database' | 'api';
 
-export const DATA_SOURCE: DataSourceMode = 'database';
+export const DATA_SOURCE: DataSourceMode = 'api';
