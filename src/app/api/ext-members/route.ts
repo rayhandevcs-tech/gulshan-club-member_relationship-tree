@@ -154,6 +154,30 @@ export async function GET() {
               rootMember.motherName = itemName || null;
               if (itemAcno) rootMember.motherId = itemAcno;
             }
+
+            // A parent with a real A/C needs their own member record too -
+            // otherwise fatherId/motherId above points at someone who
+            // doesn't exist anywhere in `members`, so the Parents row in
+            // DetailPanel can never be clicked through to their own card.
+            // `seen` already holds every core member's own id by this
+            // point (added synchronously before any core member's first
+            // await), so this only fires for a parent who ISN'T already
+            // going to get their own full record - e.g. a deceased parent
+            // no longer in the active coremember list, or one linked from
+            // a sibling processed earlier in this same pass.
+            if (itemAcno && itemName && !seen.has(itemAcno)) {
+              seen.add(itemAcno);
+              members.push({
+                id: itemAcno,
+                name: itemName,
+                via: 'core',
+                pid: null,
+                rel: null,
+                gender: relation === 'Father' ? 'M' : relation === 'Mother' ? 'F' : null,
+                since: null,
+                photoUrl: clean(item.img) || null,
+              });
+            }
             continue;
           }
 
