@@ -93,6 +93,7 @@ export async function GET() {
           motherId: null,
           fatherName: null,
           motherName: null,
+          photoUrl: clean(core.img) || null,
         };
         members.push(rootMember);
 
@@ -167,6 +168,7 @@ export async function GET() {
                 rel: 'spouse',
                 gender: null,
                 since: null,
+                photoUrl: clean(item.img) || null,
               });
             } else if (itemName && !seen.has(effectiveSpouseId!)) {
               // No club A/C — not a member, so she never appears in the
@@ -256,6 +258,7 @@ export async function GET() {
             // either parent.
             motherId: isPlainChild && effectiveSpouseId ? effectiveSpouseId : null,
             quotaNote: node === 'A4D' ? `4(d) via ${clubAcno}` : `Associate via ${clubAcno}`,
+            photoUrl: clean(item.img) || null,
           });
         }
       }),
