@@ -16,6 +16,7 @@ interface CoreMemberDto {
   id: string;
   acno: string;
   name: string;
+  img?: string | null;
 }
 
 interface TreeItemDto {
@@ -24,6 +25,7 @@ interface TreeItemDto {
   Name: string;
   Relation: string;
   Code: string;
+  img?: string | null;
 }
 
 const clean = (v: string | null | undefined) => (v ?? '').trim();
