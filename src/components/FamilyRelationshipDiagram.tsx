@@ -34,12 +34,13 @@ const FAM_HGAP   = 75;
 const FAM_SGAP   = 155;
 const FAM_VGAP   = 220;
 
-type FamRole = 'owner' | 'spouse' | 'child';
+type FamRole = 'owner' | 'spouse' | 'child' | 'parent';
 
 const FAM_ROLE_STYLE: Record<FamRole, { border: string; bg: string; bgHover: string; bgNight: string; bgNightHover: string }> = {
   owner:  { border: '#0F766E', bg: '#F0FDFA', bgHover: '#CCFBF1', bgNight: '#0D211E', bgNightHover: '#123830' },
   spouse: { border: '#BE185D', bg: '#FDF2F8', bgHover: '#FCE7F3', bgNight: '#2B131F', bgNightHover: '#3A1A2A' },
   child:  { border: '#6D28D9', bg: '#F5F3FF', bgHover: '#EDE9FE', bgNight: '#211A3D', bgNightHover: '#2D2454' },
+  parent: { border: '#1D4ED8', bg: '#EFF6FF', bgHover: '#DBEAFE', bgNight: '#111E3D', bgNightHover: '#17294F' },
 };
 
 interface FamCardData {
@@ -167,6 +168,19 @@ function buildFocusedGraph(focusId: string, members: Member[], dark: boolean): {
     ? [members.find(m => m.id === owner.pid)].filter((x): x is Member => !!x)
     : members.filter(m => m.pid === focusId && m.rel === 'spouse');
 
+  // Owner's own parents (not the spouse's) sit in a row above - only shown
+  // when they resolved to an actual member record (a name-only fatherName/
+  // motherName fallback with no real A/C has nothing to render as a card).
+  const seenParentIds = new Set<string>();
+  const parents = [
+    owner.fatherId ? members.find(m => m.id === owner.fatherId) : null,
+    owner.motherId ? members.find(m => m.id === owner.motherId) : null,
+  ].filter((x): x is Member => {
+    if (!x || seenParentIds.has(x.id)) return false;
+    seenParentIds.add(x.id);
+    return true;
+  });
+
   // Bio children via fatherId/motherId; structural rel=child as fallback
   const parentIds = new Set([owner.id, ...spouses.map(s => s.id)]);
   const seenIds = new Set<string>([owner.id, ...spouses.map(s => s.id)]);
@@ -193,8 +207,33 @@ function buildFocusedGraph(focusId: string, members: Member[], dark: boolean): {
   const row2Y   = row1Y + FAM_CARD_H + FAM_VGAP;
   const childX0 = mid - botW / 2;
 
+  // Parents row sits above the owner (mirrors the children row below) -
+  // centered on the owner's own card, not the whole owner+spouse+children
+  // span, since these are specifically the owner's parents.
+  const parentsRowW = parents.length * FAM_CARD_W + Math.max(parents.length - 1, 0) * FAM_HGAP;
+  const parentsStartX = ownerX + FAM_CARD_W / 2 - parentsRowW / 2;
+  const parentRowY = row1Y - FAM_CARD_H - FAM_VGAP;
+
   const nodes: Node[] = [];
   const edges: Edge[] = [];
+
+  parents.forEach((parent, i) => {
+    const px = parentsStartX + i * (FAM_CARD_W + FAM_HGAP);
+    nodes.push({
+      id: parent.id, type: 'card', position: { x: px, y: parentRowY },
+      data: {
+        member: parent, role: 'parent' as FamRole,
+        caption: parent.id === owner.fatherId ? 'Father' : 'Mother',
+        onPick: undefined,
+      },
+    });
+    edges.push({
+      id: `e-parent-${parent.id}-${owner.id}`,
+      source: parent.id, target: owner.id,
+      type: 'smoothstep',
+      style: { stroke: '#9CA3AF', strokeWidth: 3.5 },
+    });
+  });
 
   nodes.push({
     id: owner.id, type: 'card', position: { x: ownerX, y: row1Y },
