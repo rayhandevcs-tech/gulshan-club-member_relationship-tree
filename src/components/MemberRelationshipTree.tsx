@@ -7,17 +7,21 @@ import ReactFlow, {
   Controls,
   Handle,
   Position,
+  MarkerType,
   NodeTypes,
   NodeMouseHandler,
   useReactFlow,
   useNodesInitialized,
+  type Node,
+  type Edge,
 } from 'reactflow';
 import { TYPE_CONFIG, getInitials, typeBg, typeBgHover } from '@/lib/memberUtils';
 import type { Member } from '@/lib/types';
 import {
   buildGraph, applyLayout, findRoot,
   getType, isDead, dispName, photoOf, displayAcno,
-  CARD_W, CARD_H, SLOT_W, SLOT_H, CONN_COLOR,
+  nodesOfKind, displayMember, getRefFromRelation, slotRole,
+  CARD_W, CARD_H, SLOT_W, SLOT_H, CONN_COLOR, BESIDE_GAP,
 } from '@/lib/quotaTreeLayout';
 import { useMemberStore, type Theme } from '@/store/memberStore';
 
@@ -290,6 +294,173 @@ function UnionNodeComp({ data }: { data: { labelOffsetY?: number } }) {
 
 const nodeTypes: NodeTypes = { member: MemberNodeComp, slot: SlotNodeComp, union: UnionNodeComp };
 
+// ── Flat single-layer layout for a core member's own nodes[] ──────────────────
+// Parents on top, Transfer/Core/Spouse in the middle row, A4D+Associate below.
+// No recursion into further generations — that's the whole point: a quota
+// holder one level up can have their own unrelated second family, and
+// walking the old dagre tree down through it produced a confusing mashup.
+// Manual positions (no dagre) — this is always exactly one shape.
+function buildMemberRelGraph(
+  owner: Member,
+  members: Member[],
+  onPick: (id: string) => void,
+  dark: boolean,
+): { nodes: Node[]; edges: Edge[] } {
+  const neutralLabelBg = dark ? '#2a2e39' : '#E5E7EB';
+  const neutralLabelFg = dark ? '#e5e7eb' : '#374151';
+  const amberLabelBg   = dark ? '#3a2e12' : '#fef3c7';
+  const amberLabelFg   = dark ? '#f0c975' : '#92400e';
+
+  const parents       = nodesOfKind(owner, members, ['Parent']);
+  const spouseEntry   = nodesOfKind(owner, members, ['Spouse'])[0];
+  const transferEntry = nodesOfKind(owner, members, ['Transfer'])[0];
+  const slotEntries   = nodesOfKind(owner, members, ['A4D', 'Associate']);
+
+  const nodes: Node[] = [];
+  const edges: Edge[] = [];
+
+  const H_GAP      = BESIDE_GAP;
+  const PARENT_GAP = 160;
+  const SLOT_GAP   = 48;
+  const PARENT_Y   = 0;
+  const CORE_Y     = CARD_H + 240;
+  const SLOT_Y     = CORE_Y + CARD_H + 180;
+
+  const slotRowW = slotEntries.length > 0
+    ? slotEntries.length * SLOT_W + (slotEntries.length - 1) * SLOT_GAP
+    : 0;
+  const coreRowW = CARD_W
+    + (transferEntry ? CARD_W + H_GAP : 0)
+    + (spouseEntry ? CARD_W + H_GAP : 0);
+  const totalWidth = Math.max(slotRowW, coreRowW, CARD_W);
+
+  const coreX     = (totalWidth - CARD_W) / 2;
+  const spouseX   = coreX + CARD_W + H_GAP;
+  const transferX = coreX - CARD_W - H_GAP;
+
+  nodes.push({
+    id: owner.id, type: 'member', position: { x: coreX, y: CORE_Y },
+    data: { member: owner, onPick },
+  });
+
+  if (spouseEntry) {
+    const spouse = displayMember(spouseEntry);
+    nodes.push({
+      id: spouse.id, type: 'member', position: { x: spouseX, y: CORE_Y },
+      data: { member: spouse, onPick },
+    });
+    edges.push({
+      id: `e-spouse-${owner.id}-${spouse.id}`,
+      source: owner.id, sourceHandle: 'right-out',
+      target: spouse.id, targetHandle: 'left-in',
+      type: 'straight', label: 'Spouse',
+      style: { stroke: '#9CA3AF', strokeWidth: 3.5 },
+      labelStyle: { fontSize: 16, fill: neutralLabelFg, fontWeight: 800 },
+      labelBgStyle: { fill: neutralLabelBg, fillOpacity: 1, borderRadius: 7 },
+      labelBgPadding: [10, 6],
+    });
+  }
+
+  if (transferEntry) {
+    const transfer = displayMember(transferEntry);
+    // "Transfer from" (the common case — this member received the A/C) vs
+    // "Transfer to" (this member gave it away): the arrow always points at
+    // whoever RECEIVED the account, regardless of which side of the card
+    // the other party happens to sit on visually.
+    const isOutgoing = transferEntry.relation.toLowerCase().includes('to');
+    nodes.push({
+      id: transfer.id, type: 'member', position: { x: transferX, y: CORE_Y },
+      data: { member: transfer, onPick },
+    });
+    edges.push({
+      id: `e-transfer-${owner.id}-${transfer.id}`,
+      source: isOutgoing ? owner.id : transfer.id,
+      sourceHandle: isOutgoing ? 'left-out' : 'right-out',
+      target: isOutgoing ? transfer.id : owner.id,
+      targetHandle: isOutgoing ? 'right-in' : 'left-in',
+      type: 'straight', label: 'A/C Transfer',
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#F59E0B' },
+      style: { stroke: '#F59E0B', strokeWidth: 3.5 },
+      labelStyle: { fontSize: 16, fill: amberLabelFg, fontWeight: 800 },
+      labelBgStyle: { fill: amberLabelBg, fillOpacity: 1, borderRadius: 7 },
+      labelBgPadding: [10, 6],
+    });
+  }
+
+  if (parents.length > 0) {
+    const parentsRowW = parents.length * CARD_W + Math.max(parents.length - 1, 0) * PARENT_GAP;
+    const parentsStartX = coreX + CARD_W / 2 - parentsRowW / 2;
+
+    parents.forEach((entry, i) => {
+      const px = parentsStartX + i * (CARD_W + PARENT_GAP);
+      nodes.push({
+        id: entry.member.id, type: 'member', position: { x: px, y: PARENT_Y },
+        data: { member: displayMember(entry), onPick },
+      });
+    });
+
+    if (parents.length > 1) {
+      edges.push({
+        id: `e-parentpair-${owner.id}`,
+        source: parents[0].member.id, sourceHandle: 'right-out',
+        target: parents[1].member.id, targetHandle: 'left-in',
+        type: 'straight', label: 'Spouse',
+        style: { stroke: '#9CA3AF', strokeWidth: 3.5 },
+        labelStyle: { fontSize: 16, fill: neutralLabelFg, fontWeight: 800 },
+        labelBgStyle: { fill: neutralLabelBg, fillOpacity: 1, borderRadius: 7 },
+        labelBgPadding: [10, 6],
+      });
+    }
+
+    // Union sits ON the parent-pair spousal line (or the single parent's own
+    // bottom edge) and drops the "Children" stem straight to core — same
+    // trick applyLayout() uses for the root couple's children line.
+    const unionId = `union-parents-${owner.id}`;
+    const unionX = parents.length > 1
+      ? parentsStartX + parentsRowW / 2
+      : parentsStartX + CARD_W / 2;
+    const unionY = parents.length > 1
+      ? PARENT_Y + CARD_H / 2
+      : PARENT_Y + CARD_H;
+    nodes.push({
+      id: unionId, type: 'union',
+      position: { x: unionX, y: unionY },
+      data: { labelOffsetY: (CORE_Y - unionY) * 0.4 },
+      style: { width: 1, height: 1 },
+    });
+    edges.push({
+      id: `e-parentfan-${owner.id}`,
+      source: unionId, sourceHandle: 'bottom',
+      target: owner.id, targetHandle: 'top',
+      type: 'smoothstep',
+      style: { stroke: '#94A3B8', strokeWidth: 3.5 },
+    });
+  }
+
+  if (slotEntries.length > 0) {
+    const slotStartX = coreX + CARD_W / 2 - slotRowW / 2;
+    slotEntries.forEach((entry, i) => {
+      const slot = displayMember(entry);
+      const role = slotRole(entry.member);
+      const sx = slotStartX + i * (SLOT_W + SLOT_GAP);
+      const sid = `slot-${slot.id}`;
+      nodes.push({
+        id: sid, type: 'slot', position: { x: sx, y: SLOT_Y },
+        data: { member: slot, role, reference: getRefFromRelation(entry.relation), onPick },
+      });
+      edges.push({
+        id: `e-slot-${owner.id}-${sid}`,
+        source: owner.id, target: sid,
+        sourceHandle: 'bottom', targetHandle: 'top',
+        type: 'smoothstep',
+        style: { stroke: role === 'A4D' ? '#9333ea77' : '#ea580c77', strokeWidth: 3.5, strokeDasharray: '6 4' },
+      });
+    });
+  }
+
+  return { nodes, edges };
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 interface Props {
@@ -302,13 +473,33 @@ interface Props {
 
 function FlowInner({ rootId, members, onPick, bioMode, highlightedId }: Props) {
   const theme = useMemberStore(state => state.theme);
-  const rootMember = useMemo(
-    () => members.find(m => m.id === findRoot(rootId, members)),
-    [rootId, members],
-  );
+
+  // Core member (has its own raw `.nodes`): render exactly who was
+  // searched/clicked, no walk-up — a core member's OWN quota holder can have
+  // an unrelated second family of their own, so climbing all the way to the
+  // ultimate ancestor used to land on the wrong person entirely. Non-core
+  // (an a4d/associate dependent): walk up just far enough to reach their
+  // nearest core sponsor — NOT the full pid chain, which would also walk
+  // past that sponsor into whoever sponsors them. Only if no core ancestor
+  // exists anywhere in the chain (shouldn't happen for real API data) does
+  // this fall back to the old "walk to the ultimate ancestor" behavior, for
+  // the legacy recursive quota-tree view.
+  const rootMember = useMemo(() => {
+    let cur = members.find(m => m.id === rootId);
+    const seen = new Set<string>();
+    while (cur && !cur.nodes && !seen.has(cur.id)) {
+      seen.add(cur.id);
+      cur = cur.pid ? members.find(m => m.id === cur!.pid) : undefined;
+    }
+    if (cur) return cur;
+    return members.find(m => m.id === findRoot(rootId, members));
+  }, [rootId, members]);
 
   const { nodes: rawNodes, edges } = useMemo(() => {
     if (!rootMember) return { nodes: [], edges: [] };
+    if (rootMember.nodes) {
+      return buildMemberRelGraph(rootMember, members, onPick, theme === 'dark');
+    }
     const raw = buildGraph(rootMember, members, onPick, bioMode ?? false, theme === 'dark');
     return applyLayout(raw.nodes, raw.edges);
   }, [rootMember, members, onPick, bioMode, theme]);

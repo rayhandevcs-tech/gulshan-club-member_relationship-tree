@@ -17,7 +17,7 @@ import {
 import { getType, getRef, photoOf, displayAcno, isPendingAcno } from '@/lib/quotaTreeLayout';
 import { Member } from '@/lib/types';
 import type { Theme } from '@/store/memberStore';
-import { X, ChevronRight, Users, ArrowRight, Pencil } from 'lucide-react';
+import { X, ChevronRight, Users, ArrowRight } from 'lucide-react';
 import s from './styles/DetailPanel.module.css';
 
 // এক জায়গায় safe color lookup — কোথাও আর সরাসরি TYPE_CONFIG[...] নয়
@@ -57,8 +57,8 @@ function MemberPreviewModal({
 
   const fatherMember = member.fatherId ? getMember(members, member.fatherId) : null;
   const motherMember = member.motherId ? getMember(members, member.motherId) : null;
-  const fatherDisplay = fatherMember?.name ?? member.fatherName ?? member.father;
-  const motherDisplay = motherMember?.name ?? member.motherName ?? member.mother;
+  const fatherDisplay = fatherMember?.name ?? member.fatherName;
+  const motherDisplay = motherMember?.name ?? member.motherName;
 
   return (
     <>
@@ -199,7 +199,7 @@ function sortSlots(list: Member[]): Member[] {
   );
 }
 
-export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void }) {
+export default function DetailPanel() {
   const { members, selectedId, setSelected, navigateTo, theme } = useMemberStore();
   const [previewId, setPreviewId] = useState<string | null>(null);
 
@@ -213,8 +213,8 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
 
   const fatherMember = m.fatherId ? getMember(members, m.fatherId) : null;
   const motherMember = m.motherId ? getMember(members, m.motherId) : null;
-  const fatherDisplay = fatherMember?.name ?? m.fatherName ?? m.father;
-  const motherDisplay = motherMember?.name ?? m.motherName ?? m.mother;
+  const fatherDisplay = fatherMember?.name ?? m.fatherName;
+  const motherDisplay = motherMember?.name ?? m.motherName;
 
   // quota দিতে পারে = নিজের membership (via core/succession)। type নয় — কেউ
   // Permanent হয়েও a4d/associate route-এ থাকতে পারে, সে quota holder নয়।
@@ -256,16 +256,12 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
         <div className={s.panelHeader}>
           <span className={s.panelHeaderLabel}>Member Details</span>
           <div className={s.panelHeaderActions}>
-            {onEdit && (
-              <button onClick={() => onEdit(m.id)} className={s.editBtn} title="Edit member">
-                <Pencil size={12} /> Edit
-              </button>
-            )}
             <button onClick={() => setSelected(null)} className={s.closeBtn}>
               <X size={16} />
             </button>
           </div>
         </div>
+
 
         <div className={s.panelAvatar} style={avatarStyle(m, cfg, theme)}>
           {!photoOf(m) && getInitials(m.name)}
@@ -288,10 +284,8 @@ export default function DetailPanel({ onEdit }: { onEdit?: (id: string) => void 
                              : m.via === 'a4d' ? 'via 4(d) quota'
                              : m.via === 'succession' ? 'Received via succession'
                              : 'Associate access'],
-          ['Member ID',      m.memberId],
-          ['Birth Date',     m.birthDate],
           ['Email',          m.email],
-          ['Phone',          m.phone ?? m.phoneRes ?? m.phoneOff],
+          ['Phone',          m.phone],
           ['A4D Source',     m.quotaNote],
           ['Succession',     m.succession],
           ['Membership Ref', m.membershipRef],

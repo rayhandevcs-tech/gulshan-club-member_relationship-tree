@@ -1,16 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemberStore } from '@/store/memberStore';
-import { fetchMembers } from '@/lib/api';
 import { familyMembers } from '@/lib/demoData';
 import { DATA_SOURCE } from '@/lib/dataSource';
 import MemberTree from '@/components/MemberTree';
 import DetailPanel from '@/components/DetailPanel';
-import MemberForm from '@/components/MemberForm';
 import SearchBar from '@/components/SearchBar';
-import { Plus, LayoutGrid, Network, Sun, Moon } from 'lucide-react';
+import { LayoutGrid, Network, Sun, Moon } from 'lucide-react';
 import s from './page.module.css';
 
 export default function Home() {
@@ -21,7 +19,6 @@ export default function Home() {
     queryKey: ['members', DATA_SOURCE],
     queryFn: () => {
       if (DATA_SOURCE === 'static') return Promise.resolve(familyMembers);
-      if (DATA_SOURCE === 'database') return fetchMembers();
       return fetch('/api/ext-members').then(r => r.json());
     },
   });
@@ -33,12 +30,6 @@ export default function Home() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
-
-  const [formState, setFormState] = useState<{
-    open: boolean;
-    editId?: string;
-    pid?: string;
-  }>({ open: false });
 
   if (isLoading) {
     return <div className={s.root} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#9ca3af' }}>Loading members…</div>;
@@ -91,15 +82,6 @@ export default function Home() {
             <button onClick={toggleTheme} className={s.themeBtn} title="Toggle dark mode">
               {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
             </button>
-
-            {DATA_SOURCE === 'database' && (
-              <button
-                onClick={() => setFormState({ open: true })}
-                className={s.newBtnMobile}
-              >
-                <Plus size={13} />
-              </button>
-            )}
           </div>
 
         </div>
@@ -132,15 +114,6 @@ export default function Home() {
             {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
           </button>
 
-          {DATA_SOURCE === 'database' && (
-            <button
-              onClick={() => setFormState({ open: true })}
-              className={s.newBtnDesktop}
-            >
-              <Plus size={14} /> New Member
-            </button>
-          )}
-
         </div>
 
       </div>
@@ -153,28 +126,12 @@ export default function Home() {
           <MemberTree />
         </div>
 
-        {selectedId && (
-          <DetailPanel
-            onEdit={DATA_SOURCE === 'database' ? id => setFormState({ open: true, editId: id }) : undefined}
-          />
-        )}
+        {selectedId && <DetailPanel />}
 
       </div>
-
-      {/* Add / Edit Modal — only reachable in 'database' mode, since Add/Edit/Delete
-          write to the local DB (/api/members) and have nothing to write back to in
-          'static'/'api' mode. */}
-
-      {DATA_SOURCE === 'database' && formState.open && (
-        <MemberForm
-          onClose={() => setFormState({ open: false })}
-          editId={formState.editId}
-          defaultPid={formState.pid}
-        />
-      )}
 
     </div>
 
   );
-  
+
 }

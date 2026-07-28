@@ -3,7 +3,7 @@
 
 import { Graph, layout } from '@dagrejs/dagre';
 import type { Node, Edge } from 'reactflow';
-import type { Member } from '@/lib/types';
+import type { Member, NodeKind } from '@/lib/types';
 import type { ReactNode } from 'react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -161,6 +161,46 @@ export function getRef(slot: Member, listing: Member): ReactNode {
   return <>{label} of <strong>{parentId}</strong></>;
 }
 
+// ── Raw-node resolution (core members only — see Member.nodes) ────────────────
+
+export interface ResolvedNode { member: Member; relation: string; name: string; photoUrl?: string | null }
+
+// Resolves `owner`'s own raw node list (only ever set on core members) to
+// full Member records, for the given kinds. Returns [] for a non-core
+// owner (no `.nodes`) — callers fall back to the old pid-scan in that case.
+export function nodesOfKind(owner: Member, members: Member[], kinds: NodeKind[]): ResolvedNode[] {
+  if (!owner.nodes) return [];
+  const out: ResolvedNode[] = [];
+  owner.nodes.forEach(n => {
+    if (!kinds.includes(n.node)) return;
+    const member = members.find(x => x.id === n.acno);
+    if (member) out.push({ member, relation: n.relation, name: n.name, photoUrl: n.photoUrl });
+  });
+  return out;
+}
+
+// A single Acno can show up with a different Name/img across two different
+// people's raw node lists (real club data does this — e.g. a mother's name
+// as spelled in her child's tree vs. her own coremember record). Render
+// what THIS specific relationship says, not whatever the target member's
+// own separately-resolved record independently claims — id/type/since/
+// click-navigation all still come from the real resolved member.
+export function displayMember(entry: ResolvedNode): Member {
+  const { member, name, photoUrl } = entry;
+  if (name === member.name && (photoUrl ?? null) === (member.photoUrl ?? null)) return member;
+  return { ...member, name: name || member.name, photoUrl: photoUrl ?? member.photoUrl };
+}
+
+// Text-driven counterpart to getRef() above — used on the raw-node path,
+// where the relation string ("Son", "Daughter of PA-74", "Wife", ...) IS
+// the source of truth, so there's no need to re-derive it from
+// fatherId/gender. Bolds a trailing "of X" cross-reference, same as getRef.
+export function getRefFromRelation(relation: string): ReactNode {
+  const m = relation.match(/^(.*?)\s+of\s+(\S+)$/i);
+  if (!m) return relation;
+  return <>{m[1]} of <strong>{m[2]}</strong></>;
+}
+
 // dagre allocation sizes (slightly padded beyond render size for breathing room)
 export function nodeW(kind: 'member' | 'slot'): number {
   return kind === 'slot' ? SLOT_W + 12 : CARD_W + 20;
@@ -215,25 +255,36 @@ export function buildGraph(
     rootLevel = false,
     offsetHandle = false,
   ) {
-    const slots = members.filter(x =>
-      x.pid === owner.id &&
-      x.via !== 'core' && x.via !== 'succession' &&
+    type SlotEntry = { member: Member; role: 'A4D' | 'Assoc'; reference: ReactNode };
+
+    // Core owner: A4D/Associate placement comes straight from their own raw
+    // node list (matches what the API actually says, and picks up a
+    // no-A/C spouse's own A4D overlap row for free). Non-core owner (e.g.
+    // an a4d spouse who sponsors her own nested slot) has no `.nodes` —
+    // fall back to the old pid scan, unchanged.
+    const passesFilters = (x: Member) =>
       x.id !== besideSpouseId &&
       !bioChildIds.has(x.id) &&
       // in bioMode anyone with known blood parents renders inside the tree
       // as a full card instead — never double-render them as a slot too
       !(bioMode && (x.fatherId != null || x.motherId != null)) &&
-      !seen.has(x.id) && !seen.has(slotNodeId(x.id))
-    );
+      !seen.has(x.id) && !seen.has(slotNodeId(x.id));
 
-    slots.forEach(slot => {
+    const slotEntries: SlotEntry[] = owner.nodes
+      ? nodesOfKind(owner, members, ['A4D', 'Associate'])
+          .filter(({ member }) => passesFilters(member))
+          .map(entry => ({ member: displayMember(entry), role: slotRole(entry.member), reference: getRefFromRelation(entry.relation) }))
+      : members
+          .filter(x => x.pid === owner.id && x.via !== 'core' && x.via !== 'succession' && passesFilters(x))
+          .map(member => ({ member, role: slotRole(member), reference: getRef(member, owner) }));
+
+    slotEntries.forEach(({ member: slot, role, reference }) => {
       const sid = slotNodeId(slot.id);
       seen.add(sid);
-      const role = slotRole(slot);
 
       nodes.push({
         id: sid, type: 'slot',
-        data: { member: slot, role, reference: getRef(slot, owner), onPick },
+        data: { member: slot, role, reference, onPick },
         position: { x: 0, y: 0 },
       });
       edges.push({
@@ -272,15 +323,29 @@ export function buildGraph(
     if (seen.has(m.id)) return;
     seen.add(m.id);
 
-    // pick the ONE beside spouse; all other spouse rows become slots
-    const spouseRows = members.filter(x => x.pid === m.id && x.rel === 'spouse');
-    const spouse = spouseRows.find(x => isBesideSpouse(x, m)) ?? null;
+    // pick the ONE beside spouse; all other spouse rows become slots.
+    // Core member: the first Spouse node in their own raw list, full stop —
+    // no via/account-status gating, so a spouse with no A/C yet still sits
+    // beside. Non-core (no `.nodes`): fall back to the old pid scan.
+    const spouseEntry = m.nodes ? nodesOfKind(m, members, ['Spouse'])[0] : undefined;
+    const spouse = spouseEntry
+      ? displayMember(spouseEntry)
+      : (m.nodes ? null : (members.filter(x => x.pid === m.id && x.rel === 'spouse').find(x => isBesideSpouse(x, m)) ?? null));
     if (spouse) seen.add(spouse.id);
 
     const succNote           = m.succession;
     const isTransferToSpouse = !!(succNote && spouse && succNote === spouse.id);
     const succession         = succNote && !isTransferToSpouse
       ? members.find(x => x.id === succNote) ?? null
+      : null;
+
+    // Reverse case: someone else's account was transferred TO m (a raw
+    // Transfer node — see convertApiData.ts) — that giving member isn't
+    // reachable via any blood/quota chain, so without this m's own
+    // Transfer node would never connect to anything in this tree. Shown
+    // the same way as an outgoing succession, just on m's receiving end.
+    const incomingTransfer = !succession
+      ? members.find(x => x.succession === m.id && !seen.has(x.id)) ?? null
       : null;
 
     const children = getBioChildren(m, spouse, members, bioMode).filter(c => !seen.has(c.id));
@@ -350,6 +415,29 @@ export function buildGraph(
         data: { kind: 'succession' },
       });
       addSlots(succession, new Set());
+    }
+
+    // Incoming transfer → LEFT (mirrors the outgoing-succession block
+    // above, just from the receiving member's side)
+    if (incomingTransfer && !seen.has(incomingTransfer.id)) {
+      seen.add(incomingTransfer.id);
+      nodes.push({
+        id: incomingTransfer.id, type: 'member',
+        data: { member: incomingTransfer, onPick },
+        position: { x: 0, y: 0 },
+      });
+      edges.push({
+        id: `e-succ-${incomingTransfer.id}-${m.id}`,
+        source: m.id, target: incomingTransfer.id,
+        type: 'straight',
+        label: 'A/C transferred',
+        style: { stroke: '#F59E0B', strokeWidth: 3.5, strokeDasharray: '6 3' },
+        labelStyle: { fontSize: 16, fill: amberLabelFg, fontWeight: 800 },
+        labelBgStyle: { fill: amberLabelBg, fillOpacity: 1, borderRadius: 7 },
+        labelBgPadding: [10, 6],
+        data: { kind: 'succession' },
+      });
+      addSlots(incomingTransfer, new Set());
     }
 
     // Only a childless-of-spouse root whose own children exist needs the

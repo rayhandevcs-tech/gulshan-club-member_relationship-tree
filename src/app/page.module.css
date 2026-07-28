@@ -196,49 +196,6 @@
   transform: translateY(-1px);
 }
 
-/* New member button */
-.newBtnMobile {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.4rem 0.75rem;
-  background: linear-gradient(135deg, #4f6df5 0%, #6d5bf0 100%);
-  color: #ffffff;
-  border-radius: 0.625rem;
-  font-size: 12px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 4px 10px -3px rgba(79, 109, 245, 0.55);
-  transition: box-shadow 150ms, transform 150ms;
-}
-
-.newBtnMobile:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 14px -3px rgba(79, 109, 245, 0.6);
-}
-
-.newBtnDesktop {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.55rem 1.15rem;
-  background: linear-gradient(135deg, #4f6df5 0%, #6d5bf0 100%);
-  color: #ffffff;
-  border-radius: 0.625rem;
-  font-size: 12.5px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 4px 12px -3px rgba(79, 109, 245, 0.55);
-  transition: box-shadow 150ms, transform 150ms;
-}
-
-.newBtnDesktop:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px -4px rgba(79, 109, 245, 0.6);
-}
-
 /* Main layout */
 .main {
   display: flex;

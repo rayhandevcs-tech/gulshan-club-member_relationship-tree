@@ -81,7 +81,7 @@ export default function MemberTree() {
 
       <div className={s.tabsRow}>
 
-        {diagramMode === 'focused' && focusHistory.length > 0 && (
+        {focusHistory.length > 0 && (
           <button onClick={goBack} className={s.backBtn}>
             <ArrowLeft size={13} /> Back
           </button>
@@ -120,7 +120,7 @@ export default function MemberTree() {
         {diagramMode === 'bio' && (
 
           <div className={s.bioWrap}>
-            <MemberRelationshipTree rootId={activeRoot.id} members={members} onPick={navigateTo} highlightedId={highlightedId} />
+            <MemberRelationshipTree rootId={focusId} members={members} onPick={navigateTo} highlightedId={highlightedId} />
           </div>
         )}
 

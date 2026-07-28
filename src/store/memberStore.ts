@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Member } from '@/lib/types';
-import { createMemberApi, updateMemberApi, deleteMemberApi, fetchMembers } from '@/lib/api';
 
 export type Theme = 'light' | 'dark';
 
@@ -17,9 +16,6 @@ interface MemberStore {
   view: 'tree' | 'grid';
   theme: Theme;
   setMembers: (members: Member[]) => void;
-  addMember: (m: Member) => Promise<void>;
-  updateMember: (id: string, data: Partial<Member>) => Promise<void>;
-  deleteMember: (id: string) => Promise<void>;
   setSelected: (id: string | null) => void;
   setSearch: (q: string) => void;
   setActiveRoot: (id: string | null) => void;
@@ -47,28 +43,6 @@ export const useMemberStore = create<MemberStore>()(
 
       setMembers: (members) => set({ members }),
 
-      addMember: async (m) => {
-        const created = await createMemberApi(m);
-        set(s => ({ members: [...s.members, created] }));
-      },
-
-      updateMember: async (id, data) => {
-        const updated = await updateMemberApi(id, data);
-        set(s => ({ members: s.members.map(m => m.id === id ? updated : m) }));
-      },
-
-      deleteMember: async (id) => {
-        const { deletedIds } = await deleteMemberApi(id);
-        // Deleting can clear dangling references on OTHER members server-side
-        // (e.g. a succession/fatherId/motherId pointing at the deleted id) —
-        // refetch rather than just filtering, so those stay in sync too.
-        const fresh = await fetchMembers();
-        set(s => ({
-          members: fresh,
-          selectedId: deletedIds.includes(s.selectedId ?? '') ? null : s.selectedId,
-        }));
-      },
-
       setSelected: (id) => set({ selectedId: id }),
       setSearch: (q) => set({ searchQuery: q, activeRootId: null }),
       setActiveRoot: (id) => set({ activeRootId: id, focusHistory: [] }),
@@ -78,7 +52,7 @@ export const useMemberStore = create<MemberStore>()(
       navigateTo: (id) => {
 
         const member = get().members.find(m => m.id === id);
-        const isAnchor = member && (member.rel === null || member.rel === 'child' || member.rel === 'spouse');
+        const isAnchor = member && (member.rel === null || member.rel === 'child' || member.rel === 'spouse' || member.rel === 'sibling');
         set(s => {
           if (isAnchor && s.focusViewId && s.focusViewId !== id) {
             return {
