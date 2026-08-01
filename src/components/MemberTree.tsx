@@ -51,7 +51,7 @@ function EmptyPrompt() {
 
 export default function MemberTree() {
 
-  const { members, activeRootId, focusViewId, focusHistory, highlightedId, view, navigateTo, goBack } = useMemberStore();
+  const { members, activeRootId, focusViewId, focusHistory, highlightedId, view, setSelected, goBack } = useMemberStore();
   const [diagramMode, setDiagramMode] = useState<'focused' | 'bio'>('bio');
 
   const activeRoot = activeRootId
@@ -112,7 +112,7 @@ export default function MemberTree() {
         {diagramMode === 'focused' && (
 
           <div className={s.bioWrap}>
-            <FamilyRelationshipDiagram focusId={focusId} members={members} onPick={navigateTo} highlightedId={highlightedId} />
+            <FamilyRelationshipDiagram focusId={focusId} members={members} onPick={setSelected} highlightedId={highlightedId} />
           </div>
 
         )}
@@ -120,7 +120,7 @@ export default function MemberTree() {
         {diagramMode === 'bio' && (
 
           <div className={s.bioWrap}>
-            <MemberRelationshipTree rootId={focusId} members={members} onPick={navigateTo} highlightedId={highlightedId} />
+            <MemberRelationshipTree rootId={focusId} members={members} onPick={setSelected} highlightedId={highlightedId} />
           </div>
         )}
 

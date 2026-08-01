@@ -53,12 +53,14 @@ interface MemberNodeData {
   isSuccessor?: boolean;
   onPick: (id: string) => void;
   highlighted?: boolean;
+  caption?: ReactNode;
 }
 
 function MemberNodeComp({ data }: { data: MemberNodeData }) {
-  const { member: m, isSuccessor, onPick, highlighted } = data;
+  const { member: m, isSuccessor, onPick, highlighted, caption } = data;
   const [hovered, setHovered] = useState(false);
   const theme = useMemberStore(state => state.theme);
+  const dark = theme === 'dark';
   const { border, avatarBg, cardBg, cardBgHover } = cardColors(m, theme);
   const name = dispName(m);
   const successorBg = theme === 'dark'
@@ -90,7 +92,7 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
           border: `2.5px solid ${border}`, borderRadius: 20, background: bg,
           padding: '32px 28px',
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
-          cursor: 'pointer', width: CARD_W,
+          cursor: 'pointer', width: CARD_W, height: CARD_H, boxSizing: 'border-box',
           boxShadow: hovered ? `0 12px 26px -4px rgba(0,0,0,0.2), 0 0 0 3px ${border}2e` : '0 2px 6px rgba(0,0,0,0.08)',
           transform: hovered ? 'translateY(-3px) scale(1.015)' : 'none',
           transition: 'box-shadow 180ms ease, transform 180ms ease, border-color 180ms ease, background 180ms ease',
@@ -142,6 +144,19 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
         )}
 
       </button>
+
+      {caption && (
+        <div style={{ textAlign: 'center', marginTop: 10 }}>
+          <span style={{
+            fontSize: 18, fontWeight: 800,
+            color: dark ? '#a9b6f5' : '#3730A3',
+            background: dark ? '#232a4d' : '#E0E7FF',
+            padding: '6px 18px', borderRadius: 999,
+          }}>
+            {caption}
+          </span>
+        </div>
+      )}
 
     </div>
 
@@ -314,28 +329,35 @@ function buildMemberRelGraph(
   const parents       = nodesOfKind(owner, members, ['Parent']);
   const spouseEntry   = nodesOfKind(owner, members, ['Spouse'])[0];
   const transferEntry = nodesOfKind(owner, members, ['Transfer'])[0];
+  const childEntries  = nodesOfKind(owner, members, ['Children']);
   const slotEntries   = nodesOfKind(owner, members, ['A4D', 'Associate']);
 
   const nodes: Node[] = [];
   const edges: Edge[] = [];
 
   const H_GAP      = BESIDE_GAP;
-  const PARENT_GAP = 160;
-  const SLOT_GAP   = 48;
+  const SPOUSE_GAP = 460;
+  const PARENT_GAP = 320;
+  const ROW_GAP    = 48;
   const PARENT_Y   = 0;
   const CORE_Y     = CARD_H + 240;
-  const SLOT_Y     = CORE_Y + CARD_H + 180;
+  const SLOT_Y     = CORE_Y + CARD_H + 360;
 
-  const slotRowW = slotEntries.length > 0
-    ? slotEntries.length * SLOT_W + (slotEntries.length - 1) * SLOT_GAP
+  // Children (own A/C) and A4D/Associate (owner's dependents) share one row
+  // and fan out from the same point below the owner card — keeping them on
+  // two separate rows made their fan-out lines cross each other on the way
+  // down to their own row.
+  const descendantWidths = [...childEntries.map(() => CARD_W), ...slotEntries.map(() => SLOT_W)];
+  const descendantRowW = descendantWidths.length > 0
+    ? descendantWidths.reduce((a, b) => a + b, 0) + (descendantWidths.length - 1) * ROW_GAP
     : 0;
   const coreRowW = CARD_W
     + (transferEntry ? CARD_W + H_GAP : 0)
-    + (spouseEntry ? CARD_W + H_GAP : 0);
-  const totalWidth = Math.max(slotRowW, coreRowW, CARD_W);
+    + (spouseEntry ? CARD_W + SPOUSE_GAP : 0);
+  const totalWidth = Math.max(descendantRowW, coreRowW, CARD_W);
 
   const coreX     = (totalWidth - CARD_W) / 2;
-  const spouseX   = coreX + CARD_W + H_GAP;
+  const spouseX   = coreX + CARD_W + SPOUSE_GAP;
   const transferX = coreX - CARD_W - H_GAP;
 
   nodes.push({
@@ -374,10 +396,10 @@ function buildMemberRelGraph(
     });
     edges.push({
       id: `e-transfer-${owner.id}-${transfer.id}`,
-      source: isOutgoing ? owner.id : transfer.id,
-      sourceHandle: isOutgoing ? 'left-out' : 'right-out',
-      target: isOutgoing ? transfer.id : owner.id,
-      targetHandle: isOutgoing ? 'right-in' : 'left-in',
+      source: isOutgoing ? transfer.id : owner.id,
+      sourceHandle: isOutgoing ? 'right-out' : 'left-out',
+      target: isOutgoing ? owner.id : transfer.id,
+      targetHandle: isOutgoing ? 'left-in' : 'right-in',
       type: 'straight', label: 'A/C Transfer',
       markerEnd: { type: MarkerType.ArrowClosed, color: '#F59E0B' },
       style: { stroke: '#F59E0B', strokeWidth: 3.5 },
@@ -437,15 +459,19 @@ function buildMemberRelGraph(
     });
   }
 
-  if (slotEntries.length > 0) {
-    const slotStartX = coreX + CARD_W / 2 - slotRowW / 2;
-    slotEntries.forEach((entry, i) => {
+  if (descendantWidths.length > 0) {
+    let cursorX = coreX + CARD_W / 2 - descendantRowW / 2;
+
+    // A4D/Associate go first (nearer the owner's own center point, which is
+    // where their line comes from), then Children (nearer the marriage-line
+    // anchor to the right of owner) — keeps each group's fan-out lines from
+    // crossing the other's on the way down to this shared row.
+    slotEntries.forEach(entry => {
       const slot = displayMember(entry);
       const role = slotRole(entry.member);
-      const sx = slotStartX + i * (SLOT_W + SLOT_GAP);
       const sid = `slot-${slot.id}`;
       nodes.push({
-        id: sid, type: 'slot', position: { x: sx, y: SLOT_Y },
+        id: sid, type: 'slot', position: { x: cursorX, y: SLOT_Y },
         data: { member: slot, role, reference: getRefFromRelation(entry.relation), onPick },
       });
       edges.push({
@@ -455,7 +481,39 @@ function buildMemberRelGraph(
         type: 'smoothstep',
         style: { stroke: role === 'A4D' ? '#9333ea77' : '#ea580c77', strokeWidth: 3.5, strokeDasharray: '6 4' },
       });
+      cursorX += SLOT_W + ROW_GAP;
     });
+
+    if (childEntries.length > 0) {
+      // Union sits ON the owner<->spouse spousal line (or the owner's own
+      // bottom edge, if there's no spouse) — children belong to the
+      // marriage, not to the owner alone. Mirrors the parents->owner union.
+      const unionId = `union-children-${owner.id}`;
+      const unionX = spouseEntry ? coreX + CARD_W + SPOUSE_GAP / 2 : coreX + CARD_W / 2;
+      const unionY = spouseEntry ? CORE_Y + CARD_H / 2 : CORE_Y + CARD_H;
+      nodes.push({
+        id: unionId, type: 'union',
+        position: { x: unionX, y: unionY },
+        data: { labelOffsetY: (SLOT_Y - unionY) * 0.4 },
+        style: { width: 1, height: 1 },
+      });
+
+      childEntries.forEach(entry => {
+        const child = displayMember(entry);
+        nodes.push({
+          id: child.id, type: 'member', position: { x: cursorX, y: SLOT_Y },
+          data: { member: child, onPick, caption: entry.relation },
+        });
+        edges.push({
+          id: `e-childfan-${owner.id}-${child.id}`,
+          source: unionId, sourceHandle: 'bottom',
+          target: child.id, targetHandle: 'top',
+          type: 'smoothstep',
+          style: { stroke: '#94A3B8', strokeWidth: 3.5 },
+        });
+        cursorX += CARD_W + ROW_GAP;
+      });
+    }
   }
 
   return { nodes, edges };

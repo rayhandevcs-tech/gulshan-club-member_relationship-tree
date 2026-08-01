@@ -26,7 +26,7 @@ export const displayAcno = (id: string): string =>
 // Height grows proportionally more than width (taller than it is wide, from
 // the bigger avatar + 2-line name reservation + roomier padding).
 export const CARD_W = 380;
-export const CARD_H = 480;
+export const CARD_H = 450;
 export const SLOT_W = 420;
 export const SLOT_H = 400;
 
