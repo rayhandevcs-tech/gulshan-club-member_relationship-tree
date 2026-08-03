@@ -19,7 +19,7 @@ import { getInitials } from '@/lib/memberUtils';
 import { Member } from '@/lib/types';
 import { photoOf, dispName, isDead, displayAcno, nodesOfKind, getRefFromRelation, displayMember } from '@/lib/quotaTreeLayout';
 import { useMemberStore } from '@/store/memberStore';
-import styles from './FamilyRelationshipDiagram.module.css';
+import styles from './styles/FamilyRelationshipDiagram.module.css';
 
 interface Props {
   focusId: string;

@@ -24,7 +24,7 @@ import {
   CARD_W, CARD_H, SLOT_W, SLOT_H, BESIDE_GAP,
 } from '@/lib/quotaTreeLayout';
 import { useMemberStore, type Theme } from '@/store/memberStore';
-import styles from './MemberRelationshipTree.module.css';
+import styles from './styles/MemberRelationshipTree.module.css';
 
 
 function cardColors(m: Member, theme: Theme) {
