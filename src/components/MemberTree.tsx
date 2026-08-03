@@ -13,7 +13,9 @@ function GridCard({ member: m }: { member: Member }) {
   const [hovered, setHovered] = useState(false);
   const theme = useMemberStore(state => state.theme);
   const cfg = TYPE_CONFIG[getType(m) as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent;
+
   return (
+    
     <div
       onClick={() => useMemberStore.getState().navigateTo(m.id)}
       onMouseEnter={() => setHovered(true)}

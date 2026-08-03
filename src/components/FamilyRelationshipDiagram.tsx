@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { ReactNode, CSSProperties } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
   Background,
@@ -19,6 +19,7 @@ import { getInitials } from '@/lib/memberUtils';
 import { Member } from '@/lib/types';
 import { photoOf, dispName, isDead, displayAcno, nodesOfKind, getRefFromRelation, displayMember } from '@/lib/quotaTreeLayout';
 import { useMemberStore } from '@/store/memberStore';
+import styles from './FamilyRelationshipDiagram.module.css';
 
 interface Props {
   focusId: string;
@@ -75,76 +76,69 @@ function FamCard({ data }: { data: FamCardData }) {
   const [hovered, setHovered] = useState(false);
 
   return (
-    <div style={{ position: 'relative', width: FAM_CARD_W }}>
-      <Handle type="target" position={Position.Top} isConnectable={false} style={{ opacity: 0 }} />
-      <Handle id="right-out" type="source" position={Position.Right} isConnectable={false} style={{ opacity: 0 }} />
-      <Handle id="left-in" type="target" position={Position.Left} isConnectable={false} style={{ opacity: 0 }} />
+    <div className={styles.wrapper}>
+      <Handle type="target" position={Position.Top} isConnectable={false} className={styles.handleDot} />
+      <Handle id="right-out" type="source" position={Position.Right} isConnectable={false} className={styles.handleDot} />
+      <Handle id="left-in" type="target" position={Position.Left} isConnectable={false} className={styles.handleDot} />
 
       <button
         onClick={e => { e.stopPropagation(); onPick(m.id); }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className={highlighted ? 'search-highlight-card' : undefined}
+        className={`${styles.card}${highlighted ? ' search-highlight-card' : ''}`}
         style={{
-          border: `2px solid ${border}`, borderRadius: 16, background: hovered ? bgHover : bg,
-          padding: '22px 18px', width: '100%',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9,
-          cursor: 'pointer',
-          boxShadow: hovered ? `0 14px 28px -4px rgba(0,0,0,0.2), 0 0 0 3px ${border}2e` : '0 1px 4px rgba(0,0,0,0.06)',
-          transform: hovered ? 'translateY(-4px) scale(1.015)' : 'none',
-          transition: 'box-shadow 180ms ease, transform 180ms ease, border-color 180ms ease, background 180ms ease',
-        }}
+          '--border': border,
+          '--bg': hovered ? bgHover : bg,
+          '--card-shadow': hovered ? `0 14px 28px -4px rgba(0,0,0,0.2), 0 0 0 3px ${border}2e` : '0 1px 4px rgba(0,0,0,0.06)',
+          '--card-transform': hovered ? 'translateY(-4px) scale(1.015)' : 'none',
+        } as CSSProperties}
       >
         {badge && (
-          <div style={{
-            fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
-            padding: '4px 14px', borderRadius: 999, background: `${border}22`, color: border,
-          }}>
+          <div
+            className={styles.badge}
+            style={{ '--border': border, '--badge-bg': `${border}22` } as CSSProperties}
+          >
             {badge}
           </div>
         )}
-        <div style={{
-          width: 138, height: 138, borderRadius: '50%', backgroundColor: border,
-          backgroundImage: photo ? `url(${photo})` : undefined,
-          backgroundSize: 'cover', backgroundPosition: 'center 22%',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 27, fontWeight: 700, color: '#fff', flexShrink: 0,
-          border: `3.5px solid ${border}`,
-          boxSizing: 'border-box',
-          boxShadow: hovered ? '0 3px 10px rgba(0,0,0,0.18)' : 'none',
-          transition: 'box-shadow 180ms ease',
-        }}>
+        <div
+          className={styles.avatar}
+          style={{
+            '--border': border,
+            '--avatar-image': photo ? `url(${photo})` : 'none',
+            '--avatar-shadow': hovered ? '0 3px 10px rgba(0,0,0,0.18)' : 'none',
+          } as CSSProperties}
+        >
           {!photo && getInitials(name)}
         </div>
-        <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-strong)', textAlign: 'center', lineHeight: 1.3 }}>
+        <div className={styles.name}>
           {name}
         </div>
-        <div style={{
-          fontSize: 21, fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.03em',
-          color: 'var(--text-strong)', background: `${border}2e`, border: `1.5px solid ${border}55`,
-          padding: '4px 14px', borderRadius: 999,
-        }}>
+        <div
+          className={styles.acno}
+          style={{ '--acno-bg': `${border}2e`, '--acno-border': `${border}55` } as CSSProperties}
+        >
           {displayAcno(m.id)}
         </div>
         {m.since && (
-          <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-muted)', marginTop: 1 }}>
+          <div className={styles.joined}>
             Joined {m.since}
           </div>
         )}
         {isDead(m) && (
-          <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-faint)', background: 'var(--border-subtle)', padding: '2px 10px', borderRadius: 999 }}>
+          <span className={styles.deceased}>
             Deceased
           </span>
         )}
       </button>
 
       {caption && (
-        <div style={{ textAlign: 'center', marginTop: 7, fontSize: 18, fontWeight: 600, color: border }}>
+        <div className={styles.caption} style={{ '--caption-color': border } as CSSProperties}>
           {caption}
         </div>
       )}
       {quotaRef && (
-        <div style={{ textAlign: 'center', marginTop: 2, fontSize: 15, fontStyle: 'italic', color: 'var(--text-muted)' }}>
+        <div className={styles.quotaRef}>
           {quotaRef}
         </div>
       )}
@@ -154,13 +148,12 @@ function FamCard({ data }: { data: FamCardData }) {
 
 function FamUnion({ data }: { data: { labelOffsetY?: number } }) {
   return (
-    <div style={{ width: 1, height: 1, position: 'relative' }}>
-      <Handle id="bottom" type="source" position={Position.Bottom} isConnectable={false} style={{ width: 1, height: 1, opacity: 0 }} />
-      <span style={{
-        position: 'absolute', top: data.labelOffsetY ?? 40, left: 8, whiteSpace: 'nowrap',
-        fontSize: 16, fontWeight: 800, color: 'var(--text)',
-        background: 'var(--border-subtle)', padding: '4px 11px', borderRadius: 7,
-      }}>
+    <div className={styles.unionWrapper}>
+      <Handle id="bottom" type="source" position={Position.Bottom} isConnectable={false} className={styles.unionHandle} />
+      <span
+        className={styles.unionLabel}
+        style={{ '--union-label-top': `${data.labelOffsetY ?? 40}px` } as CSSProperties}
+      >
         Children
       </span>
     </div>
@@ -527,7 +520,7 @@ function FocusedDiagramInner({ focusId, members, onPick, highlightedId }: Props)
   };
 
   return (
-    <div style={{ width: '100%', height: 560 }}>
+    <div className={styles.flowContainer}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -541,7 +534,7 @@ function FocusedDiagramInner({ focusId, members, onPick, highlightedId }: Props)
         maxZoom={2}
       >
         <Background color={theme === 'dark' ? '#2a2e39' : '#E2E8F0'} gap={22} size={1} />
-        <Controls showInteractive={false} style={{ bottom: 10, right: 10, left: 'auto', top: 'auto' }} />
+        <Controls showInteractive={false} className={styles.controls} />
       </ReactFlow>
     </div>
   );

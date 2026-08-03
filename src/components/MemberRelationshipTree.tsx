@@ -1,6 +1,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { ReactNode, CSSProperties } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
   Background,
@@ -21,9 +21,10 @@ import {
   buildGraph, applyLayout, findRoot,
   getType, isDead, dispName, photoOf, displayAcno,
   nodesOfKind, displayMember, getRefFromRelation, slotRole,
-  CARD_W, CARD_H, SLOT_W, SLOT_H, CONN_COLOR, BESIDE_GAP,
+  CARD_W, CARD_H, SLOT_W, SLOT_H, BESIDE_GAP,
 } from '@/lib/quotaTreeLayout';
 import { useMemberStore, type Theme } from '@/store/memberStore';
+import styles from './MemberRelationshipTree.module.css';
 
 
 function cardColors(m: Member, theme: Theme) {
@@ -43,8 +44,6 @@ function cardColors(m: Member, theme: Theme) {
   // deeper tint of the same hue on hover instead of just a shadow/lift.
   return { border: c.color, avatarBg: c.color, cardBg: typeBg(c, theme), cardBgHover: typeBgHover(c, theme) };
 }
-
-const handleStyle = { background: CONN_COLOR, width: 8, height: 8, border: 'none' } as const;
 
 // ── Member card ───────────────────────────────────────────────────────────────
 
@@ -71,74 +70,66 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
   return (
     // no fixed node width: the container hugs the card, so the left/right
     // handle dots sit ON the card border instead of floating in space
-    <div style={{ position: 'relative' }}>
-      <Handle id="top"       type="target" position={Position.Top}    isConnectable={false} style={handleStyle} />
-      <Handle id="top-out"   type="source" position={Position.Top}    isConnectable={false} style={handleStyle} />
-      <Handle id="left-in"   type="target" position={Position.Left}   isConnectable={false} style={handleStyle} />
-      <Handle id="right-in"  type="target" position={Position.Right}  isConnectable={false} style={handleStyle} />
-      <Handle id="bottom"    type="source" position={Position.Bottom} isConnectable={false} style={handleStyle} />
+    <div className={styles.wrapper}>
+      <Handle id="top"       type="target" position={Position.Top}    isConnectable={false} className={styles.handleDot} />
+      <Handle id="top-out"   type="source" position={Position.Top}    isConnectable={false} className={styles.handleDot} />
+      <Handle id="left-in"   type="target" position={Position.Left}   isConnectable={false} className={styles.handleDot} />
+      <Handle id="right-in"  type="target" position={Position.Right}  isConnectable={false} className={styles.handleDot} />
+      <Handle id="bottom"    type="source" position={Position.Bottom} isConnectable={false} className={styles.handleDot} />
       {/* offset from "bottom" so a root's own A4D/Associate line doesn't
           run down the exact same column as the "Children" stem below it */}
-      <Handle id="bottom-slots" type="source" position={Position.Bottom} isConnectable={false} style={{ ...handleStyle, left: '78%' }} />
-      <Handle id="left-out"  type="source" position={Position.Left}   isConnectable={false} style={handleStyle} />
-      <Handle id="right-out" type="source" position={Position.Right}  isConnectable={false} style={handleStyle} />
+      <Handle id="bottom-slots" type="source" position={Position.Bottom} isConnectable={false} className={`${styles.handleDot} ${styles.handleDotOffset}`} />
+      <Handle id="left-out"  type="source" position={Position.Left}   isConnectable={false} className={styles.handleDot} />
+      <Handle id="right-out" type="source" position={Position.Right}  isConnectable={false} className={styles.handleDot} />
 
       <button
         onClick={e => { e.stopPropagation(); onPick(m.id); }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className={highlighted ? 'search-highlight-card' : undefined}
+        className={`${styles.card}${highlighted ? ' search-highlight-card' : ''}`}
         style={{
-          border: `2.5px solid ${border}`, borderRadius: 20, background: bg,
-          padding: '32px 28px',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
-          cursor: 'pointer', width: CARD_W, height: CARD_H, boxSizing: 'border-box',
-          boxShadow: hovered ? `0 12px 26px -4px rgba(0,0,0,0.2), 0 0 0 3px ${border}2e` : '0 2px 6px rgba(0,0,0,0.08)',
-          transform: hovered ? 'translateY(-3px) scale(1.015)' : 'none',
-          transition: 'box-shadow 180ms ease, transform 180ms ease, border-color 180ms ease, background 180ms ease',
-          opacity: isSuccessor ? 0.92 : 1,
-        }}
+          '--border': border,
+          '--bg': bg,
+          '--card-shadow': hovered ? `0 12px 26px -4px rgba(0,0,0,0.2), 0 0 0 3px ${border}2e` : '0 2px 6px rgba(0,0,0,0.08)',
+          '--card-transform': hovered ? 'translateY(-3px) scale(1.015)' : 'none',
+          '--card-opacity': isSuccessor ? 0.92 : 1,
+        } as CSSProperties}
       >
-        <div style={{
-          width: 200, height: 200, borderRadius: '50%', backgroundColor: avatarBg,
-          backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
-          backgroundSize: 'cover', backgroundPosition: 'center 22%',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 34, fontWeight: 700, color: '#fff', flexShrink: 0,
-          border: `5px solid ${border}`,
-          boxSizing: 'border-box',
-          boxShadow: hovered ? '0 3px 10px rgba(0,0,0,0.18)' : 'none',
-          transition: 'box-shadow 180ms ease',
-
-        }}>
+        <div
+          className={styles.avatar}
+          style={{
+            '--avatar-bg': avatarBg,
+            '--avatar-image': photoOf(m) ? `url(${photoOf(m)})` : 'none',
+            '--avatar-border': border,
+            '--avatar-shadow': hovered ? '0 3px 10px rgba(0,0,0,0.18)' : 'none',
+          } as CSSProperties}
+        >
 
           {!photoOf(m) && getInitials(name)}
 
         </div>
 
-        <div style={{
-          fontSize: 30, fontWeight: 700, color: 'var(--text-strong)', textAlign: 'center',
-          lineHeight: 1.28, width: CARD_W - 44, overflowWrap: 'break-word',
-          minHeight: 30 * 1.28 * 2,
-        }}>
+        <div className={styles.name}>
           {name}
         </div>
 
-        <div style={{
-          fontSize: 25, fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.03em',
-          color: 'var(--text-strong)', background: `${border}3d`, border: `2.5px solid ${border}`,
-          padding: '8px 22px', borderRadius: 999,
-          boxShadow: `0 0 0 3px ${border}22`,
-        }}>{displayAcno(m.id)}</div>
+        <div
+          className={styles.acno}
+          style={{
+            '--border': border,
+            '--acno-bg': `${border}3d`,
+            '--acno-shadow': `0 0 0 3px ${border}22`,
+          } as CSSProperties}
+        >{displayAcno(m.id)}</div>
 
         {isDead(m) && (
-          <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-faint)', background: 'var(--border-subtle)', padding: '4px 13px', borderRadius: 999 }}>
+          <span className={styles.deceased}>
             Deceased
           </span>
         )}
 
         {m.since && (
-          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-muted)', marginTop: 2 }}>
+          <div className={styles.joined}>
             Joined {m.since}
           </div>
         )}
@@ -146,13 +137,14 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
       </button>
 
       {caption && (
-        <div style={{ textAlign: 'center', marginTop: 10 }}>
-          <span style={{
-            fontSize: 18, fontWeight: 800,
-            color: dark ? '#a9b6f5' : '#3730A3',
-            background: dark ? '#232a4d' : '#E0E7FF',
-            padding: '6px 18px', borderRadius: 999,
-          }}>
+        <div className={styles.captionWrap}>
+          <span
+            className={styles.captionPill}
+            style={{
+              '--caption-color': dark ? '#a9b6f5' : '#3730A3',
+              '--caption-bg': dark ? '#232a4d' : '#E0E7FF',
+            } as CSSProperties}
+          >
             {caption}
           </span>
         </div>
@@ -185,38 +177,36 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
   const roleBg    = dark ? (role === 'A4D' ? '#2b2143' : '#3a2413') : (role === 'A4D' ? '#f3e8ff' : '#ffedd5');
   const refBg     = dark ? '#232a4d' : '#E0E7FF';
   const refColor  = dark ? '#a9b6f5' : '#3730A3';
-  const slotHandleStyle = { background: CONN_COLOR, width: 7, height: 7, border: 'none' } as const;
 
   return (
 
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 0', opacity: nested ? 0.85 : 1 }}>
-      <Handle id="top"       type="target" position={Position.Top}    isConnectable={false} style={slotHandleStyle} />
-      <Handle id="bottom"    type="source" position={Position.Bottom} isConnectable={false} style={slotHandleStyle} />
-      <Handle id="top-out"   type="source" position={Position.Top}    isConnectable={false} style={slotHandleStyle} />
-      <Handle id="bottom-in" type="target" position={Position.Bottom} isConnectable={false} style={slotHandleStyle} />
+    <div className={styles.slotWrapper} style={{ '--slot-opacity': nested ? 0.85 : 1 } as CSSProperties}>
+      <Handle id="top"       type="target" position={Position.Top}    isConnectable={false} className={styles.slotHandleDot} />
+      <Handle id="bottom"    type="source" position={Position.Bottom} isConnectable={false} className={styles.slotHandleDot} />
+      <Handle id="top-out"   type="source" position={Position.Top}    isConnectable={false} className={styles.slotHandleDot} />
+      <Handle id="bottom-in" type="target" position={Position.Bottom} isConnectable={false} className={styles.slotHandleDot} />
 
       {/* Split exactly at the card's horizontal center (where the top
           connector dot sits) so the two pills sit either side of it,
           leaving the connector point itself clear instead of covering it. */}
-      <div style={{ display: 'flex', alignItems: 'center', width: SLOT_W }}>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-          <div style={{
-            fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
-            padding: '6px 16px', borderRadius: 999, background: roleBg, color: roleColor,
-          }}>
+      <div className={styles.pillRow}>
+        <div className={styles.pillLeft}>
+          <div
+            className={styles.rolePill}
+            style={{ '--role-bg': roleBg, '--role-color': roleColor } as CSSProperties}
+          >
             {role}
           </div>
         </div>
 
-        <div style={{ width: 20, flexShrink: 0 }} />
+        <div className={styles.pillSpacer} />
 
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+        <div className={styles.pillRight}>
           {reference && (
-            <div style={{
-              fontSize: 14, fontWeight: 700,
-              padding: '6px 16px', borderRadius: 999,
-              background: refBg, color: refColor,
-            }}>
+            <div
+              className={styles.refPill}
+              style={{ '--ref-bg': refBg, '--ref-color': refColor } as CSSProperties}
+            >
               {reference}
             </div>
           )}
@@ -227,57 +217,52 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
         onClick={e => { e.stopPropagation(); onPick(m.id); }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className={highlighted ? 'search-highlight-card' : undefined}
+        className={`${styles.slotCard}${highlighted ? ' search-highlight-card' : ''}`}
         style={{
-          border: `${nested ? 3 : 3.5}px solid ${border}`, borderRadius: 15, background: hovered ? cardBgHover : cardBg,
-          padding: '26px 26px',
-          display: 'flex', flexDirection: 'column', gap: 12,
-          cursor: 'pointer', width: SLOT_W, textAlign: 'left',
-          boxShadow: hovered ? `0 8px 18px -3px rgba(0,0,0,0.18), 0 0 0 2px ${border}26` : '0 1px 3px rgba(0,0,0,0.06)',
-          transform: hovered ? 'translateY(-2px)' : 'none',
-          transition: 'box-shadow 180ms ease, transform 180ms ease, background 180ms ease',
-        }}
+          '--border': border,
+          '--slot-border-w': nested ? '3px' : '3.5px',
+          '--bg': hovered ? cardBgHover : cardBg,
+          '--slot-shadow': hovered ? `0 8px 18px -3px rgba(0,0,0,0.18), 0 0 0 2px ${border}26` : '0 1px 3px rgba(0,0,0,0.06)',
+          '--slot-transform': hovered ? 'translateY(-2px)' : 'none',
+        } as CSSProperties}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+        <div className={styles.slotRow}>
 
-          <div style={{
-            width: 122, height: 122, borderRadius: '50%', backgroundColor: avatarBg,
-            backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
-            backgroundSize: 'cover', backgroundPosition: 'center 22%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, fontWeight: 700, color: '#fff', flexShrink: 0,
-            border: `4px solid ${border}`,
-            boxSizing: 'border-box',
-
-          }}>
+          <div
+            className={styles.slotAvatar}
+            style={{
+              '--avatar-bg': avatarBg,
+              '--avatar-image': photoOf(m) ? `url(${photoOf(m)})` : 'none',
+              '--avatar-border': border,
+            } as CSSProperties}
+          >
             {!photoOf(m) && getInitials(name)}
           </div>
 
-          <div style={{ minWidth: 0, flex: 1 }}>
+          <div className={styles.slotInfo}>
 
-            <div style={{
-              fontSize: 24, fontWeight: 600, color: 'var(--text-strong)', lineHeight: 1.28, overflowWrap: 'break-word',
-              minHeight: 24 * 1.28 * 2,
-            }}>
+            <div className={styles.slotName}>
               {name}
             </div>
 
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 7, flexWrap: 'wrap' }}>
-              <span style={{
-                fontSize: 19, fontWeight: 800, fontFamily: 'monospace',
-                color: 'var(--text-strong)', background: `${border}3d`, border: `2px solid ${border}`,
-                padding: '4px 13px', borderRadius: 999,
-                boxShadow: `0 0 0 2.5px ${border}22`,
-              }}>{displayAcno(m.id)}</span>
+            <div className={styles.slotBadgeRow}>
+              <span
+                className={styles.slotAcno}
+                style={{
+                  '--border': border,
+                  '--acno-bg': `${border}3d`,
+                  '--acno-shadow': `0 0 0 2.5px ${border}22`,
+                } as CSSProperties}
+              >{displayAcno(m.id)}</span>
               {isDead(m) && (
-                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-faint)', background: 'var(--border-subtle)', padding: '2px 9px', borderRadius: 999 }}>
+                <span className={styles.slotDeceased}>
                   Deceased
                 </span>
               )}
             </div>
 
             {m.since && (
-              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-muted)', marginTop: 6 }}>
+              <div className={styles.slotJoined}>
                 Joined {m.since}
               </div>
             )}
@@ -293,14 +278,12 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
 
 function UnionNodeComp({ data }: { data: { labelOffsetY?: number } }) {
   return (
-    <div style={{ width: 1, height: 1, position: 'relative' }}>
-      <Handle id="bottom" type="source" position={Position.Bottom} isConnectable={false} style={{ width: 1, height: 1, opacity: 0 }} />
-      <span style={{
-        position: 'absolute', top: data.labelOffsetY ?? 40, left: -10, whiteSpace: 'nowrap',
-        transform: 'translateX(-100%)',
-        fontSize: 16, fontWeight: 800, color: 'var(--text)',
-        background: 'var(--border-subtle)', padding: '4px 11px', borderRadius: 7,
-      }}>
+    <div className={styles.unionWrapper}>
+      <Handle id="bottom" type="source" position={Position.Bottom} isConnectable={false} className={styles.unionHandle} />
+      <span
+        className={styles.unionLabel}
+        style={{ '--union-label-top': `${data.labelOffsetY ?? 40}px` } as CSSProperties}
+      >
         Children
       </span>
     </div>
@@ -593,7 +576,7 @@ function FlowInner({ rootId, members, onPick, bioMode, highlightedId }: Props) {
   };
 
   return (
-    <div style={{ width: '100%', height: 620 }}>
+    <div className={styles.flowContainer}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -609,7 +592,7 @@ function FlowInner({ rootId, members, onPick, bioMode, highlightedId }: Props) {
         <Background color={theme === 'dark' ? '#2a2e39' : '#E2E8F0'} gap={22} size={1} />
         <Controls
           showInteractive={false}
-          style={{ bottom: 10, right: 10, left: 'auto', top: 'auto' }}
+          className={styles.controls}
         />
       </ReactFlow>
     </div>
