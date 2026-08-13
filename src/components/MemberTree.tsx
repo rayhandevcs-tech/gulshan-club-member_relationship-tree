@@ -27,7 +27,7 @@ function GridCard({ member: m }: { member: Member }) {
         className={s.gridAvatar}
         style={{
           background: typeBg(cfg, theme), color: typeText(cfg, theme),
-          backgroundImage: photoOf(m) ? `url(${photoOf(m)})` : undefined,
+          backgroundImage: photoOf(m) ? `url("${photoOf(m)}")` : undefined,
           backgroundSize: 'cover', backgroundPosition: 'center 22%',
         }}
       >

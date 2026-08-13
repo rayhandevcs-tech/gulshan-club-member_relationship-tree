@@ -99,7 +99,7 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
           className={styles.avatar}
           style={{
             '--avatar-bg': avatarBg,
-            '--avatar-image': photoOf(m) ? `url(${photoOf(m)})` : 'none',
+            '--avatar-image': photoOf(m) ? `url("${photoOf(m)}")` : 'none',
             '--avatar-border': border,
             '--avatar-shadow': hovered ? '0 3px 10px rgba(0,0,0,0.18)' : 'none',
           } as CSSProperties}
@@ -232,7 +232,7 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
             className={styles.slotAvatar}
             style={{
               '--avatar-bg': avatarBg,
-              '--avatar-image': photoOf(m) ? `url(${photoOf(m)})` : 'none',
+              '--avatar-image': photoOf(m) ? `url("${photoOf(m)}")` : 'none',
               '--avatar-border': border,
             } as CSSProperties}
           >
