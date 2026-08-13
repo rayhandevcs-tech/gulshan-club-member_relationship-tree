@@ -105,7 +105,7 @@ function FamCard({ data }: { data: FamCardData }) {
           className={styles.avatar}
           style={{
             '--border': border,
-            '--avatar-image': photo ? `url(${photo})` : 'none',
+            '--avatar-image': photo ? `url("${photo}")` : 'none',
             '--avatar-shadow': hovered ? '0 3px 10px rgba(0,0,0,0.18)' : 'none',
           } as CSSProperties}
         >
