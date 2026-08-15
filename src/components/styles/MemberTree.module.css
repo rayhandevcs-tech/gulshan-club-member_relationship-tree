@@ -165,13 +165,13 @@
 }
 
 .tabActive {
-  background: linear-gradient(135deg, #4f6df5 0%, #6d5bf0 100%);
-  color: #ffffff;
-  box-shadow: 0 4px 14px -3px rgba(79, 109, 245, 0.5);
+  background: var(--gold-grad);
+  color: var(--gold-on);
+  box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.5);
 }
 
 .tabActive:hover {
-  color: #ffffff;
+  color: var(--gold-on);
 }
 
 .diagramArea {

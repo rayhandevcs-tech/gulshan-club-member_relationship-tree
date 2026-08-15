@@ -153,9 +153,12 @@
   height: 560px;
 }
 
+/* Top-right, inside the canvas — reachable without dragging the view down
+   to a far corner first. React Flow positions Controls absolutely, so the
+   !important overrides its own bottom-left default. */
 .controls {
-  bottom: 10px !important;
-  right: 10px !important;
+  top: 14px !important;
+  right: 14px !important;
   left: auto !important;
-  top: auto !important;
+  bottom: auto !important;
 }

@@ -1,49 +1,77 @@
 @import 'reactflow/dist/style.css';
 
+/* ── Gulshan Club palette: gold on black ─────────────────────────────────────
+   Light mode is a warm ivory paper with gold accents; dark mode is near-black
+   with a brighter gold so it keeps its contrast. The header is BLACK in both
+   themes — it carries the club's gold logo, and a white bar washed it out. */
+
 :root {
   color-scheme: light;
 
-  --bg: #fcfcfe;
-  --surface: #ffffff;
-  --surface-alt: #f9fafb;
-  --border: #e5e7eb;
-  --border-subtle: #f3f4f6;
-  --text: #1f2937;
-  --text-strong: #111827;
-  --text-muted: #9ca3af;
-  --text-faint: #6b7280;
-  --input-bg: #fbfbfd;
-  --input-border: #e5e8f2;
-  --header-bg-1: #ffffff;
-  --header-bg-2: #fafbff;
-  --header-border: #e9ecf5;
-  --tab-bg: #eef0f6;
-  --scrollbar: #e5e7eb;
-  --scrollbar-hover: #d1d5db;
-  --flow-dot: #e2e8f0;
+  --bg: #FAF7F0;
+  --surface: #FFFFFF;
+  --surface-alt: #F6F0E3;
+  --border: #E6DBC2;
+  --border-subtle: #F2EADA;
+  --text: #262219;
+  --text-strong: #14110B;
+  --text-muted: #8B8271;
+  --text-faint: #6A624F;
+  --input-bg: #FFFDF7;
+  --input-border: #E3D6B7;
+  --tab-bg: #F1E9D8;
+  --scrollbar: #E0D3B5;
+  --scrollbar-hover: #C9B98F;
+  --flow-dot: #E3D9C2;
+
+  /* brand accents — same names in both themes, so components never branch */
+  --gold: #B8912F;
+  --gold-strong: #8F6E1C;
+  --gold-soft: #F3E8C9;
+  --gold-line: #DCC688;
+  --gold-on: #17120A;                     /* text sitting on a gold fill */
+  --gold-ring: rgba(184, 145, 47, 0.28);
+  --gold-grad: linear-gradient(135deg, #E2C878 0%, #C9A445 45%, #9A7620 100%);
+
+  /* black header, both themes */
+  --header-bg-1: #131211;
+  --header-bg-2: #0B0A09;
+  --header-border: #352C16;
+  --header-text: #F6EFDD;
+  --header-muted: #BFAE8A;
 }
 
 [data-theme='dark'] {
   color-scheme: dark;
 
-  --bg: #0d0f14;
-  --surface: #171a21;
-  --surface-alt: #1d212a;
-  --border: #2a2e39;
-  --border-subtle: #23262f;
-  --text: #e5e7eb;
-  --text-strong: #f4f5f7;
-  --text-muted: #8b93a3;
-  --text-faint: #9199a8;
-  --input-bg: #1a1e26;
-  --input-border: #2d323e;
-  --header-bg-1: #171a21;
-  --header-bg-2: #12141a;
-  --header-border: #262a33;
-  --tab-bg: #1e222b;
-  --scrollbar: #2a2e39;
-  --scrollbar-hover: #3a3f4d;
-  --flow-dot: #2a2e39;
+  --bg: #0B0A09;
+  --surface: #16140F;
+  --surface-alt: #1F1C15;
+  --border: #322C1E;
+  --border-subtle: #26221A;
+  --text: #EDE7D9;
+  --text-strong: #FBF6EA;
+  --text-muted: #97907F;
+  --text-faint: #A79E88;
+  --input-bg: #1A1712;
+  --input-border: #3A3323;
+  --tab-bg: #201C15;
+  --scrollbar: #322C1E;
+  --scrollbar-hover: #4A4130;
+  --flow-dot: #322C1E;
+
+  --gold: #E0B959;
+  --gold-strong: #F0D28C;
+  --gold-soft: #2E2513;
+  --gold-line: #6B5623;
+  --gold-on: #14100A;
+  --gold-ring: rgba(224, 185, 89, 0.30);
+  --gold-grad: linear-gradient(135deg, #F0D28C 0%, #DDB760 45%, #A8801F 100%);
+
+  --header-bg-1: #131211;
+  --header-bg-2: #0B0A09;
+  --header-border: #352C16;
+  --header-text: #F6EFDD;
 }
 
 *,
@@ -79,32 +107,41 @@ button {
 /* Search-result highlight: pulses briefly, then leaves a lasting ring so the
    user can spot which card they just searched for inside the tree diagrams. */
 @keyframes search-highlight-pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5); }
-  70%  { box-shadow: 0 0 0 12px rgba(37, 99, 235, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+  0%   { box-shadow: 0 0 0 0 var(--gold-ring); }
+  70%  { box-shadow: 0 0 0 14px rgba(184, 145, 47, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(184, 145, 47, 0); }
 }
 .search-highlight-card {
   animation: search-highlight-pulse 1.4s ease-out 2;
-  border-color: #2563EB !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35) !important;
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 3px var(--gold-ring) !important;
 }
 
 /* React Flow's own chrome (zoom controls, attribution) ships light-only
-   defaults — repaint them to match the app theme in dark mode. */
-[data-theme='dark'] .react-flow__controls-button {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  fill: var(--text);
+   defaults — repaint both themes in the club's gold-on-dark. */
+.react-flow__controls {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--gold-line), 0 10px 24px -8px rgba(0, 0, 0, 0.45);
 }
-[data-theme='dark'] .react-flow__controls-button:hover {
-  background: var(--surface-alt);
+.react-flow__controls-button {
+  width: 30px;
+  height: 30px;
+  background: #17150F;
+  border-bottom: 1px solid rgba(220, 198, 136, 0.22);
+  fill: var(--gold);
+  transition: background-color 140ms ease, fill 140ms ease;
 }
-[data-theme='dark'] .react-flow__controls {
-  box-shadow: 0 0 0 1px var(--border), 0 4px 14px rgba(0, 0, 0, 0.4);
+.react-flow__controls-button:last-child {
+  border-bottom: none;
 }
-[data-theme='dark'] .react-flow__attribution {
-  background: rgba(23, 26, 33, 0.6);
+.react-flow__controls-button:hover {
+  background: #241F14;
+  fill: var(--gold-strong);
 }
-[data-theme='dark'] .react-flow__attribution a {
+.react-flow__attribution {
+  background: rgba(11, 10, 9, 0.55);
+}
+.react-flow__attribution a {
   color: var(--text-muted);
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import { useMemberStore } from '@/store/memberStore';
 import { familyMembers } from '@/lib/demoData';
@@ -15,7 +16,7 @@ export default function Home() {
   const { view, setView, selectedId, setMembers, theme, toggleTheme } = useMemberStore();
 
   // Data source is a single switch — see src/lib/dataSource.ts.
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['members', DATA_SOURCE],
     queryFn: () => {
       if (DATA_SOURCE === 'static') return Promise.resolve(familyMembers);
@@ -31,12 +32,27 @@ export default function Home() {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  if (isLoading) {
-    return <div className={s.root} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#9ca3af' }}>Loading members…</div>;
-  }
-
-  if (isError) {
-    return <div className={s.root} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#dc2626' }}>Failed to load members. Please refresh.</div>;
+  // A cold load has to walk the club system member by member (see
+  // /api/ext-members), so this screen can be up for a few seconds — give it
+  // the club's own mark and a progress shimmer rather than bare grey text.
+  if (isLoading || isError) {
+    return (
+      <div className={s.splash}>
+        <Image src="/GC_LOGO.png" alt="Gulshan Club Limited" width={72} height={72} priority className={s.splashLogo} />
+        <div className={s.splashTitle}>Gulshan Club Limited</div>
+        {isError ? (
+          <>
+            <div className={s.splashError}>Could not reach the membership system.</div>
+            <button onClick={() => refetch()} className={s.splashRetry}>Try again</button>
+          </>
+        ) : (
+          <>
+            <div className={s.splashHint}>Loading membership records…</div>
+            <div className={s.splashBar}><span /></div>
+          </>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -50,7 +66,16 @@ export default function Home() {
         <div className={s.titleRow}>
 
           <div className={s.brand}>
-            <div className={s.logo}>GC</div>
+            {/* the club's own mark (public/GC_LOGO.png); priority because it
+                sits in the header and is part of the first paint */}
+            <Image
+              src="/GC_LOGO.png"
+              alt="Gulshan Club Limited"
+              width={44}
+              height={44}
+              priority
+              className={s.logo}
+            />
             <div>
               <div className={s.title}>Gulshan Club Limited</div>
               <div className={s.subtitle}>Membership Relationship Tree</div>

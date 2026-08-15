@@ -304,8 +304,8 @@ function buildMemberRelGraph(
   onPick: (id: string) => void,
   dark: boolean,
 ): { nodes: Node[]; edges: Edge[] } {
-  const neutralLabelBg = dark ? '#2a2e39' : '#E5E7EB';
-  const neutralLabelFg = dark ? '#e5e7eb' : '#374151';
+  const neutralLabelBg = dark ? '#2A2418' : '#EFE7D5';
+  const neutralLabelFg = dark ? '#EDE7D9' : '#3A3427';
   const amberLabelBg   = dark ? '#3a2e12' : '#fef3c7';
   const amberLabelFg   = dark ? '#f0c975' : '#92400e';
 
@@ -359,7 +359,7 @@ function buildMemberRelGraph(
       source: owner.id, sourceHandle: 'right-out',
       target: spouse.id, targetHandle: 'left-in',
       type: 'straight', label: 'Spouse',
-      style: { stroke: '#9CA3AF', strokeWidth: 3.5 },
+      style: { stroke: '#A89C82', strokeWidth: 3.5 },
       labelStyle: { fontSize: 16, fill: neutralLabelFg, fontWeight: 800 },
       labelBgStyle: { fill: neutralLabelBg, fillOpacity: 1, borderRadius: 7 },
       labelBgPadding: [10, 6],
@@ -410,7 +410,7 @@ function buildMemberRelGraph(
         source: parents[0].member.id, sourceHandle: 'right-out',
         target: parents[1].member.id, targetHandle: 'left-in',
         type: 'straight', label: 'Spouse',
-        style: { stroke: '#9CA3AF', strokeWidth: 3.5 },
+        style: { stroke: '#A89C82', strokeWidth: 3.5 },
         labelStyle: { fontSize: 16, fill: neutralLabelFg, fontWeight: 800 },
         labelBgStyle: { fill: neutralLabelBg, fillOpacity: 1, borderRadius: 7 },
         labelBgPadding: [10, 6],
@@ -438,7 +438,7 @@ function buildMemberRelGraph(
       source: unionId, sourceHandle: 'bottom',
       target: owner.id, targetHandle: 'top',
       type: 'smoothstep',
-      style: { stroke: '#94A3B8', strokeWidth: 3.5 },
+      style: { stroke: '#A89C82', strokeWidth: 3.5 },
     });
   }
 
@@ -492,7 +492,7 @@ function buildMemberRelGraph(
           source: unionId, sourceHandle: 'bottom',
           target: child.id, targetHandle: 'top',
           type: 'smoothstep',
-          style: { stroke: '#94A3B8', strokeWidth: 3.5 },
+          style: { stroke: '#A89C82', strokeWidth: 3.5 },
         });
         cursorX += CARD_W + ROW_GAP;
       });
@@ -585,13 +585,20 @@ function FlowInner({ rootId, members, onPick, bioMode, highlightedId }: Props) {
         nodesConnectable={false}
         elementsSelectable={false}
         onNodeClick={handleNodeClick}
+        /* skip DOM work for cards scrolled out of view — a wide family row
+           with photos is otherwise mounted in full even when only two cards
+           are on screen */
+        onlyRenderVisibleElements
         panOnScroll
         minZoom={0.1}
         maxZoom={2.5}
       >
-        <Background color={theme === 'dark' ? '#2a2e39' : '#E2E8F0'} gap={22} size={1} />
+        <Background color={theme === 'dark' ? '#322C1E' : '#E3D9C2'} gap={22} size={1} />
+        {/* top-right: within reach of the cursor while reading the tree,
+            instead of buried at the bottom-left corner of a tall canvas */}
         <Controls
           showInteractive={false}
+          position="top-right"
           className={styles.controls}
         />
       </ReactFlow>

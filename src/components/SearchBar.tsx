@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMemberStore } from '@/store/memberStore';
 import { getRootMember, getInitials, TYPE_CONFIG, typeBg, typeText } from '@/lib/memberUtils';
-import { getType } from '@/lib/quotaTreeLayout';
+import { getType, photoOf, displayAcno } from '@/lib/quotaTreeLayout';
 import { Search } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import styles from './styles/SearchBar.module.css';
 
 export default function SearchBar() {
@@ -24,12 +25,22 @@ export default function SearchBar() {
 
   const q = searchQuery.trim().toLowerCase();
 
-  const suggestions = q
-    ? members.filter(m =>
-        // getType(m) দিয়ে search-ও করা যাবে: "permanent" লিখলে P-রা আসবে
-        (m.name + ' ' + m.id + ' ' + getType(m)).toLowerCase().includes(q)
-      ).slice(0, 8)
-    : [];
+  // Haystack built once per members array instead of re-lowercasing every
+  // member's name/id/type on every keystroke — the full club roster is a few
+  // thousand records, and this runs on each character typed.
+  const searchIndex = useMemo(
+    () => members.map(m => ({
+      member: m,
+      // getType(m) দিয়ে search-ও করা যাবে: "permanent" লিখলে P-রা আসবে
+      haystack: `${m.name} ${displayAcno(m.id)} ${getType(m)}`.toLowerCase(),
+    })),
+    [members],
+  );
+
+  const suggestions = useMemo(
+    () => (q ? searchIndex.filter(e => e.haystack.includes(q)).slice(0, 8).map(e => e.member) : []),
+    [q, searchIndex],
+  );
 
   const pick = (id: string) => {
     const m = members.find(x => x.id === id);
@@ -62,6 +73,7 @@ export default function SearchBar() {
           {suggestions.map(m => {
             const type = getType(m);                              // ← derive
             const cfg  = TYPE_CONFIG[type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.Permanent; // ← safe fallback
+            const photo = photoOf(m);                             // ← club photo, via same-origin proxy
             return (
               <div
                 key={m.id}
@@ -70,15 +82,23 @@ export default function SearchBar() {
               >
                 <div
                   className={styles.avatar}
-                  style={{ background: typeBg(cfg, theme), color: typeText(cfg, theme) }}
+                  style={{
+                    // backgroundColor, not the `background` shorthand: the
+                    // shorthand would blank out the photo set below
+                    backgroundColor: typeBg(cfg, theme),
+                    color: typeText(cfg, theme),
+                    borderColor: cfg.color,
+                    // photo when the club system has one, initials otherwise
+                    '--avatar-image': photo ? `url("${photo}")` : 'none',
+                  } as CSSProperties}
                 >
-                  {getInitials(m.name)}
+                  {!photo && getInitials(m.name)}
                 </div>
 
                 <div className={styles.memberInfo}>
                   <div className={styles.memberName}>{m.name}</div>
                   <div className={styles.memberMeta}>
-                    {m.id} · {type}
+                    {displayAcno(m.id)} · {type}
                     {m.via === 'a4d' && ' · 4(d)'}   {/* slot-দের ছোট hint */}
                   </div>
                 </div>
