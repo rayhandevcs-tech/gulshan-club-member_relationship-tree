@@ -5,13 +5,18 @@ import { Graph, layout } from '@dagrejs/dagre';
 import type { Node, Edge } from 'reactflow';
 import type { Member, NodeKind } from '@/lib/types';
 import type { ReactNode } from 'react';
+import { toProxiedPhotoUrl } from '@/lib/memberPhoto';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 export const CONN_COLOR = '#CBD5E1';
 
 
+// Member.photoUrl holds the club system's raw plain-HTTP image URL, which a
+// browser on an HTTPS deployment blocks as mixed content. Every avatar in the
+// app reads its photo through here, so routing it via toProxiedPhotoUrl()
+// (→ same-origin /api/member-photo) fixes them all in one place.
 export const photoOf = (m: Member): string | undefined =>
-  m.photoUrl || undefined;
+  toProxiedPhotoUrl(m.photoUrl);
 
 // A synthetic id (e.g. "PENDING-PS-90-spouse") for someone with no real club
 // A/C yet.

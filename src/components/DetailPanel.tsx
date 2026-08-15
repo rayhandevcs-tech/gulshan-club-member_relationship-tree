@@ -33,7 +33,7 @@ function avatarStyle(m: Member, cfg: TypeConfigEntry, theme: Theme) {
   return {
     backgroundColor: typeBg(cfg, theme),
     color: typeText(cfg, theme),
-    backgroundImage: url ? `url(${url})` : undefined,
+    backgroundImage: url ? `url("${url}")` : undefined,
     backgroundSize: 'cover' as const,
     backgroundPosition: 'center 22%' as const,
     border: `2px solid ${cfg.color}`,
