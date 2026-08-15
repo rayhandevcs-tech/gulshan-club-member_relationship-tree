@@ -8,13 +8,16 @@ import {
   getInitials,
   TYPE_CONFIG,
   getA4DQuota,
-  getSiblings,
   typeBg,
   typeText,
   type TypeConfigEntry,
 } from '@/lib/memberUtils';
 // getType: prefix থেকে type derive করে (P→Permanent, AFD→A4D, D→Donor, L→Life)
 import { getType, getRef, photoOf, displayAcno, isPendingAcno } from '@/lib/quotaTreeLayout';
+import {
+  getFamilyIndex, familyParents, familyChildren, familySiblings,
+  parentCaption, sortParents,
+} from '@/lib/familyIndex';
 import { Member } from '@/lib/types';
 import type { Theme } from '@/store/memberStore';
 import { X, ChevronRight, Users, ArrowRight } from 'lucide-react';
@@ -211,10 +214,26 @@ export default function DetailPanel() {
   const cfg = cfgOf(m);                            // ← crash-এর লাইন fixed
   const parent = m.pid ? getMember(members, m.pid) : null;
 
-  const fatherMember = m.fatherId ? getMember(members, m.fatherId) : null;
-  const motherMember = m.motherId ? getMember(members, m.motherId) : null;
-  const fatherDisplay = fatherMember?.name ?? m.fatherName;
-  const motherDisplay = motherMember?.name ?? m.motherName;
+  const index = getFamilyIndex(members);
+
+  // Parents come from the shared family index (same source as the Family
+  // Relationship tab), so a parent known only through someone else's record
+  // still shows up. A parent with no club A/C has a placeholder id — show
+  // their name and nothing else: "PENDING-DA-27-father" is an internal
+  // bookkeeping string, not something to put in front of a member.
+  const parentRows = sortParents(familyParents(index, m.id), m).map(entry => ({
+    id: entry.member.id,
+    name: entry.name || entry.member.name,
+    label: parentCaption(entry, m),
+    // null = no real account behind this name → no A/C chip, not clickable
+    member: isPendingAcno(entry.member.id) ? null : entry.member,
+  }));
+
+  // Nothing indexed but the raw names are on the record (static demo path)
+  if (parentRows.length === 0) {
+    if (m.fatherName) parentRows.push({ id: 'father-name', name: m.fatherName, label: 'Father', member: null });
+    if (m.motherName) parentRows.push({ id: 'mother-name', name: m.motherName, label: 'Mother', member: null });
+  }
 
   // quota দিতে পারে = নিজের membership (via core/succession)। type নয় — কেউ
   // Permanent হয়েও a4d/associate route-এ থাকতে পারে, সে quota holder নয়।
@@ -232,7 +251,10 @@ export default function DetailPanel() {
   // spouse-এর ক্ষেত্রে pid-ওয়ালা মানুষটা এমনিতেই Spouse section-এ আছে।
   const showPrimary = !!parent && m.via !== 'core' && m.via !== 'succession' && m.rel !== 'spouse';
 
-  const bioChildren = members.filter(c => c.fatherId === m.id || c.motherId === m.id);
+  // Every biological child of this member AND their spouse(s), from wherever
+  // in the data each one was mentioned — identical to what the Family
+  // Relationship tab draws, so the two can't disagree.
+  const bioChildren = familyChildren(index, m.id).map(entry => entry.member);
 
   // A dependent spouse who is herself via a4d/associate (not via='core')
   // shows in BOTH the Spouse section (who she is) and here (how her own
@@ -240,7 +262,8 @@ export default function DetailPanel() {
   // entirely before, so a member's A4D-registered spouse never showed up.
   const a4dMembers = sortSlots(children.filter(c => c.via === 'a4d'));
   const associateMembers = sortSlots(children.filter(c => c.via === 'associate'));
-  const siblings = getSiblings(members, m);
+  // Same source as the Family Relationship tab's sibling row.
+  const siblings = familySiblings(index, m.id).map(entry => entry.member);
 
   const previewMember = previewId ? getMember(members, previewId) : null;
 
@@ -280,7 +303,11 @@ export default function DetailPanel() {
 
         {[
           ['Joined',         m.since],
-          ['Access',         m.via === 'core' ? 'Own membership'
+          // Access answers "how did this person become an account holder" —
+          // so it's left blank for someone who holds no account at all
+          // (a placeholder id: a parent or spouse known only by name).
+          ['Access',         isPendingAcno(m.id) ? null
+                             : m.via === 'core' ? 'Own membership'
                              : m.via === 'a4d' ? 'via 4(d) quota'
                              : m.via === 'succession' ? 'Received via succession'
                              : 'Associate access'],
@@ -299,36 +326,26 @@ export default function DetailPanel() {
             </div>
           ))}
 
-        {(showPrimary || spouseMembers.length > 0 || fatherDisplay || motherDisplay || siblings.length > 0 || bioChildren.length > 0 || a4dMembers.length > 0 || associateMembers.length > 0) && (
+        {(showPrimary || spouseMembers.length > 0 || parentRows.length > 0 || siblings.length > 0 || bioChildren.length > 0 || a4dMembers.length > 0 || associateMembers.length > 0) && (
           <div className={s.panelRelSection}>
 
-            {(fatherDisplay || motherDisplay) && (
+            {parentRows.length > 0 && (
               <div className={s.panelParentsBox}>
                 <div className={s.panelParentsLabel}>
                   <Users size={11} /> Parents
                 </div>
-                {fatherDisplay && (
+                {parentRows.map(row => (
                   <div
-                    className={`${s.panelParentRow} ${fatherMember ? s.panelParentRowClickable : ''}`}
-                    onClick={() => fatherMember && setPreviewId(fatherMember.id)}
+                    key={row.id}
+                    className={`${s.panelParentRow} ${row.member ? s.panelParentRowClickable : ''}`}
+                    onClick={() => row.member && setPreviewId(row.member.id)}
                   >
-                    <span className={s.panelParentLabelCell}>Father</span>
-                    <span className={s.panelParentValue}>{fatherDisplay}</span>
-                    {fatherMember && <span className={s.panelParentAcNo}>{fatherMember.id}</span>}
-                    {fatherMember && <ChevronRight size={12} className={s.panelChevronSm} />}
+                    <span className={s.panelParentLabelCell}>{row.label}</span>
+                    <span className={s.panelParentValue}>{row.name}</span>
+                    {row.member && <span className={s.panelParentAcNo}>{row.member.id}</span>}
+                    {row.member && <ChevronRight size={12} className={s.panelChevronSm} />}
                   </div>
-                )}
-                {motherDisplay && (
-                  <div
-                    className={`${s.panelParentRow} ${motherMember ? s.panelParentRowClickable : ''}`}
-                    onClick={() => motherMember && setPreviewId(motherMember.id)}
-                  >
-                    <span className={s.panelParentLabelCell}>Mother</span>
-                    <span className={s.panelParentValue}>{motherDisplay}</span>
-                    {motherMember && <span className={s.panelParentAcNo}>{motherMember.id}</span>}
-                    {motherMember && <ChevronRight size={12} className={s.panelChevronSm} />}
-                  </div>
-                )}
+                ))}
               </div>
             )}
 

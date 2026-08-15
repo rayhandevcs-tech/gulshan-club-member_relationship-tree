@@ -16,7 +16,7 @@
    .react-flow__handle; !important guarantees these dots win regardless of
    stylesheet load order (mirrors the inline styles this replaces). */
 .handleDot {
-  background: #CBD5E1 !important; /* keep in sync with CONN_COLOR in quotaTreeLayout.tsx */
+  background: #C9BCA0 !important; /* keep in sync with CONN_COLOR in quotaTreeLayout.tsx */
   width: 8px !important;
   height: 8px !important;
   border: none !important;
@@ -134,7 +134,7 @@
 }
 
 .slotHandleDot {
-  background: #CBD5E1 !important; /* keep in sync with CONN_COLOR in quotaTreeLayout.tsx */
+  background: #C9BCA0 !important; /* keep in sync with CONN_COLOR in quotaTreeLayout.tsx */
   width: 7px !important;
   height: 7px !important;
   border: none !important;
@@ -312,9 +312,12 @@
   height: 620px;
 }
 
+/* Top-right, inside the canvas — reachable without dragging the view down
+   to a far corner first. React Flow positions Controls absolutely, so the
+   !important overrides its own bottom-left default. */
 .controls {
-  bottom: 10px !important;
-  right: 10px !important;
+  top: 14px !important;
+  right: 14px !important;
   left: auto !important;
-  top: auto !important;
+  bottom: auto !important;
 }

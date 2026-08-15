@@ -205,8 +205,8 @@
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  background-color: #1f2937;
-  color: #ffffff;
+  background-color: var(--gold);
+  color: var(--gold-on);
   font-size: 12px;
   font-weight: 500;
   padding: 0.625rem 0;
@@ -217,7 +217,7 @@
 }
 
 .previewNavBtn:hover {
-  background-color: #374151;
+  background-color: var(--gold-strong);
 }
 
 /* ── MemberRow ────────────────────────────────────────────────── */
@@ -481,7 +481,7 @@
 }
 
 .panelParentRowClickable:hover {
-  color: #2563eb;
+  color: var(--gold-strong);
 }
 
 .panelParentLabelCell {

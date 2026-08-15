@@ -17,7 +17,12 @@ import ReactFlow, {
 } from 'reactflow';
 import { getInitials } from '@/lib/memberUtils';
 import { Member } from '@/lib/types';
-import { photoOf, dispName, isDead, displayAcno, nodesOfKind, getRefFromRelation, displayMember } from '@/lib/quotaTreeLayout';
+import { photoOf, dispName, isDead, displayAcno, displayMember, isPendingAcno } from '@/lib/quotaTreeLayout';
+import {
+  getFamilyIndex, findMember, familyParents, familySpouses, familySiblings,
+  familyChildren, childCaption, parentCaption, siblingCaption, sortParents,
+  type ResolvedNode,
+} from '@/lib/familyIndex';
 import { useMemberStore } from '@/store/memberStore';
 import styles from './styles/FamilyRelationshipDiagram.module.css';
 
@@ -35,22 +40,22 @@ const FAM_CARD_H = 365;
 const FAM_HGAP   = 75;
 const FAM_SGAP   = 155;
 const FAM_VGAP   = 220;
-// core-focused layout only (buildCoreFamilyGraph): extra breathing room
-// between Father/Mother, so the "SPOUSE" label on their connecting line
-// has room to sit clear of both cards.
+// extra breathing room between Father/Mother, so the "SPOUSE" label on their
+// connecting line has room to sit clear of both cards.
 const FAM_PARENT_GAP = 230;
 
 type FamRole = 'owner' | 'spouse' | 'child' | 'parent' | 'sibling' | 'dependent';
 
+// Family roles read as one warm set alongside the club's gold-and-black
+// chrome — the focused member carries the gold itself, everyone else takes a
+// muted earth tone that still separates the roles at a glance.
 const FAM_ROLE_STYLE: Record<FamRole, { border: string; bg: string; bgHover: string; bgNight: string; bgNightHover: string }> = {
-  owner:     { border: '#0F766E', bg: '#F0FDFA', bgHover: '#CCFBF1', bgNight: '#0D211E', bgNightHover: '#123830' },
-  spouse:    { border: '#BE185D', bg: '#FDF2F8', bgHover: '#FCE7F3', bgNight: '#2B131F', bgNightHover: '#3A1A2A' },
-  child:     { border: '#6D28D9', bg: '#F5F3FF', bgHover: '#EDE9FE', bgNight: '#211A3D', bgNightHover: '#2D2454' },
-  parent:    { border: '#1D4ED8', bg: '#EFF6FF', bgHover: '#DBEAFE', bgNight: '#111E3D', bgNightHover: '#17294F' },
-  // core-focused layout only (buildCoreFamilyGraph): siblings row + the
-  // combined Children/A4D/Associate row's dependent (A4D/Associate) cards.
-  sibling:   { border: '#0891B2', bg: '#ECFEFF', bgHover: '#CFFAFE', bgNight: '#083344', bgNightHover: '#0E4A5C' },
-  dependent: { border: '#C2410C', bg: '#FFF7ED', bgHover: '#FFEDD5', bgNight: '#2B1607', bgNightHover: '#3D200B' },
+  owner:     { border: '#B8912F', bg: '#FDF6E3', bgHover: '#F6E8C3', bgNight: '#251E0D', bgNightHover: '#352A12' },
+  spouse:    { border: '#A4565F', bg: '#FCF1F1', bgHover: '#F7E1E2', bgNight: '#261617', bgNightHover: '#361F21' },
+  child:     { border: '#6E7A3A', bg: '#F5F7E9', bgHover: '#E9EED3', bgNight: '#1B1E10', bgNightHover: '#282D17' },
+  parent:    { border: '#5A5346', bg: '#F6F3EC', bgHover: '#EAE4D7', bgNight: '#1E1C17', bgNightHover: '#2B2820' },
+  sibling:   { border: '#3F6B6B', bg: '#EEF6F6', bgHover: '#DCECEC', bgNight: '#12201F', bgNightHover: '#1B2E2D' },
+  dependent: { border: '#B2662A', bg: '#FDF3E8', bgHover: '#F8E5CE', bgNight: '#271A0E', bgNightHover: '#372414' },
 };
 
 interface FamCardData {
@@ -162,165 +167,42 @@ function FamUnion({ data }: { data: { labelOffsetY?: number } }) {
 
 const famNodeTypes: NodeTypes = { card: FamCard, union: FamUnion };
 
-const famChildLabel = (m: Member) =>
-  m.gender === 'M' ? 'Son' : m.gender === 'F' ? 'Daughter' : 'Child';
-
-function buildFocusedGraph(focusId: string, members: Member[], dark: boolean): { nodes: Node[]; edges: Edge[] } {
-  const owner = members.find(m => m.id === focusId);
+// ─── The family layout: parents → siblings + self + spouse(s) → children ─────
+//
+// Blood relationships only, for EVERY member (core or dependent), straight
+// off the shared family index — see src/lib/familyIndex.ts for how a
+// "Daughter of DH-3" row parked in DA-27's 4(d) quota ends up in DH-3's
+// family here and not in DA-27's. The quota view (who sits on whose
+// membership) is the Member Relationship tab's job, not this one's.
+//
+// The children row is the union of BOTH spouses' children, gathered from
+// wherever in the data each child was mentioned — so searching either half
+// of a couple shows the same, complete family.
+function buildFamilyGraph(focusId: string, members: Member[], dark: boolean): { nodes: Node[]; edges: Edge[] } {
+  const index = getFamilyIndex(members);
+  const owner = findMember(index, focusId);
   if (!owner) return { nodes: [], edges: [] };
 
-  const labelFg = dark ? '#e5e7eb' : '#374151';
-  const labelBg = dark ? '#2a2e39' : '#E5E7EB';
+  const labelFg = dark ? '#EDE7D9' : '#3A3427';
+  const labelBg = dark ? '#2A2418' : '#EFE7D5';
 
-  // Spouse(s): if owner is registered as a spouse, they have exactly one
-  // partner (their own pid); otherwise collect EVERY member registered as a
-  // spouse under owner — a member can have more than one.
-  const spouses = owner.rel === 'spouse' && owner.pid
-    ? [members.find(m => m.id === owner.pid)].filter((x): x is Member => !!x)
-    : members.filter(m => m.pid === focusId && m.rel === 'spouse');
-
-  // Owner's own parents (not the spouse's) sit in a row above - only shown
-  // when they resolved to an actual member record (a name-only fatherName/
-  // motherName fallback with no real A/C has nothing to render as a card).
-  const seenParentIds = new Set<string>();
-  const parents = [
-    owner.fatherId ? members.find(m => m.id === owner.fatherId) : null,
-    owner.motherId ? members.find(m => m.id === owner.motherId) : null,
-  ].filter((x): x is Member => {
-    if (!x || seenParentIds.has(x.id)) return false;
-    seenParentIds.add(x.id);
+  // One card per person: whoever is claimed by two roles keeps the closest
+  // one (self → spouse → parent → sibling → child), so React Flow never gets
+  // a duplicate node id out of contradictory source rows.
+  const used = new Set<string>([owner.id]);
+  const take = (entries: ResolvedNode[]) => entries.filter(e => {
+    if (used.has(e.member.id)) return false;
+    used.add(e.member.id);
     return true;
   });
 
-  // Bio children via fatherId/motherId; structural rel=child as fallback
-  const parentIds = new Set([owner.id, ...spouses.map(s => s.id)]);
-  const seenIds = new Set<string>([owner.id, ...spouses.map(s => s.id)]);
-  const bioChildren = members.filter(m => {
-    if (seenIds.has(m.id)) return false;
-    const linked = (m.fatherId && parentIds.has(m.fatherId)) ||
-                   (m.motherId && parentIds.has(m.motherId));
-    const structural = m.rel === 'child' && parentIds.has(m.pid ?? '') &&
-                       !m.fatherId && !m.motherId;
-    if (linked || structural) { seenIds.add(m.id); return true; }
-    return false;
-  });
+  const spouses     = take(familySpouses(index, owner.id));
+  const parents     = sortParents(take(familyParents(index, owner.id)), owner);
+  const siblingsAll = take(familySiblings(index, owner.id));
+  const children    = take(familyChildren(index, owner.id));
 
-  const topRowW = FAM_CARD_W + spouses.length * (FAM_CARD_W + FAM_SGAP);
-  const botW = bioChildren.length > 0
-    ? bioChildren.length * FAM_CARD_W + (bioChildren.length - 1) * FAM_HGAP : 0;
-  const totalW = Math.max(topRowW, botW);
-  const mid = totalW / 2;
-
-  const topStartX = mid - topRowW / 2;
-  const ownerX  = topStartX;
-  const spouseXs = spouses.map((_, i) => topStartX + (i + 1) * (FAM_CARD_W + FAM_SGAP));
-  const row1Y   = 0;
-  const row2Y   = row1Y + FAM_CARD_H + FAM_VGAP;
-  const childX0 = mid - botW / 2;
-
-  // Parents row sits above the owner (mirrors the children row below) -
-  // centered on the owner's own card, not the whole owner+spouse+children
-  // span, since these are specifically the owner's parents.
-  const parentsRowW = parents.length * FAM_CARD_W + Math.max(parents.length - 1, 0) * FAM_HGAP;
-  const parentsStartX = ownerX + FAM_CARD_W / 2 - parentsRowW / 2;
-  const parentRowY = row1Y - FAM_CARD_H - FAM_VGAP;
-
-  const nodes: Node[] = [];
-  const edges: Edge[] = [];
-
-  parents.forEach((parent, i) => {
-    const px = parentsStartX + i * (FAM_CARD_W + FAM_HGAP);
-    nodes.push({
-      id: parent.id, type: 'card', position: { x: px, y: parentRowY },
-      data: {
-        member: parent, role: 'parent' as FamRole,
-        caption: parent.id === owner.fatherId ? 'Father' : 'Mother',
-        onPick: undefined,
-      },
-    });
-    edges.push({
-      id: `e-parent-${parent.id}-${owner.id}`,
-      source: parent.id, target: owner.id,
-      type: 'smoothstep',
-      style: { stroke: '#9CA3AF', strokeWidth: 3.5 },
-    });
-  });
-
-  nodes.push({
-    id: owner.id, type: 'card', position: { x: ownerX, y: row1Y },
-    data: { member: owner, role: 'owner' as FamRole, onPick: undefined },
-  });
-
-  spouses.forEach((spouse, i) => {
-    nodes.push({
-      id: spouse.id, type: 'card', position: { x: spouseXs[i], y: row1Y },
-      data: { member: spouse, role: 'spouse' as FamRole, onPick: undefined },
-    });
-    edges.push({
-      id: `e-spouse-${owner.id}-${spouse.id}`,
-      source: owner.id, sourceHandle: 'right-out',
-      target: spouse.id, targetHandle: 'left-in',
-      type: 'straight', label: 'SPOUSE',
-      style: { stroke: '#9CA3AF', strokeWidth: 3.5 },
-      labelStyle: { fontSize: 16, fill: labelFg, fontWeight: 800, letterSpacing: 0.6 },
-      labelBgStyle: { fill: labelBg, fillOpacity: 1 },
-      labelBgPadding: [10, 6],
-      labelBgBorderRadius: 7,
-    });
-  });
-
-  if (bioChildren.length > 0) {
-    const unionId = `union-${owner.id}`;
-    const unionX = spouses.length > 0 ? mid : ownerX + FAM_CARD_W / 2;
-    const unionY = spouses.length > 0 ? row1Y + FAM_CARD_H / 2 : row1Y + FAM_CARD_H;
-    const labelOffsetY = (row2Y - unionY) * 0.4;
-    nodes.push({
-      id: unionId, type: 'union', position: { x: unionX, y: unionY },
-      data: { labelOffsetY }, style: { width: 1, height: 1 },
-    });
-
-    bioChildren.forEach((c, i) => {
-      const cx = childX0 + i * (FAM_CARD_W + FAM_HGAP);
-      // Bio child, but membership can hang off someone else's quota (e.g. a
-      // grandparent's) instead of the parent(s) shown here — flag that.
-      const sponsor = c.pid && !parentIds.has(c.pid) ? members.find(m => m.id === c.pid) : null;
-      const quotaRef = sponsor ? `Membership via ${sponsor.name} (${sponsor.id})` : undefined;
-      nodes.push({
-        id: c.id, type: 'card', position: { x: cx, y: row2Y },
-        data: { member: c, role: 'child' as FamRole, caption: famChildLabel(c), quotaRef, onPick: undefined },
-      });
-      edges.push({
-        id: `e-child-${owner.id}-${c.id}`,
-        source: unionId, sourceHandle: 'bottom', target: c.id,
-        type: 'smoothstep',
-        style: { stroke: '#9CA3AF', strokeWidth: 3.5 },
-      });
-    });
-  }
-
-  return { nodes, edges };
-}
-
-// ─── Core-member layout: parents → siblings+self+spouse(s) → children/A4D/
-// Associate — built straight off the focused member's own raw `nodes` list
-// (see src/lib/types.ts) instead of scanning the flat array. Non-core focus
-// members have no `.nodes` and keep using buildFocusedGraph above,
-// unchanged.
-function buildCoreFamilyGraph(focusId: string, members: Member[], dark: boolean): { nodes: Node[]; edges: Edge[] } {
-  const owner = members.find(m => m.id === focusId);
-  if (!owner) return { nodes: [], edges: [] };
-
-  const labelFg = dark ? '#e5e7eb' : '#374151';
-  const labelBg = dark ? '#2a2e39' : '#E5E7EB';
-
-  const parents = nodesOfKind(owner, members, ['Parent']);
-  const siblingsAll = nodesOfKind(owner, members, ['Siblings']);
-  const spouses = nodesOfKind(owner, members, ['Spouse']);
-  const spouseIds = new Set(spouses.map(s => s.member.id));
-  // A spouse who also carries her own A4D node (the PS-295-style overlap)
-  // must not double-render in the bottom row too.
-  const bottomEntries = nodesOfKind(owner, members, ['Children', 'A4D', 'Associate'])
-    .filter(({ member }) => !spouseIds.has(member.id));
+  // this couple's own ids — a child sponsored from outside it gets a note
+  const coupleIds = new Set([owner.id, ...spouses.map(sp => sp.member.id)]);
 
   // sketch groups siblings 2-left/1-right for an odd count — larger half left
   const leftCount = Math.ceil(siblingsAll.length / 2);
@@ -357,7 +239,7 @@ function buildCoreFamilyGraph(focusId: string, members: Member[], dark: boolean)
     const px = parentsStartX + i * (FAM_CARD_W + FAM_PARENT_GAP);
     nodes.push({
       id: entry.member.id, type: 'card', position: { x: px, y: parentRowY },
-      data: { member: displayMember(entry), role: 'parent' as FamRole, caption: entry.relation, onPick: undefined },
+      data: { member: displayMember(entry), role: 'parent' as FamRole, caption: parentCaption(entry, owner), onPick: undefined },
     });
   });
 
@@ -367,7 +249,7 @@ function buildCoreFamilyGraph(focusId: string, members: Member[], dark: boolean)
       source: parents[0].member.id, sourceHandle: 'right-out',
       target: parents[1].member.id, targetHandle: 'left-in',
       type: 'straight', label: 'SPOUSE',
-      style: { stroke: '#9CA3AF', strokeWidth: 3.5 },
+      style: { stroke: '#A89C82', strokeWidth: 3.5 },
       labelStyle: { fontSize: 16, fill: labelFg, fontWeight: 800, letterSpacing: 0.6 },
       labelBgStyle: { fill: labelBg, fillOpacity: 1 },
       labelBgPadding: [10, 6],
@@ -375,13 +257,12 @@ function buildCoreFamilyGraph(focusId: string, members: Member[], dark: boolean)
     });
   }
 
-  // parents → union → (siblings + owner) fan-out. Spouse is not a blood
-  // child of these parents, so it's excluded here — it gets its own
-  // straight "SPOUSE" line to the owner instead, below. The union sits
-  // AT the parent-pair connecting line's own height (card vertical
-  // center) when there are two parents — same trick the bottom
-  // children/A4D/Associate union already uses for the owner-spouse line —
-  // so the downward fan-out visibly branches off that line instead of
+  // parents → union → (siblings + owner) fan-out. The spouse is not a blood
+  // child of these parents, so they're excluded here — they get their own
+  // straight "SPOUSE" line to the owner instead, below. The union sits AT the
+  // parent-pair connecting line's own height (card vertical center) when there
+  // are two parents — same trick the children union uses for the owner-spouse
+  // line — so the downward fan-out visibly branches off that line instead of
   // floating disconnected below the cards.
   if (parents.length > 0) {
     const parentUnionId = `union-parents-${owner.id}`;
@@ -392,12 +273,12 @@ function buildCoreFamilyGraph(focusId: string, members: Member[], dark: boolean)
       position: { x: parentUnionX, y: parentUnionY },
       data: { labelOffsetY: (row1Y - parentUnionY) * 0.4 }, style: { width: 1, height: 1 },
     });
-    [...siblingsLeft, ...siblingsRight, { member: owner }].forEach(({ member: target }) => {
+    [...siblingsLeft.map(e => e.member.id), ...siblingsRight.map(e => e.member.id), owner.id].forEach(targetId => {
       edges.push({
-        id: `e-parentfan-${owner.id}-${target.id}`,
-        source: parentUnionId, sourceHandle: 'bottom', target: target.id,
+        id: `e-parentfan-${owner.id}-${targetId}`,
+        source: parentUnionId, sourceHandle: 'bottom', target: targetId,
         type: 'smoothstep',
-        style: { stroke: '#9CA3AF', strokeWidth: 3.5 },
+        style: { stroke: '#A89C82', strokeWidth: 3.5 },
       });
     });
   }
@@ -405,13 +286,13 @@ function buildCoreFamilyGraph(focusId: string, members: Member[], dark: boolean)
   siblingsLeft.forEach((entry, i) => {
     nodes.push({
       id: entry.member.id, type: 'card', position: { x: siblingLeftXs[i], y: row1Y },
-      data: { member: displayMember(entry), role: 'sibling' as FamRole, caption: entry.relation, onPick: undefined },
+      data: { member: displayMember(entry), role: 'sibling' as FamRole, caption: siblingCaption(entry), onPick: undefined },
     });
   });
   siblingsRight.forEach((entry, i) => {
     nodes.push({
       id: entry.member.id, type: 'card', position: { x: siblingRightXs[i], y: row1Y },
-      data: { member: displayMember(entry), role: 'sibling' as FamRole, caption: entry.relation, onPick: undefined },
+      data: { member: displayMember(entry), role: 'sibling' as FamRole, caption: siblingCaption(entry), onPick: undefined },
     });
   });
 
@@ -430,7 +311,7 @@ function buildCoreFamilyGraph(focusId: string, members: Member[], dark: boolean)
       source: owner.id, sourceHandle: 'right-out',
       target: entry.member.id, targetHandle: 'left-in',
       type: 'straight', label: 'SPOUSE',
-      style: { stroke: '#9CA3AF', strokeWidth: 3.5 },
+      style: { stroke: '#A89C82', strokeWidth: 3.5 },
       labelStyle: { fontSize: 16, fill: labelFg, fontWeight: 800, letterSpacing: 0.6 },
       labelBgStyle: { fill: labelBg, fillOpacity: 1 },
       labelBgPadding: [10, 6],
@@ -438,31 +319,36 @@ function buildCoreFamilyGraph(focusId: string, members: Member[], dark: boolean)
     });
   });
 
-  // ── bottom row: Children + A4D + Associate, combined ──
-  if (bottomEntries.length > 0) {
+  // ── bottom row: this couple's children ──
+  if (children.length > 0) {
     const unionId = `union-${owner.id}`;
     const unionX = spouses.length > 0 ? ownerBlockCenterX : ownerX + FAM_CARD_W / 2;
     const unionY = spouses.length > 0 ? row1Y + FAM_CARD_H / 2 : row1Y + FAM_CARD_H;
-    const labelOffsetY = (row2Y - unionY) * 0.4;
     nodes.push({
       id: unionId, type: 'union', position: { x: unionX, y: unionY },
-      data: { labelOffsetY }, style: { width: 1, height: 1 },
+      data: { labelOffsetY: (row2Y - unionY) * 0.4 }, style: { width: 1, height: 1 },
     });
 
-    const botW = bottomEntries.length * FAM_CARD_W + (bottomEntries.length - 1) * FAM_HGAP;
+    const botW = children.length * FAM_CARD_W + (children.length - 1) * FAM_HGAP;
     const childX0 = ownerBlockCenterX - botW / 2;
 
-    bottomEntries.forEach((entry, i) => {
+    children.forEach((entry, i) => {
       const c = entry.member;
       const cx = childX0 + i * (FAM_CARD_W + FAM_HGAP);
-      const isDependent = c.via === 'a4d' || c.via === 'associate';
+      // Blood child either way — but their membership can sit on someone
+      // else's quota (a grandparent's, an uncle's). Say so, since the card's
+      // A4D/Associate badge alone doesn't tell you whose quota it is.
+      const sponsor = c.pid && !coupleIds.has(c.pid) ? findMember(index, c.pid) : undefined;
       nodes.push({
         id: c.id, type: 'card', position: { x: cx, y: row2Y },
         data: {
           member: displayMember(entry),
-          role: (isDependent ? 'dependent' : 'child') as FamRole,
+          role: 'child' as FamRole,
           badge: c.via === 'a4d' ? 'A4D' : c.via === 'associate' ? 'Associate' : undefined,
-          caption: getRefFromRelation(entry.relation),
+          caption: childCaption(entry),
+          quotaRef: sponsor && !isPendingAcno(sponsor.id)
+            ? `Membership via ${dispName(sponsor)} (${sponsor.id})`
+            : undefined,
           onPick: undefined,
         },
       });
@@ -470,7 +356,7 @@ function buildCoreFamilyGraph(focusId: string, members: Member[], dark: boolean)
         id: `e-child-${owner.id}-${c.id}`,
         source: unionId, sourceHandle: 'bottom', target: c.id,
         type: 'smoothstep',
-        style: { stroke: '#9CA3AF', strokeWidth: 3.5 },
+        style: { stroke: '#A89C82', strokeWidth: 3.5 },
       });
     });
   }
@@ -481,15 +367,13 @@ function buildCoreFamilyGraph(focusId: string, members: Member[], dark: boolean)
 function FocusedDiagramInner({ focusId, members, onPick, highlightedId }: Props) {
   const theme = useMemberStore(state => state.theme);
 
-  const { nodes: rawNodes, edges } = useMemo(() => {
-    const owner = members.find(m => m.id === focusId);
-    // Core members (their own `.nodes` present) get the new parents/
-    // siblings+spouse/children+A4D+Associate layout, sourced straight from
-    // their raw node list. Non-core members keep today's layout, unchanged.
-    return owner?.nodes
-      ? buildCoreFamilyGraph(focusId, members, theme === 'dark')
-      : buildFocusedGraph(focusId, members, theme === 'dark');
-  }, [focusId, members, theme]);
+  // One layout for everyone — core members and dependents alike resolve
+  // through the same family index, so clicking a child never switches to a
+  // differently-shaped view of the same family.
+  const { nodes: rawNodes, edges } = useMemo(
+    () => buildFamilyGraph(focusId, members, theme === 'dark'),
+    [focusId, members, theme],
+  );
 
   const nodes = useMemo(
     () => rawNodes.map(n => n.type === 'card'
@@ -529,12 +413,18 @@ function FocusedDiagramInner({ focusId, members, onPick, highlightedId }: Props)
         nodesConnectable={false}
         elementsSelectable={false}
         onNodeClick={handleNodeClick}
+        /* skip DOM work for cards scrolled out of view — a wide family row
+           with photos is otherwise mounted in full even when only two cards
+           are on screen */
+        onlyRenderVisibleElements
         panOnScroll
         minZoom={0.2}
         maxZoom={2}
       >
-        <Background color={theme === 'dark' ? '#2a2e39' : '#E2E8F0'} gap={22} size={1} />
-        <Controls showInteractive={false} className={styles.controls} />
+        <Background color={theme === 'dark' ? '#322C1E' : '#E3D9C2'} gap={22} size={1} />
+        {/* top-right: within reach of the cursor while reading the tree,
+            instead of buried at the bottom-left corner of a tall canvas */}
+        <Controls showInteractive={false} position="top-right" className={styles.controls} />
       </ReactFlow>
     </div>
   );

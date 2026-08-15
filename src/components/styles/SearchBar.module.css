@@ -10,30 +10,32 @@
   }
 }
 
+/* The search box lives inside the black header, so it's styled against that
+   bar rather than the page surface — in both themes. */
 .inputRow {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  background-color: var(--input-bg);
-  border: 1.5px solid var(--input-border);
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1.5px solid var(--header-border);
   border-radius: 0.75rem;
   padding: 0.55rem 0.875rem;
   transition: border-color 150ms, box-shadow 150ms, background-color 150ms;
 }
 
 .inputRow:focus-within {
-  background-color: var(--surface);
-  border-color: #94a5f8;
-  box-shadow: 0 0 0 4px rgba(79, 109, 245, 0.12);
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--gold);
+  box-shadow: 0 0 0 4px var(--gold-ring);
 }
 
 .icon {
-  color: var(--text-muted);
+  color: var(--header-muted);
   flex-shrink: 0;
 }
 
 .inputRow:focus-within .icon {
-  color: #4f6df5;
+  color: var(--gold);
 }
 
 .input {
@@ -41,13 +43,13 @@
   background: transparent;
   font-size: 13.5px;
   font-weight: 500;
-  color: var(--text);
+  color: var(--header-text);
   outline: none;
   border: none;
 }
 
 .input::placeholder {
-  color: var(--text-muted);
+  color: var(--header-muted);
   font-weight: 400;
 }
 
@@ -58,7 +60,7 @@
   right: 0;
   margin-top: 0.5rem;
   background-color: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--gold-line);
   border-radius: 0.875rem;
   box-shadow: 0 20px 40px -12px rgb(15 23 42 / 0.18), 0 4px 10px -6px rgb(15 23 42 / 0.08);
   z-index: 50;
@@ -81,6 +83,8 @@
   background-color: var(--surface-alt);
 }
 
+/* Real member photo when the club system has one (--avatar-image, set
+   inline), initials underneath when it doesn't. */
 .avatar {
   width: 2.25rem;
   height: 2.25rem;
@@ -91,7 +95,12 @@
   font-size: 10.5px;
   font-weight: 700;
   flex-shrink: 0;
-  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.04);
+  border: 1.5px solid transparent;
+  background-image: var(--avatar-image, none);
+  background-size: cover;
+  background-position: center 22%;
+  background-repeat: no-repeat;
+  box-shadow: 0 0 0 2px var(--gold-ring);
 }
 
 .memberInfo {

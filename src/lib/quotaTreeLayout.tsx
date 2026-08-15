@@ -4,11 +4,13 @@
 import { Graph, layout } from '@dagrejs/dagre';
 import type { Node, Edge } from 'reactflow';
 import type { Member, NodeKind } from '@/lib/types';
+import type { ResolvedNode } from '@/lib/relationTypes';
 import type { ReactNode } from 'react';
 import { toProxiedPhotoUrl } from '@/lib/memberPhoto';
+import { getFamilyIndex, findMember } from '@/lib/familyIndex';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-export const CONN_COLOR = '#CBD5E1';
+export const CONN_COLOR = '#C9BCA0';
 
 
 // Member.photoUrl holds the club system's raw plain-HTTP image URL, which a
@@ -168,17 +170,21 @@ export function getRef(slot: Member, listing: Member): ReactNode {
 
 // ── Raw-node resolution (core members only — see Member.nodes) ────────────────
 
-export interface ResolvedNode { member: Member; relation: string; name: string; photoUrl?: string | null }
+export type { ResolvedNode };
 
 // Resolves `owner`'s own raw node list (only ever set on core members) to
 // full Member records, for the given kinds. Returns [] for a non-core
 // owner (no `.nodes`) — callers fall back to the old pid-scan in that case.
+// Lookups go through the shared family index's id map: this runs inside
+// layout loops, and a members.find() per node was O(members × nodes) on
+// every render.
 export function nodesOfKind(owner: Member, members: Member[], kinds: NodeKind[]): ResolvedNode[] {
   if (!owner.nodes) return [];
+  const index = getFamilyIndex(members);
   const out: ResolvedNode[] = [];
   owner.nodes.forEach(n => {
     if (!kinds.includes(n.node)) return;
-    const member = members.find(x => x.id === n.acno);
+    const member = findMember(index, n.acno);
     if (member) out.push({ member, relation: n.relation, name: n.name, photoUrl: n.photoUrl });
   });
   return out;
@@ -231,8 +237,8 @@ export function buildGraph(
   dark = false,
 ) {
 
-  const neutralLabelBg  = dark ? '#2a2e39' : '#E5E7EB';
-  const neutralLabelFg  = dark ? '#e5e7eb' : '#374151';
+  const neutralLabelBg  = dark ? '#2A2418' : '#EFE7D5';
+  const neutralLabelFg  = dark ? '#EDE7D9' : '#3A3427';
   const amberLabelBg    = dark ? '#3a2e12' : '#fef3c7';
   const amberLabelFg    = dark ? '#f0c975' : '#92400e';
 
@@ -318,7 +324,7 @@ export function buildGraph(
           source: sid, target: subId,
           sourceHandle: 'bottom', targetHandle: 'top',
           type: 'smoothstep',
-          style: { stroke: '#94A3B8', strokeWidth: 2.5, strokeDasharray: '5 3' },
+          style: { stroke: '#A89C82', strokeWidth: 2.5, strokeDasharray: '5 3' },
         });
       });
     });
@@ -368,7 +374,7 @@ export function buildGraph(
         source: parentId, target: m.id,
         sourceHandle: 'bottom', targetHandle: 'top',
         type: 'smoothstep',
-        style: { stroke: '#94A3B8', strokeWidth: 3.5 },
+        style: { stroke: '#A89C82', strokeWidth: 3.5 },
       });
     }
 
@@ -388,7 +394,7 @@ export function buildGraph(
         label: isTransferToSpouse ? 'Spouse · A/C transferred' : 'Spouse',
         style: isTransferToSpouse
           ? { stroke: '#F59E0B', strokeWidth: 3.5, strokeDasharray: '6 3' }
-          : { stroke: '#9CA3AF', strokeWidth: 3.5 },
+          : { stroke: '#A89C82', strokeWidth: 3.5 },
         labelStyle: isTransferToSpouse
           ? { fontSize: 16, fill: amberLabelFg, fontWeight: 800 }
           : { fontSize: 16, fill: neutralLabelFg, fontWeight: 800 },
