@@ -1,21 +1,41 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemberStore } from '@/store/memberStore';
 import { familyMembers } from '@/lib/demoData';
 import { DATA_SOURCE } from '@/lib/dataSource';
-import { useCachedMembers, writeCachedMembers } from '@/lib/membersCache';
+import { useCachedMembers, writeCachedMembers, clearCachedMembers } from '@/lib/membersCache';
 import type { Member } from '@/lib/types';
 import MemberTree from '@/components/MemberTree';
 import DetailPanel from '@/components/DetailPanel';
 import SearchBar from '@/components/SearchBar';
-import { LayoutGrid, Network, Sun, Moon } from 'lucide-react';
+import { LayoutGrid, Network, Sun, Moon, RefreshCw } from 'lucide-react';
 import s from './page.module.css';
+
+// `force` skips every cache between here and the club system — see the
+// ?refresh=1 branch in src/app/api/ext-members/route.ts.
+async function fetchMembers(force = false): Promise<Member[]> {
+  if (DATA_SOURCE === 'static') return familyMembers;
+
+  const res = await fetch(force ? '/api/ext-members?refresh=1' : '/api/ext-members', {
+    cache: force ? 'no-store' : 'default',
+  });
+  // A failure answers with {error}, not a roster. Handing that straight to
+  // the store used to blow up the whole page on the first .map(); throwing
+  // puts the query into its error state instead, which the splash below
+  // already knows how to show (with a retry).
+  if (!res.ok) throw new Error(`members request failed: ${res.status}`);
+  const json = await res.json();
+  if (!Array.isArray(json)) throw new Error('members request returned an unexpected shape');
+  return json as Member[];
+}
 
 export default function Home() {
   const { view, setView, selectedId, setMembers, theme, toggleTheme } = useMemberStore();
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
 
   // Last roster this device loaded, if any (undefined during the server
   // render and the hydration pass — see useCachedMembers).
@@ -24,19 +44,7 @@ export default function Home() {
   // Data source is a single switch — see src/lib/dataSource.ts.
   const { data, isLoading, isError, isPlaceholderData, refetch } = useQuery<Member[]>({
     queryKey: ['members', DATA_SOURCE],
-    queryFn: async () => {
-      if (DATA_SOURCE === 'static') return familyMembers;
-
-      const res = await fetch('/api/ext-members');
-      // A failure answers with {error}, not a roster. Handing that straight
-      // to the store used to blow up the whole page on the first .map();
-      // throwing puts the query into its error state instead, which the
-      // splash below already knows how to show (with a retry).
-      if (!res.ok) throw new Error(`members request failed: ${res.status}`);
-      const json = await res.json();
-      if (!Array.isArray(json)) throw new Error('members request returned an unexpected shape');
-      return json as Member[];
-    },
+    queryFn: () => fetchMembers(),
     // Draw the previous visit's roster straight away and swap it for the
     // fresh one when it arrives, instead of holding the whole app on a
     // loading screen. Placeholder data never enters the query cache, so the
@@ -55,6 +63,30 @@ export default function Home() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
+
+  // "I just changed something in the club system and want to see it now":
+  // drops this device's saved copy AND makes the server rebuild its own from
+  // upstream, so an edit — a deletion especially — can't be masked by a cache
+  // anywhere along the way.
+  const hardRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    clearCachedMembers();
+    try {
+      const fresh = await fetchMembers(true);
+      queryClient.setQueryData(['members', DATA_SOURCE], fresh);
+      // Written here rather than left to the effect below: when the refreshed
+      // roster is identical, React Query hands back the same reference and
+      // that effect never runs — which would leave this device with no saved
+      // copy at all until something actually changed.
+      writeCachedMembers(fresh);
+    } catch (err) {
+      console.error('[members] refresh failed', err);
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // A cold load has to walk the club system member by member (see
   // /api/ext-members), so this screen can be up for a few seconds — give it
@@ -134,6 +166,14 @@ export default function Home() {
 
             </div>
 
+            <button
+              onClick={hardRefresh}
+              className={`${s.themeBtn} ${refreshing ? s.refreshing : ''}`}
+              title="Reload members from the club system"
+            >
+              <RefreshCw size={13} />
+            </button>
+
             <button onClick={toggleTheme} className={s.themeBtn} title="Toggle dark mode">
               {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
             </button>
@@ -164,6 +204,14 @@ export default function Home() {
             </button>
 
           </div>
+
+          <button
+            onClick={hardRefresh}
+            className={`${s.themeBtn} ${refreshing ? s.refreshing : ''}`}
+            title="Reload members from the club system"
+          >
+            <RefreshCw size={14} />
+          </button>
 
           <button onClick={toggleTheme} className={s.themeBtn} title="Toggle dark mode">
             {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
