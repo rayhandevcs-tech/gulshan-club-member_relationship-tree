@@ -30,9 +30,13 @@ const CORE_TIMEOUT_MS = 20_000;
 const TREE_TIMEOUT_MS = 12_000;
 const CONCURRENCY     = 16;
 
-// Membership data changes rarely; a few minutes of staleness is invisible to
-// a member browsing the tree, and it turns nearly every load into a hit.
-const TTL_MS = 5 * 60_000;
+// How long a snapshot counts as current. Short on purpose: the club system
+// is edited live, and a DELETED member that lingers on screen is far more
+// confusing than a slightly slower load. Past the TTL the cached copy is
+// still served once (so nobody waits on the upstream walk) while a refresh
+// runs behind that request — the very next load is up to date. Editors who
+// can't wait even that long have the ?refresh=1 bypass on the route.
+const TTL_MS = 60_000;
 
 type Snapshot = { at: number; payload: unknown[] };
 
@@ -134,4 +138,19 @@ export function peekMembers(): { payload: unknown[]; state: Exclude<MembersState
 export async function warmMembersCache(): Promise<void> {
   if (snapshot) return;
   await refreshMembers();
+}
+
+/**
+ * Throws the snapshot away and rebuilds it from upstream, for the explicit
+ * "refresh" action — a cached copy must never be able to outlive a deletion
+ * that someone is standing there waiting to see.
+ */
+export async function forceRefreshMembers(): Promise<unknown[]> {
+  // Deliberately NOT joining any refresh already in flight: that one may have
+  // read upstream before the change this caller is trying to see. A manual
+  // refresh is rare enough that an extra walk costs nothing.
+  snapshot = null;
+  const payload = await loadFromUpstream();
+  snapshot = { at: Date.now(), payload };
+  return payload;
 }

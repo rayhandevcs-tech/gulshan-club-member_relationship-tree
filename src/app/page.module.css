@@ -318,3 +318,17 @@
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(350%); }
 }
+
+/* Refresh button, while it's reloading from the club system */
+.refreshing {
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.refreshing svg {
+  animation: refresh-spin 900ms linear infinite;
+}
+
+@keyframes refresh-spin {
+  to { transform: rotate(360deg); }
+}

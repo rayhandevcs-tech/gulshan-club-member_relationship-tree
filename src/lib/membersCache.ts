@@ -17,8 +17,9 @@ import type { Member } from './types';
 
 const KEY = 'gulshan-club-members-v1';
 
-// Older than this and we'd rather show nothing than something misleading.
-const MAX_AGE_MS = 24 * 60 * 60_000;
+// Older than this and we'd rather show a loading screen than a roster that
+// could be a day out of date.
+const MAX_AGE_MS = 6 * 60 * 60_000;
 
 // localStorage tops out around 5MB in most browsers; anything near that is
 // not worth the main-thread cost of serialising it either.
@@ -62,6 +63,13 @@ function clientSnapshot(): Member[] | undefined {
 /** The previous visit's roster, or undefined (always undefined on the server). */
 export function useCachedMembers(): Member[] | undefined {
   return useSyncExternalStore(subscribe, clientSnapshot, serverSnapshot);
+}
+
+/** Drops the saved copy — used by the explicit refresh action. */
+export function clearCachedMembers(): void {
+  snapshot = undefined;
+  if (typeof window === 'undefined') return;
+  try { window.localStorage.removeItem(KEY); } catch { /* storage unavailable */ }
 }
 
 export function writeCachedMembers(members: Member[]): void {
