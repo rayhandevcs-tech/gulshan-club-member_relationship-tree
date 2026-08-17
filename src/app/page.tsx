@@ -6,6 +6,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemberStore } from '@/store/memberStore';
 import { familyMembers } from '@/lib/demoData';
 import { DATA_SOURCE } from '@/lib/dataSource';
+import { useCachedMembers, writeCachedMembers } from '@/lib/membersCache';
+import type { Member } from '@/lib/types';
 import MemberTree from '@/components/MemberTree';
 import DetailPanel from '@/components/DetailPanel';
 import SearchBar from '@/components/SearchBar';
@@ -15,18 +17,40 @@ import s from './page.module.css';
 export default function Home() {
   const { view, setView, selectedId, setMembers, theme, toggleTheme } = useMemberStore();
 
+  // Last roster this device loaded, if any (undefined during the server
+  // render and the hydration pass — see useCachedMembers).
+  const cached = useCachedMembers();
+
   // Data source is a single switch — see src/lib/dataSource.ts.
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, isPlaceholderData, refetch } = useQuery<Member[]>({
     queryKey: ['members', DATA_SOURCE],
-    queryFn: () => {
-      if (DATA_SOURCE === 'static') return Promise.resolve(familyMembers);
-      return fetch('/api/ext-members').then(r => r.json());
+    queryFn: async () => {
+      if (DATA_SOURCE === 'static') return familyMembers;
+
+      const res = await fetch('/api/ext-members');
+      // A failure answers with {error}, not a roster. Handing that straight
+      // to the store used to blow up the whole page on the first .map();
+      // throwing puts the query into its error state instead, which the
+      // splash below already knows how to show (with a retry).
+      if (!res.ok) throw new Error(`members request failed: ${res.status}`);
+      const json = await res.json();
+      if (!Array.isArray(json)) throw new Error('members request returned an unexpected shape');
+      return json as Member[];
     },
+    // Draw the previous visit's roster straight away and swap it for the
+    // fresh one when it arrives, instead of holding the whole app on a
+    // loading screen. Placeholder data never enters the query cache, so the
+    // real fetch still runs exactly as before.
+    placeholderData: cached,
   });
 
   useEffect(() => {
     if (data) setMembers(data);
   }, [data, setMembers]);
+
+  useEffect(() => {
+    if (data && !isPlaceholderData) writeCachedMembers(data);
+  }, [data, isPlaceholderData]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -38,7 +62,9 @@ export default function Home() {
   if (isLoading || isError) {
     return (
       <div className={s.splash}>
-        <Image src="/GC_LOGO.png" alt="Gulshan Club Limited" width={72} height={72} priority className={s.splashLogo} />
+        <span className={s.splashLogoWrap}>
+          <Image src="/new_logo.png" alt="Gulshan Club Limited" width={289} height={253} priority className={s.splashLogo} />
+        </span>
         <div className={s.splashTitle}>Gulshan Club Limited</div>
         {isError ? (
           <>
@@ -66,17 +92,21 @@ export default function Home() {
         <div className={s.titleRow}>
 
           <div className={s.brand}>
-            {/* the club's own mark (public/GC_LOGO.png); priority because it
-                sits in the header and is part of the first paint */}
-            <Image
-              src="/GC_LOGO.png"
-              alt="Gulshan Club Limited"
-              width={44}
-              height={44}
-              priority
-              className={s.logo}
-            />
-            <div>
+            {/* The club mark (public/new_logo.png). The artwork carries a
+                small white wordmark under the monogram; the crop in
+                .logoWrap hides it, since the club name is set beside it in
+                the club's gold instead. priority: it's part of first paint. */}
+            <span className={s.logoWrap}>
+              <Image
+                src="/new_logo.png"
+                alt="Gulshan Club Limited"
+                width={289}
+                height={253}
+                priority
+                className={s.logo}
+              />
+            </span>
+            <div className={s.brandText}>
               <div className={s.title}>Gulshan Club Limited</div>
               <div className={s.subtitle}>Membership Relationship Tree</div>
             </div>

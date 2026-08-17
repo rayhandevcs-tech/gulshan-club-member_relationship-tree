@@ -5,11 +5,15 @@ import type { ReactNode, CSSProperties } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
   Background,
+  BaseEdge,
   Controls,
   Handle,
   Position,
+  getSmoothStepPath,
   NodeTypes,
+  EdgeTypes,
   NodeMouseHandler,
+  type EdgeProps,
   useReactFlow,
   useNodesInitialized,
   type Node,
@@ -36,10 +40,12 @@ interface Props {
 // ─── Family Relationship tab: owner + spouse + direct children (React Flow) ──
 
 const FAM_CARD_W = 345;
-const FAM_CARD_H = 365;
+// the card's REAL rendered height (.card in the stylesheet is fixed to this),
+// so union points land exactly on a card edge or on the spousal line
+const FAM_CARD_H = 320;
 const FAM_HGAP   = 75;
-const FAM_SGAP   = 155;
-const FAM_VGAP   = 220;
+const FAM_SGAP   = 150;
+const FAM_VGAP   = 175;
 // extra breathing room between Father/Mother, so the "SPOUSE" label on their
 // connecting line has room to sit clear of both cards.
 const FAM_PARENT_GAP = 230;
@@ -82,9 +88,15 @@ function FamCard({ data }: { data: FamCardData }) {
 
   return (
     <div className={styles.wrapper}>
-      <Handle type="target" position={Position.Top} isConnectable={false} className={styles.handleDot} />
-      <Handle id="right-out" type="source" position={Position.Right} isConnectable={false} className={styles.handleDot} />
-      <Handle id="left-in" type="target" position={Position.Left} isConnectable={false} className={styles.handleDot} />
+      {/* Connection points on all four edges, like the Member Relationship
+          cards — every edge below names the exact handle it starts and ends
+          on, so lines meet the card on a dot instead of near a corner. */}
+      <Handle id="top"       type="target" position={Position.Top}    isConnectable={false} className={styles.handleDot} />
+      <Handle id="bottom"    type="source" position={Position.Bottom} isConnectable={false} className={styles.handleDot} />
+      <Handle id="left-in"   type="target" position={Position.Left}   isConnectable={false} className={styles.handleDot} />
+      <Handle id="left-out"  type="source" position={Position.Left}   isConnectable={false} className={styles.handleDot} />
+      <Handle id="right-in"  type="target" position={Position.Right}  isConnectable={false} className={styles.handleDot} />
+      <Handle id="right-out" type="source" position={Position.Right}  isConnectable={false} className={styles.handleDot} />
 
       <button
         onClick={e => { e.stopPropagation(); onPick(m.id); }}
@@ -137,14 +149,14 @@ function FamCard({ data }: { data: FamCardData }) {
         )}
       </button>
 
-      {caption && (
-        <div className={styles.caption} style={{ '--caption-color': border } as CSSProperties}>
-          {caption}
-        </div>
-      )}
-      {quotaRef && (
-        <div className={styles.quotaRef}>
-          {quotaRef}
+      {(caption || quotaRef) && (
+        <div className={styles.captionBlock}>
+          {caption && (
+            <div className={styles.caption} style={{ '--caption-color': border } as CSSProperties}>
+              {caption}
+            </div>
+          )}
+          {quotaRef && <div className={styles.quotaRef}>{quotaRef}</div>}
         </div>
       )}
     </div>
@@ -165,7 +177,31 @@ function FamUnion({ data }: { data: { labelOffsetY?: number } }) {
   );
 }
 
+// How far above the row it feeds the horizontal "bus" of a fan-out sits.
+const FAM_BUS_LIFT = 70;
+
+/**
+ * Fan-out connector (parents → children, couple → children).
+ *
+ * The stock smooth-step edge turns at the midpoint between its two ends, and
+ * since a union point sits ON the spousal line — level with the middle of the
+ * cards — that midpoint lands within a few pixels of the cards' bottom edge,
+ * dragging the horizontal run right through the captions underneath them.
+ * Placing the turn a fixed distance above the row it feeds keeps that run in
+ * clear space, and keeps every fan-out in the diagram at the same height.
+ */
+function FamBusEdge({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, style }: EdgeProps) {
+  const [path] = getSmoothStepPath({
+    sourceX, sourceY, sourcePosition,
+    targetX, targetY, targetPosition,
+    borderRadius: 14,
+    centerY: targetY - FAM_BUS_LIFT,
+  });
+  return <BaseEdge path={path} style={style} />;
+}
+
 const famNodeTypes: NodeTypes = { card: FamCard, union: FamUnion };
+const famEdgeTypes: EdgeTypes = { bus: FamBusEdge };
 
 // ─── The family layout: parents → siblings + self + spouse(s) → children ─────
 //
@@ -276,8 +312,9 @@ function buildFamilyGraph(focusId: string, members: Member[], dark: boolean): { 
     [...siblingsLeft.map(e => e.member.id), ...siblingsRight.map(e => e.member.id), owner.id].forEach(targetId => {
       edges.push({
         id: `e-parentfan-${owner.id}-${targetId}`,
-        source: parentUnionId, sourceHandle: 'bottom', target: targetId,
-        type: 'smoothstep',
+        source: parentUnionId, sourceHandle: 'bottom',
+        target: targetId, targetHandle: 'top',
+        type: 'bus',
         style: { stroke: '#A89C82', strokeWidth: 3.5 },
       });
     });
@@ -354,8 +391,9 @@ function buildFamilyGraph(focusId: string, members: Member[], dark: boolean): { 
       });
       edges.push({
         id: `e-child-${owner.id}-${c.id}`,
-        source: unionId, sourceHandle: 'bottom', target: c.id,
-        type: 'smoothstep',
+        source: unionId, sourceHandle: 'bottom',
+        target: c.id, targetHandle: 'top',
+        type: 'bus',
         style: { stroke: '#A89C82', strokeWidth: 3.5 },
       });
     });
@@ -393,7 +431,7 @@ function FocusedDiagramInner({ focusId, members, onPick, highlightedId }: Props)
         return;
       }
     }
-    rf.fitView({ padding: 0.2, minZoom: 0.2, maxZoom: 1.5, duration: 300 });
+    rf.fitView({ padding: 0.16, minZoom: 0.08, maxZoom: 1.4, duration: 300 });
   }, [nodesInitialized, highlightedId, nodes, rf]);
 
   if (!nodes.length) return null;
@@ -409,6 +447,7 @@ function FocusedDiagramInner({ focusId, members, onPick, highlightedId }: Props)
         nodes={nodes}
         edges={edges}
         nodeTypes={famNodeTypes}
+        edgeTypes={famEdgeTypes}
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable={false}
@@ -418,7 +457,7 @@ function FocusedDiagramInner({ focusId, members, onPick, highlightedId }: Props)
            are on screen */
         onlyRenderVisibleElements
         panOnScroll
-        minZoom={0.2}
+        minZoom={0.08}
         maxZoom={2}
       >
         <Background color={theme === 'dark' ? '#322C1E' : '#E3D9C2'} gap={22} size={1} />
