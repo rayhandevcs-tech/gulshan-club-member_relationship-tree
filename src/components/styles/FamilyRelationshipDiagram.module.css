@@ -144,6 +144,12 @@
   color: var(--caption-color);
 }
 
+/* see the comment on this class's use in FamilyRelationshipDiagram.tsx */
+.captionOffCentre {
+  text-align: left;
+  padding-left: 18px;
+}
+
 .quotaRef {
   text-align: center;
   margin-top: 2px;

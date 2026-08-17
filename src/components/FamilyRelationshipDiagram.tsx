@@ -44,7 +44,10 @@ const FAM_CARD_W = 345;
 // so union points land exactly on a card edge or on the spousal line
 const FAM_CARD_H = 320;
 const FAM_HGAP   = 75;
-const FAM_SGAP   = 150;
+// spouse cards sit further apart than siblings do: the SPOUSE pill goes
+// between them, and the couple's "Children" stem drops from the midpoint of
+// that same line
+const FAM_SGAP   = 235;
 const FAM_VGAP   = 175;
 // extra breathing room between Father/Mother, so the "SPOUSE" label on their
 // connecting line has room to sit clear of both cards.
@@ -152,7 +155,14 @@ function FamCard({ data }: { data: FamCardData }) {
       {(caption || quotaRef) && (
         <div className={styles.captionBlock}>
           {caption && (
-            <div className={styles.caption} style={{ '--caption-color': border } as CSSProperties}>
+            <div
+              // A parent's caption is nudged off centre: the union stem for
+              // the generation below starts at this card's bottom centre and
+              // labels itself there, and the two were sitting on top of each
+              // other.
+              className={`${styles.caption}${role === 'parent' ? ` ${styles.captionOffCentre}` : ''}`}
+              style={{ '--caption-color': border } as CSSProperties}
+            >
               {caption}
             </div>
           )}
