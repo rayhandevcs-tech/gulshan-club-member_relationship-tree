@@ -1,61 +1,64 @@
 // src/app/api/ext-members/route.ts
 //
 // 'api' data-source mode (see src/lib/dataSource.ts) — the club's own
-// system. The fetching, caching and shape conversion all live in ./cache.ts
-// (shared with the boot-time warmup in src/instrumentation.ts); this handler
-// only decides what to answer with.
+// system. The fetching and shape conversion live in ./cache.ts, which keeps
+// the roster rebuilt on a loop; this handler only hands out whatever that
+// last completed build produced.
 //
-// GET /api/ext-members            → cached copy when it's current, otherwise
-//                                   the previous one while a refresh runs
-// GET /api/ext-members?refresh=1  → skip every cache and rebuild from the
-//                                   club system, for "I just changed
-//                                   something and want to see it"
+// GET /api/ext-members            → the current roster, served straight from
+//                                   memory (no request ever waits on the club
+//                                   system once the first build is done)
+// GET /api/ext-members?refresh=1  → rebuild from the club system first, then
+//                                   answer — the manual "show me now" path
+//
+// Nothing here may be cached on the wire: the payload changes whenever the
+// club system does, and browsers only re-download it when /version tells them
+// the hash changed, so there is nothing to gain from a stale copy in between.
 
 import { NextResponse } from 'next/server';
-import { forceRefreshMembers, peekMembers, refreshMembers } from './cache';
+import { ensureMembersFresh, forceRefreshMembers, peekMembers, refreshMembers, startMembersAutoRefresh } from './cache';
 
-type CacheState = 'fresh' | 'stale' | 'forced';
+export const dynamic = 'force-dynamic';
 
-const respond = (payload: unknown[], state: CacheState) =>
-  NextResponse.json(payload, {
+const serve = (snapshot: { json: string; hash: string; at: number }, state: 'live' | 'forced') =>
+  new Response(snapshot.json, {
+    status: 200,
     headers: {
-      // A forced refresh must not be answerable from any cache in between —
-      // that's the whole point of asking for it.
-      'Cache-Control': state === 'forced'
-        ? 'no-store'
-        : 'public, max-age=0, s-maxage=60, stale-while-revalidate=120',
-      'X-Members-Cache': state,
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+      'X-Members-Hash': snapshot.hash,
+      'X-Members-Built-At': new Date(snapshot.at).toISOString(),
+      'X-Members-State': state,
     },
   });
 
-export async function GET(request: Request) {
-  const forced = new URL(request.url).searchParams.get('refresh') === '1';
+const failed = () =>
+  NextResponse.json({ error: 'Failed to fetch from external API' }, { status: 502, headers: { 'Cache-Control': 'no-store' } });
 
-  if (forced) {
+export async function GET(request: Request) {
+  // Hosts that freeze idle instances lose the background loop; re-arming it
+  // on a request is what keeps those deployments current too.
+  startMembersAutoRefresh();
+
+  if (new URL(request.url).searchParams.get('refresh') === '1') {
     try {
-      return respond(await forceRefreshMembers(), 'forced');
+      return serve(await forceRefreshMembers(), 'forced');
     } catch (err) {
       console.error('[ext-members] forced refresh', err);
-      return NextResponse.json({ error: 'Failed to fetch from external API' }, { status: 502 });
+      return failed();
     }
   }
 
-  const cached = peekMembers();
-
-  if (cached?.state === 'fresh') return respond(cached.payload, 'fresh');
-
-  // Stale copy in hand: serve it now, refresh behind the request, so the next
-  // load is current. The rejection is swallowed because nobody is waiting on
-  // it — a failed refresh just means the next request retries.
-  if (cached) {
-    void refreshMembers().catch(err => console.error('[ext-members] background refresh', err));
-    return respond(cached.payload, 'stale');
+  const current = peekMembers();
+  if (current) {
+    ensureMembersFresh();       // never blocks — rebuilds behind this response
+    return serve(current, 'live');
   }
 
   try {
-    return respond(await refreshMembers(), 'fresh');
+    return serve(await refreshMembers(), 'live');
   } catch (err) {
     console.error('[ext-members]', err);
-    return NextResponse.json({ error: 'Failed to fetch from external API' }, { status: 502 });
+    return failed();
   }
 }
