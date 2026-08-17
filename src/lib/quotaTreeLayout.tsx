@@ -33,17 +33,15 @@ export const displayAcno = (id: string): string =>
 // Height grows proportionally more than width (taller than it is wide, from
 // the bigger avatar + 2-line name reservation + roomier padding).
 export const CARD_W = 380;
-export const CARD_H = 450;
+export const CARD_H = 350;
 export const SLOT_W = 420;
 export const SLOT_H = 400;
 
-// CARD_H above is deliberately padded well past the common-case rendered
-// card height, so dagre never lets a rank overlap a tall (2-line name +
-// Deceased tag) card. That padding is wrong to reuse for a *visual* anchor
-// though — e.g. the single-parent "Children" stem used to drop the full
-// CARD_H below the card top, landing ~70px past where the card actually
-// ends. This tracks the common-case rendered height instead.
-export const CARD_VISUAL_H = 420;
+// The card is a fixed 350px box (see .card in MemberRelationshipTree.module.css)
+// and its caption is absolutely positioned, so the rendered height and the
+// layout height are now the same number — visual anchors like the "Children"
+// stem can use CARD_H directly instead of guessing at a shorter value.
+export const CARD_VISUAL_H = CARD_H;
 
 // Wide enough to fit the longest connector label ("Spouse · A/C
 // transferred", ~25 chars at 16px/800 weight) without spilling into

@@ -177,7 +177,7 @@
 .diagramArea {
   width: 100%;
   overflow: auto;
-  padding: 0.75rem;
+  padding: 0.75rem 0.25rem;
   display: block;
 }
 
@@ -189,7 +189,7 @@
 
 @media (min-width: 640px) {
   .diagramArea {
-    padding: 1.5rem;
+    padding: 1.5rem 0.5rem;
   }
   .diagramAreaStart {
     justify-content: center;

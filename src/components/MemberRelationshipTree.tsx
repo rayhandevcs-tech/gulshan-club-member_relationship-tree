@@ -319,12 +319,14 @@ function buildMemberRelGraph(
   const edges: Edge[] = [];
 
   const H_GAP      = BESIDE_GAP;
-  const SPOUSE_GAP = 460;
+  // just enough for the "Spouse" pill to sit clear of both cards — the line
+  // used to run nearly a card-and-a-half wide
+  const SPOUSE_GAP = 250;
   const PARENT_GAP = 320;
   const ROW_GAP    = 48;
   const PARENT_Y   = 0;
-  const CORE_Y     = CARD_H + 240;
-  const SLOT_Y     = CORE_Y + CARD_H + 360;
+  const CORE_Y     = CARD_H + 200;
+  const SLOT_Y     = CORE_Y + CARD_H + 260;
 
   // Children (own A/C) and A4D/Associate (owner's dependents) share one row
   // and fan out from the same point below the owner card — keeping them on
