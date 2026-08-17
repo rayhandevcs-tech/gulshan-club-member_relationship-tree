@@ -14,13 +14,18 @@ import SearchBar from '@/components/SearchBar';
 import { LayoutGrid, Network, Sun, Moon, RefreshCw } from 'lucide-react';
 import s from './page.module.css';
 
-// `force` skips every cache between here and the club system — see the
-// ?refresh=1 branch in src/app/api/ext-members/route.ts.
+// Hash of the roster this browser currently holds. The version poll below
+// compares against it, so the multi-megabyte payload is re-downloaded only
+// when the club system's data has actually changed.
+let heldHash: string | null = null;
+
+// `force` makes the server rebuild from the club system before answering —
+// see the ?refresh=1 branch in src/app/api/ext-members/route.ts.
 async function fetchMembers(force = false): Promise<Member[]> {
   if (DATA_SOURCE === 'static') return familyMembers;
 
   const res = await fetch(force ? '/api/ext-members?refresh=1' : '/api/ext-members', {
-    cache: force ? 'no-store' : 'default',
+    cache: 'no-store',
   });
   // A failure answers with {error}, not a roster. Handing that straight to
   // the store used to blow up the whole page on the first .map(); throwing
@@ -29,8 +34,24 @@ async function fetchMembers(force = false): Promise<Member[]> {
   if (!res.ok) throw new Error(`members request failed: ${res.status}`);
   const json = await res.json();
   if (!Array.isArray(json)) throw new Error('members request returned an unexpected shape');
+
+  heldHash = res.headers.get('x-members-hash');
   return json as Member[];
 }
+
+/** A few dozen bytes identifying the roster the server would serve now. */
+async function fetchMembersVersion(): Promise<string | null> {
+  if (DATA_SOURCE === 'static') return 'static';
+
+  const res = await fetch('/api/ext-members/version', { cache: 'no-store' });
+  if (!res.ok) throw new Error(`version request failed: ${res.status}`);
+  const json = await res.json();
+  return typeof json?.hash === 'string' ? json.hash : null;
+}
+
+// How often to ask whether anything changed upstream. Cheap enough to do
+// often; the roster itself only moves when the answer differs.
+const VERSION_POLL_MS = 10_000;
 
 export default function Home() {
   const { view, setView, selectedId, setMembers, theme, toggleTheme } = useMemberStore();
@@ -59,6 +80,24 @@ export default function Home() {
   useEffect(() => {
     if (data && !isPlaceholderData) writeCachedMembers(data);
   }, [data, isPlaceholderData]);
+
+  // Watch for changes made in the club system — an added, edited or deleted
+  // member — and pull the new roster as soon as one shows up. Polling the
+  // hash rather than the roster keeps this to a few dozen bytes a tick.
+  const { data: liveHash } = useQuery({
+    queryKey: ['members-version', DATA_SOURCE],
+    queryFn: fetchMembersVersion,
+    refetchInterval: VERSION_POLL_MS,
+    refetchIntervalInBackground: false,   // a hidden tab polls nothing
+    staleTime: 0,
+    gcTime: 60_000,
+    retry: 1,
+  });
+
+  useEffect(() => {
+    if (!liveHash || !heldHash || liveHash === heldHash) return;
+    void refetch();
+  }, [liveHash, refetch]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
