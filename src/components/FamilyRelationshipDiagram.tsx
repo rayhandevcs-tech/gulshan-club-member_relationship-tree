@@ -52,6 +52,11 @@ const FAM_VGAP   = 175;
 // extra breathing room between Father/Mother, so the "SPOUSE" label on their
 // connecting line has room to sit clear of both cards.
 const FAM_PARENT_GAP = 230;
+// The focused couple is set apart from the siblings either side of them.
+// Siblings now bring their own spouses along, and without this the person
+// next to the focused member could be somebody else's wife standing closer
+// to them than their own.
+const FAM_BRANCH_GAP = 190;
 
 // ── inner nodes ─────────────────────────────────────────────────────────────
 // A person on this diagram can carry nodes of their own (the API's ChildNode
@@ -75,7 +80,14 @@ interface Attachment {
   member: Member;
   label: string;
   kind: AttachKind;
+  badge?: string;
 }
+
+// A spouse is a spouse wherever the API happens to state them. Most are
+// stated as a Spouse row, but plenty arrive inside an A4D or Associate row
+// — the club's quota paperwork, not a different relationship — and those
+// were being seated below the person as though they were a dependent.
+const SPOUSE_RELATION = /^(wife|husband|spouse)$/i;
 
 type FamRole = 'owner' | 'spouse' | 'child' | 'parent' | 'sibling' | 'dependent' | 'transfer';
 
@@ -86,10 +98,6 @@ const INNER_ROLE: Record<AttachKind, FamRole> = {
   assoc:    'dependent',
   child:    'child',
 };
-
-// The card already says "A4D"/"Associate" for the focused member's own
-// children; a dependent hanging off somebody else's card gets the same tag.
-const INNER_BADGE: Partial<Record<AttachKind, string>> = { a4d: 'A4D', assoc: 'Associate' };
 
 interface Cluster {
   member: Member;
@@ -327,33 +335,32 @@ function buildFamilyGraph(focusId: string, members: Member[], dark: boolean): { 
       if (!member || used.has(member.id)) return;
 
       const shown = { ...member, name: n.name || member.name, photoUrl: n.photoUrl ?? member.photoUrl };
+      const relation = (n.relation ?? '').trim();
+
+      // Which quota the account sits on is still worth saying, so a spouse
+      // lifted out of an A4D row keeps that row's badge.
+      const claim = (kind: AttachKind, label: string, badge?: string) => {
+        used.add(member.id);
+        const spouse = SPOUSE_RELATION.test(relation);
+        (spouse || kind === 'spouse' || kind === 'transfer' ? sides : below)
+          .push({ member: shown, label: spouse ? relation : label, kind: spouse ? 'spouse' : kind, badge });
+      };
+
       switch (n.node) {
-        case 'Spouse':
-          used.add(member.id);
-          sides.push({ member: shown, label: 'Spouse', kind: 'spouse' });
-          return;
-        case 'Transfer':
-          used.add(member.id);
-          sides.push({ member: shown, label: 'A/C Transfer', kind: 'transfer' });
-          return;
-        case 'A4D':
-          used.add(member.id);
-          below.push({ member: shown, label: n.relation || 'A4D', kind: 'a4d' });
-          return;
-        case 'Associate':
-          used.add(member.id);
-          below.push({ member: shown, label: n.relation || 'Associate', kind: 'assoc' });
-          return;
-        case 'Children':
-          used.add(member.id);
-          below.push({ member: shown, label: n.relation || 'Child', kind: 'child' });
-          return;
+        case 'Spouse':    return claim('spouse',   relation || 'Spouse');
+        case 'Transfer':  return claim('transfer', 'A/C Transfer');
+        case 'A4D':       return claim('a4d',      relation || 'A4D',       'A4D');
+        case 'Associate': return claim('assoc',    relation || 'Associate', 'Associate');
+        case 'Children':  return claim('child',    relation || 'Child');
         default:
           // Parent/Siblings inside a row describe the focused member's own
           // generation, which this diagram already lays out properly.
           return;
       }
     });
+    // A spouse takes the first seat — the one on the reading side, next to
+    // the person — ahead of an account transfer.
+    sides.sort((a, b) => Number(b.kind === 'spouse') - Number(a.kind === 'spouse'));
     // Only two can flank a card; the rest go below, where the row grows.
     return { sides: sides.slice(0, INNER_SIDE_LIMIT), below: [...below, ...sides.slice(INNER_SIDE_LIMIT)] };
   };
@@ -408,7 +415,7 @@ function buildFamilyGraph(focusId: string, members: Member[], dark: boolean): { 
         },
         // no caption: the line between the two cards is labelled, and saying
         // "Spouse" twice within 200px reads as two different claims
-        data: { member: att.member, role, onPick: undefined },
+        data: { member: att.member, role, badge: att.badge, onPick: undefined },
       });
       edges.push({
         id: `e-inner-${c.member.id}-${att.member.id}`,
@@ -435,7 +442,7 @@ function buildFamilyGraph(focusId: string, members: Member[], dark: boolean): { 
         position: { x: bx, y: y + FAM_CARD_H + INNER_DROP },
         data: {
           member: att.member, role,
-          caption: att.label, badge: INNER_BADGE[att.kind],
+          caption: att.label, badge: att.badge,
           onPick: undefined,
         },
       });
@@ -489,9 +496,9 @@ function buildFamilyGraph(focusId: string, members: Member[], dark: boolean): { 
   // ── middle row: siblingsLeft | owner | spouse(s) | siblingsRight ────────
   const middle: { cluster: Cluster; gapBefore: number }[] = [
     ...siblingsLeft.map(c => ({ cluster: c, gapBefore: FAM_HGAP })),
-    { cluster: ownerCluster, gapBefore: FAM_HGAP },
+    { cluster: ownerCluster, gapBefore: FAM_BRANCH_GAP },
     ...spouseClusters.map((c, i) => ({ cluster: c, gapBefore: i === 0 ? FAM_SGAP : FAM_HGAP })),
-    ...siblingsRight.map(c => ({ cluster: c, gapBefore: FAM_HGAP })),
+    ...siblingsRight.map((c, i) => ({ cluster: c, gapBefore: i === 0 ? FAM_BRANCH_GAP : FAM_HGAP })),
   ];
 
   let cursor = 0;

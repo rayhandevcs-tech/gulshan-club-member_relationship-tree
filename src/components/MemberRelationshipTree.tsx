@@ -349,7 +349,9 @@ function buildMemberRelGraph(
   const innerTransferOf = (entry?: ResolvedNode): RelationNode | undefined =>
     entry?.inner?.find(n => n.node === 'Transfer');
 
-  const TRANSFER_GAP = 150;
+  // Wide enough that the "A/C Transfer" label on the line sits in clear space
+  // with air either side of it, rather than wedged between two card edges.
+  const TRANSFER_GAP = 265;
   const transferExtra = (entry?: ResolvedNode) => (innerTransferOf(entry) ? CARD_W + TRANSFER_GAP : 0);
 
   // Places the transferee to the right of the card it belongs to, and points
