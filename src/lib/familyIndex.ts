@@ -34,7 +34,7 @@
 // casing), so every map here is keyed by the upper-cased A/C number while
 // RelLink.id keeps whatever the API actually said.
 
-import type { Member } from './types';
+import type { Member, RelationNode } from './types';
 import type { ResolvedNode } from './relationTypes';
 
 export type { ResolvedNode };
@@ -45,6 +45,7 @@ export interface RelLink {
   relation: string;           // raw relation text ("Daughter", "Son of PM-174", …)
   name?: string | null;       // name as spelled in THIS row (see displayMember)
   photoUrl?: string | null;
+  inner?: RelationNode[];     // the row's own ChildNode list, if any
 }
 
 export interface FamilyIndex {
@@ -130,7 +131,7 @@ export function buildFamilyIndex(members: Member[]): FamilyIndex {
     if (!owner.nodes) return;
 
     owner.nodes.forEach(n => {
-      const link: RelLink = { id: n.acno, relation: n.relation, name: n.name, photoUrl: n.photoUrl };
+      const link: RelLink = { id: n.acno, relation: n.relation, name: n.name, photoUrl: n.photoUrl, inner: n.inner };
       if (!key(n.acno)) return;
 
       switch (n.node) {
@@ -276,6 +277,7 @@ function resolve(index: FamilyIndex, links: Iterable<RelLink> | undefined, skip:
       relation: link.relation,
       name: link.name || member.name,
       photoUrl: link.photoUrl ?? member.photoUrl,
+      inner: link.inner,
     });
   }
   return out;

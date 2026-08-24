@@ -19,15 +19,26 @@ import { TYPE_CONFIG, getInitials, typeBg, typeBgHover } from '@/lib/memberUtils
 import type { Member } from '@/lib/types';
 import {
   buildGraph, applyLayout, findRoot,
-  getType, isDead, dispName, photoOf, displayAcno,
+  getType, isDead, isInactive, dispName, photoOf, displayAcno,
   nodesOfKind, displayMember, getRefFromRelation, slotRole,
   CARD_W, CARD_H, SLOT_W, SLOT_H, BESIDE_GAP,
 } from '@/lib/quotaTreeLayout';
+import { getFamilyIndex, findMember } from '@/lib/familyIndex';
+import type { RelationNode } from '@/lib/types';
+import type { ResolvedNode } from '@/lib/relationTypes';
 import { useMemberStore, type Theme } from '@/store/memberStore';
 import styles from './styles/MemberRelationshipTree.module.css';
 
 
 function cardColors(m: Member, theme: Theme) {
+  // A closed account (API Status "N") is drained of colour whatever its
+  // membership type — the type tint is about which quota an ACTIVE account
+  // sits in, and repeating it here would say the wrong thing.
+  if (isInactive(m)) {
+    return theme === 'dark'
+      ? { border: '#6E6553', avatarBg: '#4A4437', cardBg: '#1B1913', cardBgHover: '#26231A' }
+      : { border: '#A79C84', avatarBg: '#8C826B', cardBg: '#F2EFE7', cardBgHover: '#E8E3D6' };
+  }
   if (isDead(m)) {
     return theme === 'dark'
       ? { border: '#9CA3AF', avatarBg: '#6B7280', cardBg: '#23262b', cardBgHover: '#2b2f36' }
@@ -125,6 +136,12 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
         {isDead(m) && (
           <span className={styles.deceased}>
             Deceased
+          </span>
+        )}
+
+        {isInactive(m) && (
+          <span className={styles.inactiveTag}>
+            Inactive A/C
           </span>
         )}
 
@@ -259,6 +276,11 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
                   Deceased
                 </span>
               )}
+              {isInactive(m) && (
+                <span className={styles.slotInactive}>
+                  Inactive
+                </span>
+              )}
             </div>
 
             {m.since && (
@@ -318,6 +340,51 @@ function buildMemberRelGraph(
   const nodes: Node[] = [];
   const edges: Edge[] = [];
 
+  // ── an A/C transfer belonging to a SECONDARY card ────────────────────────
+  // A child, spouse or dependent can have transferred their own account to
+  // someone else; the API states that inside that row's ChildNode. It is a
+  // fact about that person's membership, so it belongs in this tab — seated
+  // beside their card, exactly like the owner's own transfer is.
+  const index = getFamilyIndex(members);
+  const innerTransferOf = (entry?: ResolvedNode): RelationNode | undefined =>
+    entry?.inner?.find(n => n.node === 'Transfer');
+
+  const TRANSFER_GAP = 150;
+  const transferExtra = (entry?: ResolvedNode) => (innerTransferOf(entry) ? CARD_W + TRANSFER_GAP : 0);
+
+  // Places the transferee to the right of the card it belongs to, and points
+  // an arrow at whoever RECEIVED the account.
+  const addInnerTransfer = (host: ResolvedNode, hostId: string, hostX: number, hostW: number, y: number) => {
+    const node = innerTransferOf(host);
+    if (!node) return;
+    const target = findMember(index, node.acno);
+    if (!target) return;
+
+    const nodeId = `xfer-${hostId}-${target.id}`;
+    const isOutgoing = node.relation.toLowerCase().includes('to');
+    nodes.push({
+      id: nodeId, type: 'member',
+      position: { x: hostX + hostW + TRANSFER_GAP, y },
+      data: {
+        member: { ...target, name: node.name || target.name, photoUrl: node.photoUrl ?? target.photoUrl },
+        onPick,
+      },
+    });
+    edges.push({
+      id: `e-${nodeId}`,
+      source: isOutgoing ? hostId : nodeId,
+      sourceHandle: isOutgoing ? 'right-out' : 'left-out',
+      target: isOutgoing ? nodeId : hostId,
+      targetHandle: isOutgoing ? 'left-in' : 'right-in',
+      type: 'straight', label: 'A/C Transfer',
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#F59E0B' },
+      style: { stroke: '#F59E0B', strokeWidth: 3.5 },
+      labelStyle: { fontSize: 16, fill: amberLabelFg, fontWeight: 800 },
+      labelBgStyle: { fill: amberLabelBg, fillOpacity: 1, borderRadius: 7 },
+      labelBgPadding: [10, 6],
+    });
+  };
+
   const H_GAP      = BESIDE_GAP;
   // just enough for the "Spouse" pill to sit clear of both cards — the line
   // used to run nearly a card-and-a-half wide
@@ -332,13 +399,16 @@ function buildMemberRelGraph(
   // and fan out from the same point below the owner card — keeping them on
   // two separate rows made their fan-out lines cross each other on the way
   // down to their own row.
-  const descendantWidths = [...childEntries.map(() => CARD_W), ...slotEntries.map(() => SLOT_W)];
+  const descendantWidths = [
+    ...childEntries.map(e => CARD_W + transferExtra(e)),
+    ...slotEntries.map(e => SLOT_W + transferExtra(e)),
+  ];
   const descendantRowW = descendantWidths.length > 0
     ? descendantWidths.reduce((a, b) => a + b, 0) + (descendantWidths.length - 1) * ROW_GAP
     : 0;
   const coreRowW = CARD_W
     + (transferEntry ? CARD_W + H_GAP : 0)
-    + (spouseEntry ? CARD_W + SPOUSE_GAP : 0);
+    + (spouseEntry ? CARD_W + SPOUSE_GAP + transferExtra(spouseEntry) : 0);
   const totalWidth = Math.max(descendantRowW, coreRowW, CARD_W);
 
   const coreX     = (totalWidth - CARD_W) / 2;
@@ -356,6 +426,7 @@ function buildMemberRelGraph(
       id: spouse.id, type: 'member', position: { x: spouseX, y: CORE_Y },
       data: { member: spouse, onPick },
     });
+    addInnerTransfer(spouseEntry, spouse.id, spouseX, CARD_W, CORE_Y);
     edges.push({
       id: `e-spouse-${owner.id}-${spouse.id}`,
       source: owner.id, sourceHandle: 'right-out',
@@ -404,6 +475,7 @@ function buildMemberRelGraph(
         id: entry.member.id, type: 'member', position: { x: px, y: PARENT_Y },
         data: { member: displayMember(entry), onPick },
       });
+      addInnerTransfer(entry, entry.member.id, px, CARD_W, PARENT_Y);
     });
 
     if (parents.length > 1) {
@@ -453,7 +525,12 @@ function buildMemberRelGraph(
     // crossing the other's on the way down to this shared row.
     slotEntries.forEach(entry => {
       const slot = displayMember(entry);
-      const role = slotRole(entry.member);
+      // the row said A4D or Associate — that beats guessing from the member's
+      // own record, which for someone holding a core account of their own
+      // would say neither
+      const role: 'A4D' | 'Assoc' = entry.kind === 'A4D' ? 'A4D'
+        : entry.kind === 'Associate' ? 'Assoc'
+        : slotRole(entry.member);
       const sid = `slot-${slot.id}`;
       nodes.push({
         id: sid, type: 'slot', position: { x: cursorX, y: SLOT_Y },
@@ -466,7 +543,8 @@ function buildMemberRelGraph(
         type: 'smoothstep',
         style: { stroke: role === 'A4D' ? '#9333ea77' : '#ea580c77', strokeWidth: 3.5, strokeDasharray: '6 4' },
       });
-      cursorX += SLOT_W + ROW_GAP;
+      addInnerTransfer(entry, sid, cursorX, SLOT_W, SLOT_Y);
+      cursorX += SLOT_W + transferExtra(entry) + ROW_GAP;
     });
 
     if (childEntries.length > 0) {
@@ -496,7 +574,8 @@ function buildMemberRelGraph(
           type: 'smoothstep',
           style: { stroke: '#A89C82', strokeWidth: 3.5 },
         });
-        cursorX += CARD_W + ROW_GAP;
+        addInnerTransfer(entry, child.id, cursorX, CARD_W, SLOT_Y);
+        cursorX += CARD_W + transferExtra(entry) + ROW_GAP;
       });
     }
   }
