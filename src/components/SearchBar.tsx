@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMemberStore } from '@/store/memberStore';
 import { getRootMember, getInitials, TYPE_CONFIG, typeBg, typeText } from '@/lib/memberUtils';
-import { getType, photoOf, displayAcno } from '@/lib/quotaTreeLayout';
+import { getType, photoOf, displayAcno, isInactive } from '@/lib/quotaTreeLayout';
 import { Search } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import styles from './styles/SearchBar.module.css';
@@ -100,6 +100,7 @@ export default function SearchBar() {
                   <div className={styles.memberMeta}>
                     {displayAcno(m.id)} · {type}
                     {m.via === 'a4d' && ' · 4(d)'}   {/* slot-দের ছোট hint */}
+                    {isInactive(m) && ' · Inactive'}
                   </div>
                 </div>
               </div>

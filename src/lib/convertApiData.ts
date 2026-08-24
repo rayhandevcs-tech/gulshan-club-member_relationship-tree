@@ -29,10 +29,23 @@ export interface TreeItemDto {
   Name: string;
   Relation: string;
   Code: string;
+  Status?: string | null;         // "Y" active | "N" closed | absent on older rows
+  ChildNode?: TreeItemDto[] | null; // nodes belonging to THIS row's member
   img?: string | null;
 }
 
 const clean = (v: string | null | undefined) => (v ?? '').trim();
+
+// "Y"/"N" → true/false. Anything else (blank, missing, junk) is "not stated"
+// rather than "inactive": a lot of records are still incomplete, and greying
+// out a perfectly good account because a field hasn't been filled in yet
+// would be worse than saying nothing.
+function parseStatus(raw: string | null | undefined): boolean | null {
+  const v = clean(raw).toUpperCase();
+  if (v === 'Y') return true;
+  if (v === 'N') return false;
+  return null;
+}
 
 const NODE_KINDS = new Set<string>(['Parent', 'Spouse', 'Siblings', 'Children', 'A4D', 'Associate', 'Transfer']);
 
@@ -87,6 +100,85 @@ function pendingParentId(clubAcno: string, relation: string): string {
   return `PENDING-${clubAcno}-${relation === 'Father' ? 'father' : 'mother'}`;
 }
 
+// One raw row → a RelationNode, recursively including whatever its
+// ChildNode array carried. Returns null for rows this app can't place: an
+// unknown Node kind, or (for everything but Parent/Spouse) no A/C to point
+// at — the malformed empty `{}` rows the API sometimes emits land here too.
+function toRelationNode(
+  item: TreeItemDto,
+  hostAcno: string,
+  effectiveSpouseId: string | null,
+): RelationNode | null {
+  const kind = clean(item.Node);
+  if (!NODE_KINDS.has(kind)) return null;
+
+  const itemAcno = clean(item.Acno);
+  const itemName = clean(item.Name);
+  const relation = clean(item.Relation);
+  const photoUrl = clean(item.img) || null;
+  const active = parseStatus(item.Status);
+
+  // Spouse and Parent rows are worth keeping even with no club A/C — they
+  // still get a card (labelled "No A/C") in both tabs. Everyone else needs a
+  // real account number, since every other card is looked up by one.
+  let acno = itemAcno;
+  if (!acno && itemName) {
+    if (kind === 'Spouse') acno = effectiveSpouseId ?? '';
+    else if (kind === 'Parent') acno = pendingParentId(hostAcno, relation);
+  }
+  if (!acno || !itemName) return null;
+
+  const node: RelationNode = {
+    node: kind as NodeKind,
+    acno,
+    name: itemName,
+    relation,
+    // a placeholder id has no photo of its own to show
+    photoUrl: itemAcno ? photoUrl : null,
+    active,
+  };
+
+  const inner = Array.isArray(item.ChildNode)
+    ? item.ChildNode
+        .map(child => toRelationNode(child, acno, null))
+        .filter((n): n is RelationNode => n !== null)
+    : [];
+  if (inner.length) node.inner = inner;
+
+  return node;
+}
+
+// Every account mentioned anywhere in a row's ChildNode needs its own member
+// record, or the diagrams have nothing to render when they follow the link.
+// These are reference stubs: `pid` records whose row they arrived on, but
+// rel/fatherId are deliberately left unset so the family index never mistakes
+// an inner node for a blood relationship of the member hosting it.
+function collectInnerMembers(
+  nodes: RelationNode[],
+  hostAcno: string,
+  members: Record<string, unknown>[],
+  seen: Set<string>,
+): void {
+  nodes.forEach(n => {
+    if (!seen.has(n.acno)) {
+      seen.add(n.acno);
+      members.push({
+        id: n.acno,
+        name: n.name,
+        via: n.node === 'A4D' ? 'a4d' : n.node === 'Associate' ? 'associate' : 'core',
+        type: n.node === 'A4D' ? 'A4D' : n.node === 'Associate' ? 'Associate' : null,
+        pid: hostAcno,
+        rel: null,
+        gender: null,
+        since: null,
+        photoUrl: n.photoUrl ?? null,
+        active: n.active ?? null,
+      });
+    }
+    if (n.inner?.length) collectInnerMembers(n.inner, n.acno, members, seen);
+  });
+}
+
 export function convertApiMembers(
   coreList: CoreMemberDto[],
   treeByInternalId: Record<string, TreeItemDto[]>,
@@ -110,6 +202,16 @@ export function convertApiMembers(
   // member's record whether that record already exists (a real coremember
   // processed earlier or later in this same loop) or needs a fresh stub.
   const transfers: { sourceAcno: string; sourceName: string; sourcePhoto: string | null; targetAcno: string }[] = [];
+
+  // Status travels on the ROWS that mention an account, not on the account's
+  // own /coremember entry — so it is collected here from every tree and
+  // applied to the member records once they all exist. First statement wins;
+  // the same account is described the same way wherever it appears.
+  const statusByAcno = new Map<string, boolean>();
+
+  // Inner (ChildNode) members are created last, so a reference stub can never
+  // land on top of the fuller record a sibling/child/spouse row builds below.
+  const innerRoots: { host: string; nodes: RelationNode[] }[] = [];
 
   coreList.forEach(core => {
     const clubAcno = clean(core.acno);
@@ -167,33 +269,18 @@ export function convertApiMembers(
     // Member relationship tabs need to seat her beside regardless of
     // whether she holds an account. Every other kind needs a real Acno —
     // no card renders without one anywhere else in this app either. ──
-    const nodes: RelationNode[] = [];
-    tree.forEach(item => {
-      const kind = clean(item.Node);
-      if (!NODE_KINDS.has(kind)) return;
-      const itemName = clean(item.Name);
-      const relation = clean(item.Relation);
-      const photoUrl = clean(item.img) || null;
-
-      if (kind === 'Spouse') {
-        const acno = clean(item.Acno) || (itemName ? effectiveSpouseId : null);
-        if (acno && itemName) nodes.push({ node: 'Spouse', acno, name: itemName, relation, photoUrl });
-        return;
-      }
-
-      if (kind === 'Parent') {
-        const itemAcno = clean(item.Acno);
-        const acno = itemAcno || (itemName ? pendingParentId(clubAcno, relation) : null);
-        if (acno && itemName) nodes.push({ node: 'Parent', acno, name: itemName, relation, photoUrl: itemAcno ? photoUrl : null });
-        return;
-      }
-
-      const itemAcno = clean(item.Acno);
-      if (itemAcno && itemName) {
-        nodes.push({ node: kind as NodeKind, acno: itemAcno, name: itemName, relation, photoUrl });
-      }
-    });
+    const nodes: RelationNode[] = tree
+      .map(item => toRelationNode(item, clubAcno, effectiveSpouseId))
+      .filter((n): n is RelationNode => n !== null);
     rootMember.nodes = nodes;
+
+    const noteStatus = (list: RelationNode[]) => list.forEach(n => {
+      if (n.active != null && !statusByAcno.has(n.acno)) statusByAcno.set(n.acno, n.active);
+      if (n.inner?.length) noteStatus(n.inner);
+    });
+    noteStatus(nodes);
+
+    nodes.forEach(n => { if (n.inner?.length) innerRoots.push({ host: n.acno, nodes: n.inner }); });
 
     // ── PASS 1: Parent + Siblings + independent ("core") spouse ──────
     for (const item of tree) {
@@ -421,6 +508,10 @@ export function convertApiMembers(
     }
   });
 
+  // ── reference stubs for everything that only appeared inside a row's
+  // ChildNode, so those cards have something to resolve to ──
+  innerRoots.forEach(({ host, nodes }) => collectInnerMembers(nodes, host, members, seen));
+
   // ── resolve Transfer rows now that every core member has its own full
   // record — patch `succession` onto the giving member if they already
   // exist (as a real coremember, wherever it fell in the loop above), or
@@ -442,6 +533,14 @@ export function convertApiMembers(
         photoUrl: sourcePhoto,
         succession: targetAcno,
       });
+    }
+  });
+
+  // ── active/closed, from whichever rows stated it ──
+  members.forEach(m => {
+    if (m.active == null) {
+      const stated = statusByAcno.get(m.id as string);
+      if (stated !== undefined) m.active = stated;
     }
   });
 

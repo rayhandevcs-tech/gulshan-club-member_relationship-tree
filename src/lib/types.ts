@@ -17,6 +17,15 @@ export interface RelationNode {
   name: string;
   relation: string;  // raw relation text, e.g. "Father", "Wife", "Daughter of PA-74"
   photoUrl?: string | null;
+  // Whether that account is still active — the API's Status field, "Y"/"N".
+  // null when the row doesn't say (older records; plenty are still
+  // incomplete).
+  active?: boolean | null;
+  // The API's ChildNode: nodes hanging off THIS relationship row rather than
+  // off the member whose tree it is. A child who transferred their account
+  // away, a sibling with an associate member of their own — one level deeper
+  // than the row itself, and only ever what that row actually carried.
+  inner?: RelationNode[];
 }
 
 export interface Member {
@@ -32,6 +41,7 @@ export interface Member {
   motherId?: string | null;
   succession?: string | null; // account transferred to this member id
   nodes?: RelationNode[];     // raw API "other nodes" for THIS member — only ever set on core members
+  active?: boolean | null;    // API Status: "Y" active, "N" closed, null = not stated
   photoUrl?: string | null;
   note?: string | null;
   // ── optional profile fields used by panels/search ──

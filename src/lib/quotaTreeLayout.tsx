@@ -24,6 +24,11 @@ export const photoOf = (m: Member): string | undefined =>
 // A/C yet.
 export const isPendingAcno = (id: string): boolean => id.startsWith('PENDING-');
 
+// The API's Status said "N": the account exists in the records but is closed.
+// Only an explicit "N" counts — a record that simply hasn't been filled in
+// yet is not evidence of anything.
+export const isInactive = (m: Member): boolean => m.active === false;
+
 // Shown in the id badge instead of the raw internal placeholder string.
 export const displayAcno = (id: string): string =>
   isPendingAcno(id) ? 'No A/C' : id;
@@ -183,7 +188,7 @@ export function nodesOfKind(owner: Member, members: Member[], kinds: NodeKind[])
   owner.nodes.forEach(n => {
     if (!kinds.includes(n.node)) return;
     const member = findMember(index, n.acno);
-    if (member) out.push({ member, relation: n.relation, name: n.name, photoUrl: n.photoUrl });
+    if (member) out.push({ member, kind: n.node, relation: n.relation, name: n.name, photoUrl: n.photoUrl, inner: n.inner });
   });
   return out;
 }
