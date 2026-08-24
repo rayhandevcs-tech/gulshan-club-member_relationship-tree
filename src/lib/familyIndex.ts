@@ -274,7 +274,7 @@ function resolve(index: FamilyIndex, links: Iterable<RelLink> | undefined, skip:
     skip.add(k);
     out.push({
       member,
-      relation: link.relation,
+      relation: link.relation ?? '',
       name: link.name || member.name,
       photoUrl: link.photoUrl ?? member.photoUrl,
       inner: link.inner,

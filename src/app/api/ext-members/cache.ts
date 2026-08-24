@@ -94,11 +94,22 @@ async function mapLimit<T>(items: T[], limit: number, task: (item: T) => Promise
   await Promise.all(workers);
 }
 
-/** Drops null/undefined/'' fields — they carry no meaning to any consumer. */
+/**
+ * Drops null/undefined fields — most of a member record is empty, and those
+ * bytes cost transfer and parse time for nothing.
+ *
+ * Empty STRINGS are kept on purpose. They look equally worthless, but a
+ * missing key and an empty string are not the same thing to the code that
+ * reads them: a row with no relation text arrived with `relation: ""`, and
+ * dropping it turned that into `undefined`, which took the whole page down
+ * on the first `relation.match(...)`. Saving a handful of bytes is not worth
+ * that class of bug — the readers are hardened now too, but the payload
+ * should not be the thing testing them.
+ */
 function compact<T extends object>(obj: T): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(obj)) {
-    if (v === null || v === undefined || v === '') continue;
+    if (v === null || v === undefined) continue;
     out[k] = v;
   }
   return out;
