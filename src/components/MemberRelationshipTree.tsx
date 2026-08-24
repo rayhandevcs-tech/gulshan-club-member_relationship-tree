@@ -361,7 +361,7 @@ function buildMemberRelGraph(
     if (!target) return;
 
     const nodeId = `xfer-${hostId}-${target.id}`;
-    const isOutgoing = node.relation.toLowerCase().includes('to');
+    const isOutgoing = (node.relation ?? '').toLowerCase().includes('to');
     nodes.push({
       id: nodeId, type: 'member',
       position: { x: hostX + hostW + TRANSFER_GAP, y },
@@ -445,7 +445,7 @@ function buildMemberRelGraph(
     // "Transfer to" (this member gave it away): the arrow always points at
     // whoever RECEIVED the account, regardless of which side of the card
     // the other party happens to sit on visually.
-    const isOutgoing = transferEntry.relation.toLowerCase().includes('to');
+    const isOutgoing = (transferEntry.relation ?? '').toLowerCase().includes('to');
     nodes.push({
       id: transfer.id, type: 'member', position: { x: transferX, y: CORE_Y },
       data: { member: transfer, onPick },

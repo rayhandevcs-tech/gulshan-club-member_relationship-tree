@@ -188,7 +188,7 @@ export function nodesOfKind(owner: Member, members: Member[], kinds: NodeKind[])
   owner.nodes.forEach(n => {
     if (!kinds.includes(n.node)) return;
     const member = findMember(index, n.acno);
-    if (member) out.push({ member, kind: n.node, relation: n.relation, name: n.name, photoUrl: n.photoUrl, inner: n.inner });
+    if (member) out.push({ member, kind: n.node, relation: n.relation ?? '', name: n.name, photoUrl: n.photoUrl, inner: n.inner });
   });
   return out;
 }
@@ -209,9 +209,14 @@ export function displayMember(entry: ResolvedNode): Member {
 // where the relation string ("Son", "Daughter of PA-74", "Wife", ...) IS
 // the source of truth, so there's no need to re-derive it from
 // fatherId/gender. Bolds a trailing "of X" cross-reference, same as getRef.
-export function getRefFromRelation(relation: string): ReactNode {
-  const m = relation.match(/^(.*?)\s+of\s+(\S+)$/i);
-  if (!m) return relation;
+export function getRefFromRelation(relation: string | null | undefined): ReactNode {
+  // Never assume the field is there: rows do come through with no relation
+  // text at all, and a diagram must not be able to take the page down over
+  // a missing caption.
+  const text = (relation ?? '').trim();
+  if (!text) return null;
+  const m = text.match(/^(.*?)\s+of\s+(\S+)$/i);
+  if (!m) return text;
   return <>{m[1]} of <strong>{m[2]}</strong></>;
 }
 
