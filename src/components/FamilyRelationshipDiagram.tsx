@@ -53,17 +53,21 @@ const FAM_VGAP   = 175;
 // connecting line has room to sit clear of both cards.
 const FAM_PARENT_GAP = 230;
 
-// ── attachment cards ────────────────────────────────────────────────────────
+// ── inner nodes ─────────────────────────────────────────────────────────────
 // A person on this diagram can carry nodes of their own (the API's ChildNode
 // on the row that named them): a spouse, an account transfer, dependents.
-// Those are drawn as compact cards hanging off the card they belong to —
-// deliberately smaller than a full one, so a second level reads as detail
-// about somebody in the family rather than as another member of it.
-const ATT_W    = 260;
-const ATT_H    = 118;
-const ATT_GAP  = 34;    // between attachments sharing a row
-const ATT_SIDE = 130;   // card → attachment beside it (the edge is labelled)
-const ATT_DROP = 74;    // card's bottom edge → the attachments under it
+// They are drawn as FULL cards, the same size as everyone else's — every
+// person in this family is a person, and shrinking some of them made the
+// diagram read as a hierarchy of importance it does not mean. Their POSITION
+// carries the relationship instead, exactly as it does for the focused
+// member: a spouse (or an account transfer) sits BESIDE them, and their
+// children and dependents sit BELOW them.
+const INNER_SIDE = 215;   // card → the card beside it (that line is labelled)
+const INNER_DROP = 185;   // card's bottom edge → the cards under it
+// Two people can flank a card — one right, one left. A third would have to
+// reach past one of them, so anyone beyond the pair joins the row below,
+// where there is room for any number.
+const INNER_SIDE_LIMIT = 2;
 
 type AttachKind = 'spouse' | 'transfer' | 'a4d' | 'assoc' | 'child';
 
@@ -73,28 +77,31 @@ interface Attachment {
   kind: AttachKind;
 }
 
-type FamRole = 'owner' | 'spouse' | 'child' | 'parent' | 'sibling' | 'dependent';
+type FamRole = 'owner' | 'spouse' | 'child' | 'parent' | 'sibling' | 'dependent' | 'transfer';
+
+const INNER_ROLE: Record<AttachKind, FamRole> = {
+  spouse:   'spouse',
+  transfer: 'transfer',
+  a4d:      'dependent',
+  assoc:    'dependent',
+  child:    'child',
+};
+
+// The card already says "A4D"/"Associate" for the focused member's own
+// children; a dependent hanging off somebody else's card gets the same tag.
+const INNER_BADGE: Partial<Record<AttachKind, string>> = { a4d: 'A4D', assoc: 'Associate' };
 
 interface Cluster {
   member: Member;
   role: FamRole;
-  sides: Attachment[];    // spouse / transfer — beside the card
-  below: Attachment[];    // dependents — under it
+  sides: Attachment[];    // spouse / transfer — beside the card (right, then left)
+  below: Attachment[];    // children / dependents — under it
   width: number;          // the whole block, so neighbours can clear it
-  cardOffset: number;     // where the card sits inside that block
-  belowOffset: number;
+  cardOffset: number;     // the card's left edge inside that block
   caption?: ReactNode;
   quotaRef?: ReactNode;
   badge?: string;
 }
-
-const ATTACH_COLOR: Record<AttachKind, string> = {
-  spouse:   '#A4565F',
-  transfer: '#C99A2E',
-  a4d:      '#8A5CC2',
-  assoc:    '#B2662A',
-  child:    '#6E7A3A',
-};
 
 // Family roles read as one warm set alongside the club's gold-and-black
 // chrome — the focused member carries the gold itself, everyone else takes a
@@ -106,6 +113,7 @@ const FAM_ROLE_STYLE: Record<FamRole, { border: string; bg: string; bgHover: str
   parent:    { border: '#5A5346', bg: '#F6F3EC', bgHover: '#EAE4D7', bgNight: '#1E1C17', bgNightHover: '#2B2820' },
   sibling:   { border: '#3F6B6B', bg: '#EEF6F6', bgHover: '#DCECEC', bgNight: '#12201F', bgNightHover: '#1B2E2D' },
   dependent: { border: '#B2662A', bg: '#FDF3E8', bgHover: '#F8E5CE', bgNight: '#271A0E', bgNightHover: '#372414' },
+  transfer:  { border: '#C99A2E', bg: '#FDF8E9', bgHover: '#F7EDCC', bgNight: '#241C09', bgNightHover: '#342810' },
 };
 
 const FAM_INACTIVE_STYLE = {
@@ -227,70 +235,6 @@ function FamCard({ data }: { data: FamCardData }) {
   );
 }
 
-interface FamAttachData {
-  member: Member;
-  label: string;
-  kind: AttachKind;
-  onPick: (id: string) => void;
-  highlighted?: boolean;
-}
-
-function FamAttachCard({ data }: { data: FamAttachData }) {
-  const { member: m, label, kind, onPick, highlighted } = data;
-  const theme = useMemberStore(state => state.theme);
-  const dark = theme === 'dark';
-  const [hovered, setHovered] = useState(false);
-  const inactive = isInactive(m);
-  const border = inactive ? '#A79C84' : ATTACH_COLOR[kind];
-  const name = dispName(m);
-  const photo = photoOf(m);
-
-  return (
-    <div className={styles.attachWrapper}>
-      <Handle id="top"      type="target" position={Position.Top}    isConnectable={false} className={styles.handleDot} />
-      <Handle id="left-in"  type="target" position={Position.Left}   isConnectable={false} className={styles.handleDot} />
-      <Handle id="right-in" type="target" position={Position.Right}  isConnectable={false} className={styles.handleDot} />
-      <Handle id="bottom"   type="source" position={Position.Bottom} isConnectable={false} className={styles.handleDot} />
-
-      <button
-        onClick={e => { e.stopPropagation(); onPick(m.id); }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        className={`${styles.attachCard}${highlighted ? ' search-highlight-card' : ''}`}
-        style={{
-          '--border': border,
-          '--bg': dark ? `${border}1f` : `${border}14`,
-          '--attach-shadow': hovered ? `0 8px 18px -6px rgba(0,0,0,0.3), 0 0 0 2px ${border}33` : '0 1px 3px rgba(0,0,0,0.07)',
-          '--attach-transform': hovered ? 'translateY(-2px)' : 'none',
-          '--attach-opacity': inactive ? 0.85 : 1,
-        } as CSSProperties}
-      >
-        <div
-          className={styles.attachAvatar}
-          style={{
-            '--border': border,
-            '--avatar-image': photo ? `url("${photo}")` : 'none',
-          } as CSSProperties}
-        >
-          {!photo && getInitials(name)}
-        </div>
-        <div className={styles.attachInfo}>
-          <div className={styles.attachName}>{name}</div>
-          <div className={styles.attachMeta}>
-            <span className={styles.attachAcno} style={{ '--border': border } as CSSProperties}>
-              {displayAcno(m.id)}
-            </span>
-            <span className={styles.attachLabel} style={{ '--border': border } as CSSProperties}>
-              {label}
-            </span>
-          </div>
-          {inactive && <div className={styles.attachInactive}>Inactive A/C</div>}
-        </div>
-      </button>
-    </div>
-  );
-}
-
 function FamUnion({ data }: { data: { labelOffsetY?: number } }) {
   return (
     <div className={styles.unionWrapper}>
@@ -328,7 +272,7 @@ function FamBusEdge({ sourceX, sourceY, sourcePosition, targetX, targetY, target
   return <BaseEdge path={path} style={style} />;
 }
 
-const famNodeTypes: NodeTypes = { card: FamCard, attach: FamAttachCard, union: FamUnion };
+const famNodeTypes: NodeTypes = { card: FamCard, union: FamUnion };
 const famEdgeTypes: EdgeTypes = { bus: FamBusEdge };
 
 // ─── The family layout: parents → siblings + self + spouse(s) → children ─────
@@ -368,34 +312,40 @@ function buildFamilyGraph(focusId: string, members: Member[], dark: boolean): { 
   // this couple's own ids — a child sponsored from outside it gets a note
   const coupleIds = new Set([owner.id, ...spouses.map(sp => sp.member.id)]);
 
-  // ── attachments: the ChildNode list a row carried ───────────────────────
-  // These belong to the person on THIS card, not to the focused member — so
-  // they hang off their card instead of joining a row of their own: a spouse
-  // or an account transfer beside them, dependents underneath.
+  // ── inner nodes: the ChildNode list a row carried ───────────────────────
+  // These belong to the person on THIS card, not to the focused member, so
+  // they are placed around their card the same way the focused member's own
+  // family is placed around theirs: spouse (and account transfer) beside,
+  // children and dependents below.
   const attachmentsOf = (entry: ResolvedNode | null): { sides: Attachment[]; below: Attachment[] } => {
     const sides: Attachment[] = [];
     const below: Attachment[] = [];
     entry?.inner?.forEach(n => {
       const member = findMember(index, n.acno);
-      // Already drawn as a card of its own — showing it twice would imply
-      // two different people.
+      // Already drawn elsewhere on this diagram — showing them twice would
+      // imply two different people.
       if (!member || used.has(member.id)) return;
 
       const shown = { ...member, name: n.name || member.name, photoUrl: n.photoUrl ?? member.photoUrl };
       switch (n.node) {
         case 'Spouse':
+          used.add(member.id);
           sides.push({ member: shown, label: 'Spouse', kind: 'spouse' });
           return;
         case 'Transfer':
+          used.add(member.id);
           sides.push({ member: shown, label: 'A/C Transfer', kind: 'transfer' });
           return;
         case 'A4D':
+          used.add(member.id);
           below.push({ member: shown, label: n.relation || 'A4D', kind: 'a4d' });
           return;
         case 'Associate':
+          used.add(member.id);
           below.push({ member: shown, label: n.relation || 'Associate', kind: 'assoc' });
           return;
         case 'Children':
+          used.add(member.id);
           below.push({ member: shown, label: n.relation || 'Child', kind: 'child' });
           return;
         default:
@@ -404,11 +354,15 @@ function buildFamilyGraph(focusId: string, members: Member[], dark: boolean): { 
           return;
       }
     });
-    return { sides, below };
+    // Only two can flank a card; the rest go below, where the row grows.
+    return { sides: sides.slice(0, INNER_SIDE_LIMIT), below: [...below, ...sides.slice(INNER_SIDE_LIMIT)] };
   };
 
   // A card plus whatever hangs off it, measured as one block so neighbours
   // can be spaced around the whole thing rather than around the card alone.
+  // Everything is measured out from the CARD'S CENTRE, because that is what
+  // the rows above and below align to: the cards beside it reach out to one
+  // side, the row under it spreads evenly to both.
   const toCluster = (
     entry: ResolvedNode | null,
     member: Member,
@@ -416,22 +370,24 @@ function buildFamilyGraph(focusId: string, members: Member[], dark: boolean): { 
     extra: { caption?: ReactNode; quotaRef?: ReactNode; badge?: string } = {},
   ): Cluster => {
     const { sides, below } = attachmentsOf(entry);
-    const sideExtra = sides.length ? ATT_SIDE + ATT_W : 0;
-    const belowW = below.length ? below.length * ATT_W + (below.length - 1) * ATT_GAP : 0;
-    const cardBlock = FAM_CARD_W + sideExtra;
-    const width = Math.max(cardBlock, belowW);
+    const half      = FAM_CARD_W / 2;
+    const rightArm  = sides.length > 0 ? INNER_SIDE + FAM_CARD_W : 0;
+    const leftArm   = sides.length > 1 ? INNER_SIDE + FAM_CARD_W : 0;
+    const belowW    = below.length ? below.length * FAM_CARD_W + (below.length - 1) * FAM_HGAP : 0;
+    const reachLeft  = Math.max(half + leftArm, belowW / 2);
+    const reachRight = Math.max(half + rightArm, belowW / 2);
     return {
-      member, role, sides, below, width,
+      member, role, sides, below,
+      width: reachLeft + reachRight,
+      cardOffset: reachLeft - half,
       caption: extra.caption, quotaRef: extra.quotaRef, badge: extra.badge,
-      cardOffset: (width - cardBlock) / 2,
-      belowOffset: (width - belowW) / 2,
     };
   };
 
   const nodes: Node[] = [];
   const edges: Edge[] = [];
 
-  /** Draws a cluster with its card's left edge at `x`, top at `y`. */
+  /** Draws a cluster: its block starts at `x`, every card's top at `y`. */
   const placeCluster = (c: Cluster, x: number, y: number): number => {
     const cardX = x + c.cardOffset;
     nodes.push({
@@ -439,25 +395,28 @@ function buildFamilyGraph(focusId: string, members: Member[], dark: boolean): { 
       data: { member: c.member, role: c.role, caption: c.caption, quotaRef: c.quotaRef, badge: c.badge, onPick: undefined },
     });
 
-    // beside: stacked and centred against the card's own height
-    const sideBlockH = c.sides.length * ATT_H + Math.max(c.sides.length - 1, 0) * 12;
+    // beside: level with the card, so the line between them is horizontal and
+    // leaves each card on its own side dot
     c.sides.forEach((att, i) => {
-      const id = `att-${c.member.id}-${att.member.id}`;
+      const right = i === 0;
+      const role = INNER_ROLE[att.kind];
       nodes.push({
-        id, type: 'attach',
+        id: att.member.id, type: 'card',
         position: {
-          x: cardX + FAM_CARD_W + ATT_SIDE,
-          y: y + (FAM_CARD_H - sideBlockH) / 2 + i * (ATT_H + 12),
+          x: right ? cardX + FAM_CARD_W + INNER_SIDE : cardX - INNER_SIDE - FAM_CARD_W,
+          y,
         },
-        data: { member: att.member, label: att.label, kind: att.kind, onPick: undefined },
+        // no caption: the line between the two cards is labelled, and saying
+        // "Spouse" twice within 200px reads as two different claims
+        data: { member: att.member, role, onPick: undefined },
       });
       edges.push({
-        id: `e-${id}`,
-        source: c.member.id, sourceHandle: 'right-out',
-        target: id, targetHandle: 'left-in',
+        id: `e-inner-${c.member.id}-${att.member.id}`,
+        source: c.member.id, sourceHandle: right ? 'right-out' : 'left-out',
+        target: att.member.id, targetHandle: right ? 'left-in' : 'right-in',
         type: 'straight',
         label: att.label,
-        style: { stroke: att.kind === 'transfer' ? '#C99A2E' : '#A89C82', strokeWidth: 3 },
+        style: { stroke: att.kind === 'transfer' ? '#C99A2E' : '#A89C82', strokeWidth: 3.5 },
         labelStyle: { fontSize: 15, fill: labelFg, fontWeight: 700 },
         labelBgStyle: { fill: labelBg, fillOpacity: 1 },
         labelBgPadding: [8, 5],
@@ -465,24 +424,28 @@ function buildFamilyGraph(focusId: string, members: Member[], dark: boolean): { 
       });
     });
 
-    // underneath: this person's own dependents
-    c.below.forEach((att, i) => {
-      const id = `att-${c.member.id}-${att.member.id}`;
+    // underneath: this person's own children and dependents, centred on the
+    // card they belong to
+    const belowW = c.below.length ? c.below.length * FAM_CARD_W + (c.below.length - 1) * FAM_HGAP : 0;
+    let bx = cardX + FAM_CARD_W / 2 - belowW / 2;
+    c.below.forEach(att => {
+      const role = INNER_ROLE[att.kind];
       nodes.push({
-        id, type: 'attach',
-        position: { x: x + c.belowOffset + i * (ATT_W + ATT_GAP), y: y + FAM_CARD_H + ATT_DROP },
-        data: { member: att.member, label: att.label, kind: att.kind, onPick: undefined },
-      });
-      edges.push({
-        id: `e-${id}`,
-        source: c.member.id, sourceHandle: 'bottom',
-        target: id, targetHandle: 'top',
-        type: 'smoothstep',
-        style: {
-          stroke: att.kind === 'assoc' ? '#B2662A99' : att.kind === 'child' ? '#6E7A3A99' : '#8A5CC299',
-          strokeWidth: 3,
-          strokeDasharray: '6 4',
+        id: att.member.id, type: 'card',
+        position: { x: bx, y: y + FAM_CARD_H + INNER_DROP },
+        data: {
+          member: att.member, role,
+          caption: att.label, badge: INNER_BADGE[att.kind],
+          onPick: undefined,
         },
+      });
+      bx += FAM_CARD_W + FAM_HGAP;
+      edges.push({
+        id: `e-inner-${c.member.id}-${att.member.id}`,
+        source: c.member.id, sourceHandle: 'bottom',
+        target: att.member.id, targetHandle: 'top',
+        type: 'bus',
+        style: { stroke: FAM_ROLE_STYLE[role].border, strokeWidth: 3 },
       });
     });
 
@@ -516,7 +479,7 @@ function buildFamilyGraph(focusId: string, members: Member[], dark: boolean): { 
 
   // A row whose cards carry dependents underneath needs the extra height, or
   // the next row's fan-out would run straight through them.
-  const belowBlock = (list: Cluster[]) => (list.some(c => c.below.length) ? ATT_DROP + ATT_H + 60 : 0);
+  const belowBlock = (list: Cluster[]) => (list.some(c => c.below.length) ? INNER_DROP + FAM_CARD_H + 80 : 0);
 
   const row1Y      = 0;
   const parentRowY = row1Y - FAM_CARD_H - FAM_VGAP - belowBlock(parentClusters);
@@ -655,7 +618,7 @@ function FocusedDiagramInner({ focusId, members, onPick, highlightedId }: Props)
   );
 
   const nodes = useMemo(
-    () => rawNodes.map(n => (n.type === 'card' || n.type === 'attach')
+    () => rawNodes.map(n => n.type === 'card'
       ? {
           ...n,
           data: {
