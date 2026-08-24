@@ -46,7 +46,12 @@ export interface RelLink {
   name?: string | null;       // name as spelled in THIS row (see displayMember)
   photoUrl?: string | null;
   inner?: RelationNode[];     // the row's own ChildNode list, if any
+  // True when an actual API row said this, rather than the index working it
+  // out. Only parents use it so far: what a member's own record says about
+  // their parents beats anything inferred from a sibling's record.
+  stated?: boolean;
 }
+
 
 export interface FamilyIndex {
   byId:     Map<string, Member>;
@@ -57,6 +62,14 @@ export interface FamilyIndex {
 }
 
 const key = (id: string | null | undefined) => (id ?? '').trim().toUpperCase();
+
+/**
+ * A parent with no club A/C of their own gets a PENDING-<member>-father/mother
+ * stand-in so they still get a card. That id belongs to ONE member's record —
+ * two members' unnamed fathers are two different men even when neither holds
+ * an account — so it must never be used to connect people to each other.
+ */
+const isPlaceholder = (id: string | null | undefined) => key(id).startsWith('PENDING-');
 
 const SPOUSE_WORDS  = new Set(['wife', 'husband', 'spouse']);
 const SIBLING_WORDS = new Set(['brother', 'sister', 'sibling', 'siblings']);
@@ -121,9 +134,11 @@ export function buildFamilyIndex(members: Member[]): FamilyIndex {
   // someone's child still counts: only the guess is ignored.
   const noInferredParents = new Set<string>();
 
-  const linkChild = (parentId: string, child: RelLink) => {
+  // `stated` marks a link an actual API row asserted, as opposed to one this
+  // index worked out afterwards — see RelLink.stated.
+  const linkChild = (parentId: string, child: RelLink, stated: boolean) => {
     addLink(index.children, parentId, child);
-    addLink(index.parents, child.id, { id: parentId, relation: '' });
+    addLink(index.parents, child.id, { id: parentId, relation: '', stated });
   };
 
   // ── pass 1: every core member's own raw node list ──────────────────────
@@ -140,7 +155,7 @@ export function buildFamilyIndex(members: Member[]): FamilyIndex {
           return;
 
         case 'Parent':
-          addLink(index.parents, owner.id, link);
+          addLink(index.parents, owner.id, { ...link, stated: true });
           addLink(index.children, n.acno, { id: owner.id, relation: '' });
           return;
 
@@ -167,7 +182,7 @@ export function buildFamilyIndex(members: Member[]): FamilyIndex {
           // "of X" names the real parent — the dependent then belongs to X's
           // family, and to nobody else's, even though their membership hangs
           // off this owner's quota.
-          if (ref) { linkChild(ref, link); return; }
+          if (ref) { linkChild(ref, link, true); return; }
 
           // No cross-reference. A Children row, or a 4(d) row (that quota is
           // for the member's own dependents), means their own child — real
@@ -179,7 +194,7 @@ export function buildFamilyIndex(members: Member[]): FamilyIndex {
             noInferredParents.add(key(n.acno));
             return;
           }
-          linkChild(owner.id, link);
+          linkChild(owner.id, link, true);
           return;
         }
 
@@ -195,10 +210,10 @@ export function buildFamilyIndex(members: Member[]): FamilyIndex {
   // and the static demo data path — all still resolve here.)
   members.forEach(m => {
     if (!noInferredParents.has(key(m.id))) {
-      if (m.fatherId) linkChild(m.fatherId, { id: m.id, relation: '' });
-      if (m.motherId) linkChild(m.motherId, { id: m.id, relation: '' });
+      if (m.fatherId) linkChild(m.fatherId, { id: m.id, relation: '' }, false);
+      if (m.motherId) linkChild(m.motherId, { id: m.id, relation: '' }, false);
       if (!m.fatherId && !m.motherId && m.rel === 'child' && m.pid) {
-        linkChild(m.pid, { id: m.id, relation: '' });
+        linkChild(m.pid, { id: m.id, relation: '' }, false);
       }
     }
     if (m.rel === 'spouse' && m.pid) {
@@ -232,12 +247,18 @@ export function buildFamilyIndex(members: Member[]): FamilyIndex {
     if (!sibs?.length || !pars?.length) return;
 
     pars.forEach(parent => {
+      // A stand-in for one member's unnamed parent is not a person anyone
+      // else can be a child of. Without this, every sibling inherits every
+      // other sibling's placeholder father — so a member ends up with a row
+      // of "Father of <someone else>" cards, and, through them, the whole
+      // club as brothers.
+      if (isPlaceholder(parent.id)) return;
       sibs.forEach(sib => {
         if (key(sib.id) === key(parent.id)) return;
         if (related(index.siblings, parent.id, sib.id)) return;  // stated siblings
         if (related(index.spouses, parent.id, sib.id)) return;   // stated spouses
         if (related(index.parents, parent.id, sib.id)) return;   // sib is the parent's parent
-        linkChild(parent.id, { id: sib.id, relation: sib.relation, name: sib.name, photoUrl: sib.photoUrl });
+        linkChild(parent.id, { id: sib.id, relation: sib.relation, name: sib.name, photoUrl: sib.photoUrl }, false);
       });
     });
   });
@@ -287,8 +308,21 @@ export function familySpouses(index: FamilyIndex, id: string): ResolvedNode[] {
   return resolve(index, index.spouses.get(key(id))?.values(), new Set([key(id)]));
 }
 
+/**
+ * The parent links worth showing. A member's own record is the authority on
+ * who their parents are: when it names them, nothing inferred from anyone
+ * else's record is added beside them. Only a member whose own record is
+ * silent falls back to what the rest of the data implies — which is how a
+ * dependent, who carries no Parent row at all, still finds their parents.
+ */
+function parentLinks(index: FamilyIndex, id: string): RelLink[] {
+  const all = [...(index.parents.get(key(id))?.values() ?? [])];
+  const stated = all.filter(l => l.stated);
+  return stated.length ? stated : all;
+}
+
 export function familyParents(index: FamilyIndex, id: string): ResolvedNode[] {
-  return resolve(index, index.parents.get(key(id))?.values(), new Set([key(id)]));
+  return resolve(index, parentLinks(index, id), new Set([key(id)]));
 }
 
 /**
@@ -303,8 +337,12 @@ export function familySiblings(index: FamilyIndex, id: string): ResolvedNode[] {
   index.parents.get(self)?.forEach((_, k) => skip.add(k));
 
   const out = resolve(index, index.siblings.get(self)?.values(), skip);
-  index.parents.get(self)?.forEach((_, parentKey) => {
-    out.push(...resolve(index, index.children.get(parentKey)?.values(), skip));
+  // Through the parents actually shown, and never through a placeholder:
+  // that stand-in stands for this member's own parent, so the only child it
+  // can produce is this member.
+  parentLinks(index, self).forEach(parent => {
+    if (isPlaceholder(parent.id)) return;
+    out.push(...resolve(index, index.children.get(key(parent.id))?.values(), skip));
   });
   return out;
 }

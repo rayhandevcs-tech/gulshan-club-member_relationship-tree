@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode, CSSProperties } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
@@ -533,6 +533,11 @@ function buildFamilyGraph(focusId: string, members: Member[], dark: boolean): { 
   // ── parents row — centred on the owner alone; siblings/spouse hang off
   // the fan-out/spouse-line below, not the parents' own alignment ──
   if (parentClusters.length > 0) {
+    // Two parent cards are not automatically a couple. Contradictory source
+    // records can leave a member with two fathers, and drawing a "SPOUSE"
+    // line between them states something the data never said.
+    const parentCaptions = parents.map(e => parentCaption(e, owner));
+    const parentsCoupled = parentCaptions.includes('Father') && parentCaptions.includes('Mother');
     const parentsRowW = parentClusters.reduce((sum, c) => sum + c.width, 0)
       + Math.max(parentClusters.length - 1, 0) * FAM_PARENT_GAP;
     let px = ownerX + FAM_CARD_W / 2 - parentsRowW / 2;
@@ -543,7 +548,7 @@ function buildFamilyGraph(focusId: string, members: Member[], dark: boolean): { 
       px += c.width;
     });
 
-    if (parentClusters.length > 1) {
+    if (parentsCoupled) {
       edges.push({
         id: `e-parentpair-${owner.id}`,
         source: parentClusters[0].member.id, sourceHandle: 'right-out',
@@ -561,10 +566,10 @@ function buildFamilyGraph(focusId: string, members: Member[], dark: boolean): { 
     // single parent's own bottom edge, so the downward fan-out visibly
     // branches off it instead of floating below the cards.
     const parentUnionId = `union-parents-${owner.id}`;
-    const parentUnionX = parentClusters.length > 1
+    const parentUnionX = parentsCoupled
       ? (parentCardXs[0] + parentCardXs[1] + FAM_CARD_W) / 2
       : parentCardXs[0] + FAM_CARD_W / 2;
-    const parentUnionY = parentClusters.length > 1
+    const parentUnionY = parentsCoupled
       ? parentRowY + FAM_CARD_H / 2
       : parentRowY + FAM_CARD_H;
     nodes.push({
@@ -640,9 +645,19 @@ function FocusedDiagramInner({ focusId, members, onPick, highlightedId }: Props)
 
   const rf = useReactFlow();
   const nodesInitialized = useNodesInitialized();
+  // Which family the canvas is currently framed on. Searching someone new
+  // has to re-frame: the previous family's zoom and position mean nothing
+  // for this one, and just centring on the searched card left the rest of
+  // their family off screen — which reads as the search not working at all.
+  const framedFocus = useRef<string | null>(null);
   useEffect(() => {
     if (!nodesInitialized) return;
-    if (highlightedId) {
+    const sameFamily = framedFocus.current === focusId;
+    framedFocus.current = focusId;
+
+    // Within the family already on screen, a search is asking to be taken to
+    // one card — there is nothing to re-frame.
+    if (sameFamily && highlightedId) {
       const target = nodes.find(n => n.id === highlightedId);
       if (target) {
         rf.setCenter(target.position.x + FAM_CARD_W / 2, target.position.y + FAM_CARD_H / 2, { zoom: 1, duration: 600 });
@@ -650,7 +665,7 @@ function FocusedDiagramInner({ focusId, members, onPick, highlightedId }: Props)
       }
     }
     rf.fitView({ padding: 0.16, minZoom: 0.08, maxZoom: 1.4, duration: 300 });
-  }, [nodesInitialized, highlightedId, nodes, rf]);
+  }, [nodesInitialized, highlightedId, focusId, nodes, rf]);
 
   if (!nodes.length) return null;
 
