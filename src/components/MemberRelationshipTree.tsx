@@ -1,5 +1,5 @@
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode, CSSProperties } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
@@ -637,9 +637,16 @@ function FlowInner({ rootId, members, onPick, bioMode, highlightedId }: Props) {
 
   const rf = useReactFlow();
   const nodesInitialized = useNodesInitialized();
+  // Which tree the canvas is framed on — a search that lands on a different
+  // member re-frames, rather than keeping the last one's zoom and leaving
+  // most of the new tree off screen.
+  const framedRoot = useRef<string | null>(null);
   useEffect(() => {
     if (!nodesInitialized) return;
-    if (highlightedId) {
+    const sameTree = framedRoot.current === rootId;
+    framedRoot.current = rootId;
+
+    if (sameTree && highlightedId) {
       const target = nodes.find(n => (n.data as { member?: Member })?.member?.id === highlightedId);
       if (target) {
         const w = target.type === 'slot' ? SLOT_W : CARD_W;
@@ -649,7 +656,7 @@ function FlowInner({ rootId, members, onPick, bioMode, highlightedId }: Props) {
       }
     }
     rf.fitView({ padding: 0.18, minZoom: 0.12, maxZoom: 1.6, duration: 300 });
-  }, [nodesInitialized, highlightedId, nodes, rf]);
+  }, [nodesInitialized, highlightedId, rootId, nodes, rf]);
 
   if (!rootMember) return null;
 
