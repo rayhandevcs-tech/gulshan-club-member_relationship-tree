@@ -9,7 +9,7 @@ import type { CSSProperties } from 'react';
 import styles from './styles/SearchBar.module.css';
 
 export default function SearchBar() {
-  const { members, searchQuery, setSearch, setActiveRoot, setFocusView, setHighlighted, theme } = useMemberStore();
+  const { members, searchQuery, setSearch, setActiveRoot, setFocusView, setHighlighted, selectedId, setSelected, theme } = useMemberStore();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -52,6 +52,12 @@ export default function SearchBar() {
     const isLeaf = m.via === 'a4d';
     setFocusView(isLeaf && m.pid ? m.pid : id);
     setHighlighted(id);
+    // An open details panel is showing "the member being looked at", so a
+    // search has to move it too — otherwise the tree switches to the
+    // searched member while the panel beside it goes on describing whoever
+    // was clicked before, which reads as the search doing nothing. A CLOSED
+    // panel stays closed: searching is not a request to open it.
+    if (selectedId) setSelected(id);
     setOpen(false);
   };
 
