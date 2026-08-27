@@ -50,6 +50,12 @@ export interface RelLink {
   // out. Only parents use it so far: what a member's own record says about
   // their parents beats anything inferred from a sibling's record.
   stated?: boolean;
+  // On a parent link: how the child was described by the row that produced
+  // it. "Daughter" is somebody stating a parent; a blank 4(d) row is an
+  // account sitting in a quota, which is a much weaker claim to the same
+  // thing. Kept on the parent side because the parent side is where the
+  // competing claims have to be told apart.
+  claim?: string;
 }
 
 
@@ -138,7 +144,7 @@ export function buildFamilyIndex(members: Member[]): FamilyIndex {
   // index worked out afterwards — see RelLink.stated.
   const linkChild = (parentId: string, child: RelLink, stated: boolean) => {
     addLink(index.children, parentId, child);
-    addLink(index.parents, child.id, { id: parentId, relation: '', stated });
+    addLink(index.parents, child.id, { id: parentId, relation: '', stated, claim: child.relation });
   };
 
   // ── pass 1: every core member's own raw node list ──────────────────────
@@ -317,12 +323,89 @@ export function familySpouses(index: FamilyIndex, id: string): ResolvedNode[] {
  */
 function parentLinks(index: FamilyIndex, id: string): RelLink[] {
   const all = [...(index.parents.get(key(id))?.values() ?? [])];
-  const stated = all.filter(l => l.stated);
-  return stated.length ? stated : all;
+  const self = index.byId.get(key(id));
+  // A link the member's own flat record points at is kept whatever produced
+  // it — that is the reading the rest of the app already goes by, and it is
+  // usually the only thing naming the mother of a plainly-listed child.
+  const own = (l: RelLink) =>
+    !!self && (key(l.id) === key(self.fatherId) || key(l.id) === key(self.motherId));
+  const kept = all.filter(l => l.stated || own(l));
+  return kept.length ? kept : all;
+}
+
+/** Which side of a person's parentage a link is claiming, if it says. */
+type ParentSlot = 'father' | 'mother' | 'unknown';
+
+function parentSlot(entry: ResolvedNode, self: Member | undefined): ParentSlot {
+  const word = parseRelationText(entry.relation).base.toLowerCase();
+  if (word === 'father') return 'father';
+  if (word === 'mother') return 'mother';
+  if (self && key(entry.member.id) === key(self.fatherId)) return 'father';
+  if (self && key(entry.member.id) === key(self.motherId)) return 'mother';
+  if (entry.member.gender === 'M') return 'father';
+  if (entry.member.gender === 'F') return 'mother';
+  return 'unknown';
+}
+
+/**
+ * Nobody has three parents.
+ *
+ * The club's records don't guarantee that: an A/C written into several
+ * members' trees makes every one of those members a claimed parent of that
+ * dependent, and a panel listing a column of "Parent" rows is wrong however
+ * many rows the data has. So the claims are weighed, and at most one father
+ * and one mother come out.
+ *
+ * A claim carries real evidence of which parent it is when the row says
+ * "Father"/"Mother" outright, when the member's own record points at that
+ * person, or when the person's gender is known. Claims with none of that
+ * are only named when there is no competition — one unlabelled claim is a
+ * parent whose details are simply missing, but a dozen of them are a
+ * mistake in the records, and naming two at random would be inventing an
+ * answer the data doesn't have.
+ */
+const CHILD_WORDS = new Set(['son', 'daughter', 'child']);
+
+function pickParents(entries: ResolvedNode[], claims: Map<string, string>, self: Member | undefined): ResolvedNode[] {
+  if (entries.length <= 1) return entries;
+
+  // Lower is better. 4 means the row asserted nothing at all — an account
+  // number sitting in somebody's quota with no relationship written on it.
+  const confidence = (e: ResolvedNode): number => {
+    const word = parseRelationText(e.relation).base.toLowerCase();
+    if (word === 'father' || word === 'mother') return 0;
+    if (self && (key(e.member.id) === key(self.fatherId) || key(e.member.id) === key(self.motherId))) return 1;
+    if (CHILD_WORDS.has(parseRelationText(claims.get(key(e.member.id))).base.toLowerCase())) return 2;
+    if (e.member.gender) return 3;
+    return 4;
+  };
+
+  const ranked = entries
+    .map((entry, i) => ({ entry, i, score: confidence(entry), slot: parentSlot(entry, self) }))
+    .sort((a, b) => a.score - b.score || a.i - b.i);
+
+  // Nothing but blank quota rows to go on. One of those is a parent whose
+  // details are simply missing; a dozen of them is a mistake in the
+  // records, and naming two at random would invent an answer.
+  if (ranked.every(r => r.score === 4)) return entries.length <= 2 ? entries : [];
+
+  const out: ResolvedNode[] = [];
+  const taken = new Set<ParentSlot>();
+  for (const r of ranked) {
+    if (r.score === 4) break;                              // ranked, so the rest are too
+    if (r.slot !== 'unknown' && taken.has(r.slot)) continue; // never two fathers
+    out.push(r.entry);
+    if (r.slot !== 'unknown') taken.add(r.slot);
+    if (out.length === 2) break;
+  }
+  return out;
 }
 
 export function familyParents(index: FamilyIndex, id: string): ResolvedNode[] {
-  return resolve(index, parentLinks(index, id), new Set([key(id)]));
+  const links = parentLinks(index, id);
+  const claims = new Map(links.map(l => [key(l.id), l.claim ?? '']));
+  const entries = resolve(index, links, new Set([key(id)]));
+  return pickParents(entries, claims, index.byId.get(key(id)));
 }
 
 /**
@@ -337,12 +420,12 @@ export function familySiblings(index: FamilyIndex, id: string): ResolvedNode[] {
   index.parents.get(self)?.forEach((_, k) => skip.add(k));
 
   const out = resolve(index, index.siblings.get(self)?.values(), skip);
-  // Through the parents actually shown, and never through a placeholder:
+  // Through the two parents actually shown, and never through a placeholder:
   // that stand-in stands for this member's own parent, so the only child it
   // can produce is this member.
-  parentLinks(index, self).forEach(parent => {
-    if (isPlaceholder(parent.id)) return;
-    out.push(...resolve(index, index.children.get(key(parent.id))?.values(), skip));
+  familyParents(index, id).forEach(parent => {
+    if (isPlaceholder(parent.member.id)) return;
+    out.push(...resolve(index, index.children.get(key(parent.member.id))?.values(), skip));
   });
   return out;
 }
