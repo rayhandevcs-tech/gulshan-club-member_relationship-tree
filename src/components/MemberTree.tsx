@@ -77,6 +77,20 @@ export default function MemberTree() {
 
   const focusId = focusViewId ?? activeRoot.id;
 
+  // The two tabs answer different questions, so a searched DEPENDENT lands
+  // in a different place in each.
+  //
+  // The member view is about quota: a 4(d) dependent holds none, so there is
+  // no tree to draw from them — it stays on the member whose quota they sit
+  // in, with their card highlighted inside it.
+  //
+  // The family view is about blood, and resolves anybody through the shared
+  // index. Sending it to the sponsor instead showed the sponsor's family
+  // with the searched person nowhere on the canvas — searching somebody and
+  // being shown somebody else's relatives. It follows the search itself.
+  const searched = highlightedId && members.some(m => m.id === highlightedId) ? highlightedId : null;
+  const familyFocusId = searched ?? focusId;
+
   return (
 
     <div className={s.diagramWrap}>
@@ -114,7 +128,7 @@ export default function MemberTree() {
         {diagramMode === 'focused' && (
 
           <div className={s.bioWrap}>
-            <FamilyRelationshipDiagram focusId={focusId} members={members} onPick={setSelected} highlightedId={highlightedId} />
+            <FamilyRelationshipDiagram focusId={familyFocusId} members={members} onPick={setSelected} highlightedId={highlightedId} />
           </div>
 
         )}

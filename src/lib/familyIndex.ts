@@ -148,67 +148,80 @@ export function buildFamilyIndex(members: Member[]): FamilyIndex {
   };
 
   // ── pass 1: every core member's own raw node list ──────────────────────
-  members.forEach(owner => {
-    if (!owner.nodes) return;
+  //
+  // One row, read as a statement made BY `ownerId` ABOUT the person the row
+  // names.
+  const absorb = (ownerId: string, n: RelationNode): void => {
+    const link: RelLink = { id: n.acno, relation: n.relation, name: n.name, photoUrl: n.photoUrl, inner: n.inner };
+    if (!key(n.acno)) return;
 
-    owner.nodes.forEach(n => {
-      const link: RelLink = { id: n.acno, relation: n.relation, name: n.name, photoUrl: n.photoUrl, inner: n.inner };
-      if (!key(n.acno)) return;
+    switch (n.node) {
+      case 'Spouse':
+        pair(index.spouses, { id: ownerId, relation: n.relation }, link);
+        return;
 
-      switch (n.node) {
-        case 'Spouse':
-          pair(index.spouses, { id: owner.id, relation: n.relation }, link);
-          return;
+      case 'Parent':
+        addLink(index.parents, ownerId, { ...link, stated: true });
+        addLink(index.children, n.acno, { id: ownerId, relation: '' });
+        return;
 
-        case 'Parent':
-          addLink(index.parents, owner.id, { ...link, stated: true });
-          addLink(index.children, n.acno, { id: owner.id, relation: '' });
-          return;
+      case 'Siblings':
+        pair(index.siblings, { id: ownerId, relation: '' }, link);
+        return;
 
-        case 'Siblings':
-          pair(index.siblings, { id: owner.id, relation: '' }, link);
-          return;
+      case 'Children':
+      case 'A4D':
+      case 'Associate': {
+        // The relation text decides — a quota row is not automatically a
+        // parent-child fact (see the file header).
+        const { base, ref } = parseRelationText(n.relation);
+        const word = base.toLowerCase();
 
-        case 'Children':
-        case 'A4D':
-        case 'Associate': {
-          // The relation text decides — a quota row is not automatically a
-          // parent-child fact (see the file header).
-          const { base, ref } = parseRelationText(n.relation);
-          const word = base.toLowerCase();
-
-          if (SPOUSE_WORDS.has(word)) {
-            pair(index.spouses, { id: owner.id, relation: n.relation }, link);
-            return;
-          }
-          if (SIBLING_WORDS.has(word)) {
-            pair(index.siblings, { id: owner.id, relation: n.relation }, link);
-            return;
-          }
-          // "of X" names the real parent — the dependent then belongs to X's
-          // family, and to nobody else's, even though their membership hangs
-          // off this owner's quota.
-          if (ref) { linkChild(ref, link, true); return; }
-
-          // No cross-reference. A Children row, or a 4(d) row (that quota is
-          // for the member's own dependents), means their own child — real
-          // data labels those inconsistently, so the wording isn't required.
-          // An Associate row is different: "Associate-01" is a slot number,
-          // not a relationship, so unless it actually says Son/Daughter this
-          // is somebody's associate member and no family claim is made.
-          if (n.node === 'Associate' && word !== 'son' && word !== 'daughter' && word !== 'child') {
-            noInferredParents.add(key(n.acno));
-            return;
-          }
-          linkChild(owner.id, link, true);
+        if (SPOUSE_WORDS.has(word)) {
+          pair(index.spouses, { id: ownerId, relation: n.relation }, link);
           return;
         }
-
-        default:
-          // 'Transfer' carries no family meaning.
+        if (SIBLING_WORDS.has(word)) {
+          pair(index.siblings, { id: ownerId, relation: n.relation }, link);
           return;
+        }
+        // "of X" names the real parent — the dependent then belongs to X's
+        // family, and to nobody else's, even though their membership hangs
+        // off this owner's quota.
+        if (ref) { linkChild(ref, link, true); return; }
+
+        // No cross-reference. A Children row, or a 4(d) row (that quota is
+        // for the member's own dependents), means their own child — real
+        // data labels those inconsistently, so the wording isn't required.
+        // An Associate row is different: "Associate-01" is a slot number,
+        // not a relationship, so unless it actually says Son/Daughter this
+        // is somebody's associate member and no family claim is made.
+        if (n.node === 'Associate' && word !== 'son' && word !== 'daughter' && word !== 'child') {
+          noInferredParents.add(key(n.acno));
+          return;
+        }
+        linkChild(ownerId, link, true);
+        return;
       }
+
+      default:
+        // 'Transfer' carries no family meaning.
+        return;
+    }
+  };
+
+  members.forEach(owner => {
+    // A row's ChildNode list describes the person on THAT row, not the
+    // member whose tree it arrived in: "PT-73, Wife" inside the Siblings row
+    // for DM-88 says PT-73 is DM-88's wife. Read from there, that fact
+    // belongs to both of them — so either one can be searched and still find
+    // the other, instead of it existing only as a decoration on somebody
+    // else's diagram.
+    const walk = (ownerId: string, rows: RelationNode[]) => rows.forEach(n => {
+      absorb(ownerId, n);
+      if (n.inner?.length) walk(n.acno, n.inner);
     });
+    if (owner.nodes) walk(owner.id, owner.nodes);
   });
 
   // ── pass 2: flat fields, for members the node lists never covered ──────

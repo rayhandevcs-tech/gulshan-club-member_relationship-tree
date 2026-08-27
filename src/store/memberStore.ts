@@ -59,11 +59,15 @@ export const useMemberStore = create<MemberStore>()(
               selectedId: id,
               focusViewId: id,
               focusHistory: [...s.focusHistory, s.focusViewId],
+              // moving under your own steam ends the last search — see the
+              // family view's focus in MemberTree, which follows it
+              highlightedId: null,
             };
           }
           return {
             selectedId: id,
             focusViewId: isAnchor ? id : s.focusViewId,
+            highlightedId: null,
           };
         });
       },
@@ -74,6 +78,7 @@ export const useMemberStore = create<MemberStore>()(
         return {
           focusViewId: prev,
           focusHistory: s.focusHistory.slice(0, -1),
+          highlightedId: null,
         };
       }),
       setView: (v) => set({ view: v }),
