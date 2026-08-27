@@ -19,7 +19,7 @@ import { TYPE_CONFIG, getInitials, typeBg, typeBgHover } from '@/lib/memberUtils
 import type { Member } from '@/lib/types';
 import {
   buildGraph, applyLayout, findRoot,
-  getType, isDead, isInactive, dispName, photoOf, displayAcno,
+  getType, isDead, isInactive, showsClosedAcno, dispName, photoOf, displayAcno,
   nodesOfKind, displayMember, getRefFromRelation, slotRole,
   CARD_W, CARD_H, SLOT_W, SLOT_H, BESIDE_GAP,
 } from '@/lib/quotaTreeLayout';
@@ -100,7 +100,7 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
         className={`${styles.card}${highlighted ? ' search-highlight-card' : ''}`}
         style={{
           '--border': border,
-          '--bg': bg,
+          '--card-bg': bg,
           '--card-shadow': hovered ? `0 12px 26px -4px rgba(0,0,0,0.2), 0 0 0 3px ${border}2e` : '0 2px 6px rgba(0,0,0,0.08)',
           '--card-transform': hovered ? 'translateY(-3px) scale(1.015)' : 'none',
           '--card-opacity': isSuccessor ? 0.92 : 1,
@@ -139,7 +139,7 @@ function MemberNodeComp({ data }: { data: MemberNodeData }) {
           </span>
         )}
 
-        {isInactive(m) && (
+        {showsClosedAcno(m) && (
           <span className={styles.inactiveTag}>
             Inactive A/C
           </span>
@@ -238,7 +238,7 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
         style={{
           '--border': border,
           '--slot-border-w': nested ? '3px' : '3.5px',
-          '--bg': hovered ? cardBgHover : cardBg,
+          '--card-bg': hovered ? cardBgHover : cardBg,
           '--slot-shadow': hovered ? `0 8px 18px -3px rgba(0,0,0,0.18), 0 0 0 2px ${border}26` : '0 1px 3px rgba(0,0,0,0.06)',
           '--slot-transform': hovered ? 'translateY(-2px)' : 'none',
         } as CSSProperties}
@@ -276,7 +276,7 @@ function SlotNodeComp({ data }: { data: SlotNodeData }) {
                   Deceased
                 </span>
               )}
-              {isInactive(m) && (
+              {showsClosedAcno(m) && (
                 <span className={styles.slotInactive}>
                   Inactive
                 </span>
@@ -683,7 +683,9 @@ function FlowInner({ rootId, members, onPick, bioMode, highlightedId }: Props) {
         minZoom={0.1}
         maxZoom={2.5}
       >
-        <Background color={theme === 'dark' ? '#322C1E' : '#E3D9C2'} gap={22} size={1} />
+        {/* Keep in step with --flow-dot in globals.css: the dots have to stay
+            a faint texture on the ground, not a second colour on it. */}
+        <Background color={theme === 'dark' ? '#2B2519' : '#D6C9AB'} gap={22} size={1} />
         {/* top-right: within reach of the cursor while reading the tree,
             instead of buried at the bottom-left corner of a tall canvas */}
         <Controls

@@ -31,7 +31,7 @@
 .card {
   border: 2.5px solid var(--border);
   border-radius: 20px;
-  background: var(--bg);
+  background: var(--card-bg);
   padding: 22px 24px;
   display: flex;
   flex-direction: column;
@@ -198,7 +198,7 @@
 .slotCard {
   border: var(--slot-border-w) solid var(--border);
   border-radius: 15px;
-  background: var(--bg);
+  background: var(--card-bg);
   padding: 26px 26px;
   display: flex;
   flex-direction: column;
