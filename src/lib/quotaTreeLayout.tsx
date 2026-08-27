@@ -29,6 +29,13 @@ export const isPendingAcno = (id: string): boolean => id.startsWith('PENDING-');
 // yet is not evidence of anything.
 export const isInactive = (m: Member): boolean => m.active === false;
 
+// Whether to SAY "Inactive A/C" out loud. Someone with no club A/C at all
+// still reads as drained (isInactive keeps their card grey), but the words
+// would contradict the "No A/C" badge sitting right above them: there is no
+// account there to be closed.
+export const showsClosedAcno = (m: Member): boolean =>
+  isInactive(m) && !isPendingAcno(m.id);
+
 // Shown in the id badge instead of the raw internal placeholder string.
 export const displayAcno = (id: string): string =>
   isPendingAcno(id) ? 'No A/C' : id;

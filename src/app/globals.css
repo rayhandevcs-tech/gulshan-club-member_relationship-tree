@@ -8,7 +8,10 @@
 :root {
   color-scheme: light;
 
-  --bg: #FAF7F0;
+  /* The page IS the diagram canvas, and every card on it is a pale tint, so
+     the ground has to sit a clear step below the lightest card fill —
+     otherwise a drained (grey) card dissolves into it. */
+  --bg: #EBE3D2;
   --surface: #FFFFFF;
   --surface-alt: #F6F0E3;
   --border: #E6DBC2;
@@ -19,10 +22,10 @@
   --text-faint: #6A624F;
   --input-bg: #FFFDF7;
   --input-border: #E3D6B7;
-  --tab-bg: #F1E9D8;
+  --tab-bg: #F8F2E4;
   --scrollbar: #E0D3B5;
   --scrollbar-hover: #C9B98F;
-  --flow-dot: #E3D9C2;
+  --flow-dot: #D6C9AB;
 
   /* brand accents — same names in both themes, so components never branch */
   --gold: #B8912F;
@@ -44,7 +47,7 @@
 [data-theme='dark'] {
   color-scheme: dark;
 
-  --bg: #0B0A09;
+  --bg: #070605;
   --surface: #16140F;
   --surface-alt: #1F1C15;
   --border: #322C1E;
@@ -58,7 +61,7 @@
   --tab-bg: #201C15;
   --scrollbar: #322C1E;
   --scrollbar-hover: #4A4130;
-  --flow-dot: #322C1E;
+  --flow-dot: #2B2519;
 
   --gold: #E0B959;
   --gold-strong: #F0D28C;

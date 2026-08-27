@@ -13,7 +13,7 @@ import {
   type TypeConfigEntry,
 } from '@/lib/memberUtils';
 // getType: prefix থেকে type derive করে (P→Permanent, AFD→A4D, D→Donor, L→Life)
-import { getType, getRef, photoOf, displayAcno, isPendingAcno, isInactive } from '@/lib/quotaTreeLayout';
+import { getType, getRef, photoOf, displayAcno, isPendingAcno, showsClosedAcno } from '@/lib/quotaTreeLayout';
 import {
   getFamilyIndex, familyParents, familyChildren, familySiblings,
   parentCaption, sortParents,
@@ -190,7 +190,7 @@ function slotBadges(c: Member, theme: Theme): { text: string; color: string; bg:
   // since date", which the external-API integration never provides at all
   // for otherwise perfectly real, active accounts.
   if (isPendingAcno(c.id)) out.push({ text: 'Pending A/C', color: dark ? '#f0c975' : '#92400e', bg: dark ? '#3a2e12' : '#fef3c7' });
-  if (isInactive(c)) out.push({ text: 'Inactive', color: dark ? '#B9B099' : '#6A624F', bg: dark ? '#26231A' : '#EDE8DA' });
+  if (showsClosedAcno(c)) out.push({ text: 'Inactive', color: dark ? '#B9B099' : '#6A624F', bg: dark ? '#26231A' : '#EDE8DA' });
   return out;
 }
 
@@ -306,7 +306,7 @@ export default function DetailPanel() {
           ['Joined',         m.since],
           // only worth a row when it's NOT the normal case — most records
           // don't state a status at all yet
-          ['Status',         isInactive(m) ? 'Inactive account' : null],
+          ['Status',         showsClosedAcno(m) ? 'Inactive account' : null],
           // Access answers "how did this person become an account holder" —
           // so it's left blank for someone who holds no account at all
           // (a placeholder id: a parent or spouse known only by name).

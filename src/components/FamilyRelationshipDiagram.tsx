@@ -21,7 +21,7 @@ import ReactFlow, {
 } from 'reactflow';
 import { getInitials } from '@/lib/memberUtils';
 import { Member } from '@/lib/types';
-import { photoOf, dispName, isDead, isInactive, displayAcno, displayMember, isPendingAcno } from '@/lib/quotaTreeLayout';
+import { photoOf, dispName, isDead, isInactive, showsClosedAcno, displayAcno, displayMember, isPendingAcno } from '@/lib/quotaTreeLayout';
 import {
   getFamilyIndex, findMember, familyParents, familySpouses, familySiblings,
   familyChildren, childCaption, parentCaption, siblingCaption, sortParents,
@@ -173,7 +173,7 @@ function FamCard({ data }: { data: FamCardData }) {
         className={`${styles.card}${highlighted ? ' search-highlight-card' : ''}`}
         style={{
           '--border': border,
-          '--bg': hovered ? bgHover : bg,
+          '--card-bg': hovered ? bgHover : bg,
           '--card-shadow': hovered ? `0 14px 28px -4px rgba(0,0,0,0.2), 0 0 0 3px ${border}2e` : '0 1px 4px rgba(0,0,0,0.06)',
           '--card-transform': hovered ? 'translateY(-4px) scale(1.015)' : 'none',
         } as CSSProperties}
@@ -215,7 +215,7 @@ function FamCard({ data }: { data: FamCardData }) {
             Deceased
           </span>
         )}
-        {isInactive(m) && (
+        {showsClosedAcno(m) && (
           <span className={styles.inactiveTag}>
             Inactive A/C
           </span>
@@ -693,7 +693,9 @@ function FocusedDiagramInner({ focusId, members, onPick, highlightedId }: Props)
         minZoom={0.08}
         maxZoom={2}
       >
-        <Background color={theme === 'dark' ? '#322C1E' : '#E3D9C2'} gap={22} size={1} />
+        {/* Keep in step with --flow-dot in globals.css: the dots have to stay
+            a faint texture on the ground, not a second colour on it. */}
+        <Background color={theme === 'dark' ? '#2B2519' : '#D6C9AB'} gap={22} size={1} />
         {/* top-right: within reach of the cursor while reading the tree,
             instead of buried at the bottom-left corner of a tall canvas */}
         <Controls showInteractive={false} position="top-right" className={styles.controls} />
